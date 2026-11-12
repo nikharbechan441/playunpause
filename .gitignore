@@ -1,0 +1,14 @@
+node_modules/
+dist/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db-journal
+.env
+.env.*
+!.env.example
+*.local
+tools/out/
+preview-email-*.html
+NOTES.md
+LAUNCH_PLAYBOOK.md

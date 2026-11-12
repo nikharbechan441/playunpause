@@ -1,0 +1,49 @@
+# Unpause (https://playunpause.com)
+
+> Independent, unofficial, ad-free second-screen companion web app for console and PC players. Designed to deliver exact mathematical answers in under 3 seconds while your game is paused on a phone or laptop—zero pop-up ads, zero login walls, zero 900-word SEO intros.
+
+## Supported Games & Companion Utilities
+
+### 1. Grand Theft Auto VI (GTA 6)
+- **212 GB Console Pre-Load & Storage Surgery (`https://playunpause.com/`):** Exact usable SSD calculations for Xbox Series S (364 GB usable), PS5 Base (667 GB usable), Xbox Series X (802 GB usable), PS5 Slim (848 GB usable), and PS5 Pro (1,890 GB usable). Includes download ETA by Mbps, New Zealand rolling midnight unlock reality check (Xbox location behavior vs PSN account region lock), and shareable Thermal Funeral Receipt PNG export.
+- **Safe & Door Keypad Vault (`https://playunpause.com/?tab=safes`):** Instant search by district, street landmark, or reward with interactive 10-key tone playback and local progress check-offs (shows 6 simulated UI demo safes prior to Nov 18 public launch; verified combinations populate starting Nov 18, 2026).
+- **Squad Heist Cut & Story Market Flip Calculator (`https://playunpause.com/?tab=squad`):** Integer-exact squad percentage splitter with per-player percentage locks and shareable ledger PNG export, plus dual-protagonist two-leg stock flip compounder.
+- **Spoiler-Free Missables Shield & Night Run Routes (`https://playunpause.com/?tab=nightrun`):** Pre-mission pause triggers with zero plot spoilers and 45/90/120-minute weeknight session checklists.
+
+### 2. Minecraft
+- **Nether Portal 8:1 Linker & Detection Sphere Check (`https://playunpause.com/?game=minecraft`):** Converts Overworld X/Y/Z coordinates into exact Nether placement coordinates (divide X and Z by 8, Y preserved). Verifies coordinates against the 128-block detection sphere to guarantee portals do not accidentally link to neighbor portals or spawn in lava.
+
+### 3. Fortnite: Battle Royale
+- **Battle Pass Level 100/200 Daily XP Pace Calculator (`https://playunpause.com/?game=fortnite`):** Calculates exact remaining XP needed (80,000 XP per level), required daily XP targets based on season days remaining, and estimated Battle Royale matches needed to reach Tier 100 or Super Level 200 before season downtime.
+
+### 4. Call of Duty: Black Ops 6 & Warzone
+- **Dark Matter Camo Mastery Pace Tracker (`https://playunpause.com/?game=cod-warzone`):** Tracks remaining weapons out of the 33 base launch weapons, headshots needed, estimated 10-minute multiplayer matches, and hours remaining to unlock Mastery Camos.
+- **Warzone 3-Plate Armor TTK Calculator (`https://playunpause.com/?game=cod-warzone`):** Simulates weapon RPM and bullet damage against 300 HP total health (150 Base HP + 150 3-Plate Armor) to give exact Shots-to-Kill and Time-to-Kill (TTK in milliseconds).
+
+### 5. EA Sports FC 25 (Ultimate Team)
+- **5% Transfer Market Tax & Sniping Profit Calculator (`https://playunpause.com/?game=ea-fc-25`):** Calculates exact 5% EA tax deductions, after-tax net coin payout, live flip net profit/loss, and the break-even purchase threshold (95% rule) to prevent accidental coin loss on high-value Ultimate Team player card flips.
+
+### 6. Roblox (Developer Exchange & Marketplace)
+- **30% Marketplace Tax & Published DevEx USD Cashout Calculator (`https://playunpause.com/?game=roblox`):** Computes net Robux received after the 30% creator fee deduction on Gamepasses/Developer Products, and applies the published DevEx cashout rate ($0.0038 per earned Robux) to show actual real-world USD payout.
+
+### 7. Counter-Strike 2 (CS2)
+- **Round Loss Streak Bonus Progression & Buy Strategy (`https://playunpause.com/?game=cs2`):** Displays exact round loss cash bonuses ($1,400 base, $1,900 at 1 loss, $2,400 at 2, $2,900 at 3, $3,400 max at 4+ losses) and computes team full buy ($4,500 with Rifle + Armor + Utilities) versus eco thresholds ($2,000 max reserve).
+
+### 8. Valorant
+- **Ranked RR Ladder & Next Tier Target Calculator (`https://playunpause.com/?game=valorant`):** Calculates RR required to hit the 100 RR promotional threshold and estimates net wins needed at the standard +18 RR/win average.
+
+### 9. Apex Legends
+- **500-Pack Guaranteed Heirloom Shard Pity Tracker (`https://playunpause.com/?game=apex-legends`):** Calculates packs remaining to hit the guaranteed 500-pack pity system threshold, total Apex Coins required (100 coins/pack), and estimated USD equivalent.
+
+### 10. GTA Online (GTA V)
+- **Cayo Perico & Diamond Casino Net Payout Splitter (`https://playunpause.com/?game=gta-v`):** Automatically deducts Pavel's mandatory 2% cut and the 10% fencing fee from primary and secondary loot pools, then splits the remaining net pool between host and up to 3 crew members with clean custom percentage sliders.
+
+## One-Time All-Access Pass ($6.99 USD Pre-Launch / $9.99 Standard)
+- Single one-time payment unlocks Pro Meta reference tables, device cloud sync via an 8-character `UP-XXXXXXXX` code, and ad-free status across all 10 supported games for the operational lifetime of `playunpause.com` with zero recurring subscriptions and a 14-day hassle-free refund policy.
+
+## Legal, Privacy & Non-Affiliation
+- Terms of Service: https://playunpause.com/?legal=terms
+- Privacy Notice (POPIA / GDPR / CCPA): https://playunpause.com/?legal=privacy
+- Refund & Acceptable Ad Policy: https://playunpause.com/?legal=refunds
+- Non-Affiliation: Independent, unofficial browser utility. Not affiliated with, endorsed, or sponsored by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Mojang, Microsoft, Electronic Arts, Respawn, Valve, Riot Games, Roblox Corp., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
+- Support: hello@playunpause.com | Sponsorships: sponsors@playunpause.com | IP/DMCA: dmca@playunpause.com
