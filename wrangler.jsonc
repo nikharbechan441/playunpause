@@ -1,10 +1,28 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "playunpause",
+  "account_id": "576c33d5e81e2ec90e0d62c532cbe330",
   "main": "worker/index.js",
   "compatibility_date": "2025-11-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "playunpause.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.playunpause.com",
+      "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "playunpause-db",
+      "database_id": "af58ee7f-491b-4bce-a3ce-515de3d02aaf"
+    }
+  ],
   "build": {
     "command": "npm run build"
   },
