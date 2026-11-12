@@ -185,7 +185,7 @@ export default function LegalComplianceModal({
                 3. Cross-Border Hosting &amp; Your Deletion Rights
               </h3>
               <p style={{ margin: 0, color: 'var(--ink-secondary)' }}>
-                Our application database is hosted in <strong>Frankfurt, Germany (EU)</strong> on Render behind Cloudflare security, with checkout webhooks transmitted from Whop / Stripe (United States) under standard data-protection safeguards. To inspect, export, or permanently delete your <code>UP-XXXXXXXX</code> sync record and order hash, email{' '}
+                Our application and encrypted SQLite database (Cloudflare Workers &amp; D1) run on <strong>Cloudflare global edge infrastructure</strong> (with EU/EEA regional routing where applicable), and checkout webhooks are transmitted from Whop / Stripe (United States) under standard data-protection safeguards. To inspect, export, or permanently delete your <code>UP-XXXXXXXX</code> sync record and order hash, email{' '}
                 <a href={`mailto:${supportEmail}`} style={{ color: 'var(--ocean)', fontWeight: 600 }}>
                   {supportEmail}
                 </a>{' '}

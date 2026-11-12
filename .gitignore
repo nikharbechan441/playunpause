@@ -12,3 +12,5 @@ tools/out/
 preview-email-*.html
 NOTES.md
 LAUNCH_PLAYBOOK.md
+.wrangler/
+.dev.vars

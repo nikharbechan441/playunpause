@@ -53,9 +53,9 @@ const LEGAL_META = {
   },
   privacy: {
     title: 'Privacy Notice (POPIA · GDPR · CCPA) — Unpause',
-    desc: 'Privacy-first architecture for playunpause.com: zero behavioral ad trackers, keyed HMAC email hashing, EU Frankfurt hosting, and 7-day deletion rights.',
+    desc: 'Privacy-first architecture for playunpause.com: zero behavioral ad trackers, keyed HMAC email hashing, Cloudflare D1 edge storage, and 7-day deletion rights.',
     h1: 'Unpause Privacy Notice (POPIA · EU/UK GDPR · CCPA)',
-    body: 'Unpause runs zero third-party behavioral ad networks and never sells personal information. Free calculator inputs stay in your browser localStorage. Paid pass fulfillment via Whop/Stripe stores only a keyed HMAC-SHA256 hash of your checkout email, receipt reference, and checklist JSON in Frankfurt, Germany (EU). Request access or deletion anytime via hello@playunpause.com.',
+    body: 'Unpause runs zero third-party behavioral ad networks and never sells personal information. Free calculator inputs stay in your browser localStorage. Paid pass fulfillment via Whop/Stripe stores only a keyed HMAC-SHA256 hash of your checkout email, receipt reference, and checklist JSON on Cloudflare Workers & D1 encrypted storage. Request access or deletion anytime via hello@playunpause.com.',
   },
   refunds: {
     title: '14-Day Refund Guarantee & Acceptable Ad Policy — Unpause',
