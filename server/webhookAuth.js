@@ -29,9 +29,15 @@ export function verifyWhopWebhook({
   const webhookTimestamp = normHeaders['webhook-timestamp'] || normHeaders['svix-timestamp'];
   const webhookSignature = normHeaders['webhook-signature'] || normHeaders['svix-signature'];
 
-  const secretKey = secret.startsWith('whsec_')
-    ? Buffer.from(secret.slice('whsec_'.length), 'base64')
-    : Buffer.from(secret, 'utf8');
+  const secretKeys = secret.startsWith('whsec_')
+    ? [Buffer.from(secret.slice('whsec_'.length), 'base64'), Buffer.from(secret, 'utf8')]
+    : secret.startsWith('ws_')
+      ? [
+          Buffer.from(secret, 'utf8'),
+          Buffer.from(secret.slice('ws_'.length), 'base64'),
+          Buffer.from(secret.slice('ws_'.length), 'utf8'),
+        ].filter((buf) => buf.length >= 16)
+      : [Buffer.from(secret, 'utf8')];
 
   if (webhookId && webhookTimestamp && webhookSignature) {
     const ts = Number(webhookTimestamp);
@@ -40,12 +46,6 @@ export function verifyWhopWebhook({
     }
 
     const signedContent = `${webhookId}.${webhookTimestamp}.${rawString}`;
-    const expectedBase64 = crypto
-      .createHmac('sha256', secretKey)
-      .update(signedContent, 'utf8')
-      .digest('base64');
-    const expectedBuf = Buffer.from(expectedBase64, 'utf8');
-
     const candidates = webhookSignature
       .split(' ')
       .map((part) => part.trim())
@@ -53,10 +53,18 @@ export function verifyWhopWebhook({
       .slice(0, 5)
       .map((part) => part.slice(3));
 
-    for (const candidate of candidates) {
-      const candBuf = Buffer.from(candidate, 'utf8');
-      if (candBuf.length === expectedBuf.length && crypto.timingSafeEqual(candBuf, expectedBuf)) {
-        return { valid: true, eventId: webhookId };
+    for (const keyBuf of secretKeys) {
+      const expectedBase64 = crypto
+        .createHmac('sha256', keyBuf)
+        .update(signedContent, 'utf8')
+        .digest('base64');
+      const expectedBuf = Buffer.from(expectedBase64, 'utf8');
+
+      for (const candidate of candidates) {
+        const candBuf = Buffer.from(candidate, 'utf8');
+        if (candBuf.length === expectedBuf.length && crypto.timingSafeEqual(candBuf, expectedBuf)) {
+          return { valid: true, eventId: webhookId };
+        }
       }
     }
     return { valid: false, reason: 'signature_mismatch' };
@@ -73,11 +81,13 @@ export function verifyWhopWebhook({
       return { valid: false, reason: 'timestamp_out_of_range' };
     }
     const cleanSig = hexSigHeader.replace(/^sha256=/i, '').trim();
-    const expectedHex = crypto.createHmac('sha256', secretKey).update(rawString, 'utf8').digest('hex');
-    const a = Buffer.from(expectedHex, 'utf8');
     const b = Buffer.from(cleanSig, 'utf8');
-    if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
-      return { valid: true, eventId: webhookId || null };
+    for (const keyBuf of secretKeys) {
+      const expectedHex = crypto.createHmac('sha256', keyBuf).update(rawString, 'utf8').digest('hex');
+      const a = Buffer.from(expectedHex, 'utf8');
+      if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+        return { valid: true, eventId: webhookId || null };
+      }
     }
   }
 

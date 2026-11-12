@@ -467,6 +467,10 @@ export function createApp({ dbPath, env = process.env } = {}) {
   }
 
   // 1. Whop Standard Webhook Endpoint (Raw body preserved BEFORE express.json; authenticated via HMAC)
+  app.get('/api/webhooks/whop', rateLimit(60, 'whop_webhook_probe'), (_req, res) => {
+    res.status(200).json({ ok: true, endpoint: 'whop_webhook', ready: true });
+  });
+
   app.post(
     '/api/webhooks/whop',
     rateLimit(120, 'whop_webhook'),
@@ -498,13 +502,18 @@ export function createApp({ dbPath, env = process.env } = {}) {
         return res.status(400).json({ error: 'Missing transaction reference' });
       }
 
-      // Handle Refund / Dispute / Membership Invalid Revocation Events
+      // Handle Refund / Dispute / Membership Invalid Revocation Events (Whop v2/v5 + 2026-11-10-1)
       const revocationEvents = new Set([
         'payment.refunded',
         'payment_refunded',
+        'refund.created',
+        'refund.updated',
         'membership.went_invalid',
         'membership_went_invalid',
+        'membership.deactivated',
+        'membership_deactivated',
         'dispute.created',
+        'dispute.alert_created',
         'payment.disputed',
       ]);
 
@@ -514,6 +523,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
           data.membership?.id,
           data.license_key,
           data.payment_id,
+          data.payment?.id,
           data.id,
         ]
           .filter((v) => typeof v === 'string' && v.trim())
@@ -597,19 +607,29 @@ export function createApp({ dbPath, env = process.env } = {}) {
           : Math.round(rawAmount * 100);
 
       const planId = String(data.plan?.id || data.plan_id || '').trim();
-      const passPlanId = String(env.WHOP_PASS_PLAN_ID || '').trim();
-      const sponsorPlanId = String(env.WHOP_SPONSOR_PLAN_ID || '').trim();
+      const productId = String(data.product?.id || data.product_id || '').trim();
+      const passIds = String(env.WHOP_PASS_PLAN_ID || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const sponsorIds = String(env.WHOP_SPONSOR_PLAN_ID || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
 
-      if (env.NODE_ENV === 'production' && (!passPlanId || !sponsorPlanId)) {
+      if (env.NODE_ENV === 'production' && (!passIds.length || !sponsorIds.length)) {
         return res.status(503).json({ error: 'Webhook plan IDs not configured' });
       }
 
+      const matchesAny = (targets) =>
+        targets.some((t) => (planId && t === planId) || (productId && t === productId));
+
       let productKind = null;
-      if (sponsorPlanId && planId === sponsorPlanId) {
+      if (sponsorIds.length && matchesAny(sponsorIds)) {
         productKind = 'sponsor_24h';
-      } else if (passPlanId && planId === passPlanId) {
+      } else if (passIds.length && matchesAny(passIds)) {
         productKind = 'nightrun_pass';
-      } else if (passPlanId || sponsorPlanId) {
+      } else if (passIds.length || sponsorIds.length) {
         return res.status(400).json({ error: 'Missing or unrecognized product plan ID' });
       } else {
         productKind = amountCents >= 9900 ? 'sponsor_24h' : 'nightrun_pass';

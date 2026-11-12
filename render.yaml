@@ -27,10 +27,14 @@ services:
         value: "false"
       - key: TRUST_CF_HEADERS
         value: "true"
+      - key: WHOP_PASS_CHECKOUT_URL
+        value: https://whop.com/playunpause/unpause-one-time-all-access-pass/
+      - key: WHOP_SPONSOR_CHECKOUT_URL
+        value: https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/
       - key: WHOP_PASS_PLAN_ID
-        sync: false
+        value: prod_oMcH19N9BCoDO
       - key: WHOP_SPONSOR_PLAN_ID
-        sync: false
+        value: prod_QrrVpAuy4GAUm
       - key: WHOP_WEBHOOK_SECRET
         sync: false
       - key: EMAIL_HASH_PEPPER
