@@ -25,11 +25,20 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE INDEX IF NOT EXISTS idx_orders_deck_code ON orders(deck_code);
 
+CREATE TABLE IF NOT EXISTS processed_webhooks (
+  webhook_key TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  received_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sponsors (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   badge_text TEXT NOT NULL,
   target_url TEXT NOT NULL,
+  whop_ref TEXT,
   starts_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL,
   active INTEGER NOT NULL DEFAULT 1
 );
+
+CREATE INDEX IF NOT EXISTS idx_sponsors_whop_ref ON sponsors(whop_ref);

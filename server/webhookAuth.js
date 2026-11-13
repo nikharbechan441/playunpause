@@ -70,7 +70,7 @@ export function verifyWhopWebhook({
     return { valid: false, reason: 'signature_mismatch' };
   }
 
-  // Fallback: timestamp-required HMAC-SHA256 hex header
+  // Fallback: timestamp-required HMAC-SHA256 hex header (paired with processed_webhooks replay check)
   const hexSigHeader = normHeaders['x-whop-signature'];
   if (hexSigHeader) {
     if (!webhookTimestamp) {
@@ -80,12 +80,23 @@ export function verifyWhopWebhook({
     if (!Number.isFinite(ts) || Math.abs(nowEpochSeconds - ts) > toleranceSeconds) {
       return { valid: false, reason: 'timestamp_out_of_range' };
     }
-    const cleanSig = hexSigHeader.replace(/^sha256=/i, '').trim();
+    const cleanSig = hexSigHeader.replace(/^sha256=/i, '').trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(cleanSig)) {
+      return { valid: false, reason: 'invalid_hex_signature' };
+    }
     const b = Buffer.from(cleanSig, 'utf8');
     for (const keyBuf of secretKeys) {
-      const expectedHex = crypto.createHmac('sha256', keyBuf).update(rawString, 'utf8').digest('hex');
-      const a = Buffer.from(expectedHex, 'utf8');
-      if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+      const boundExpectedHex = crypto
+        .createHmac('sha256', keyBuf)
+        .update(`${webhookTimestamp}.${rawString}`, 'utf8')
+        .digest('hex');
+      const aBound = Buffer.from(boundExpectedHex, 'utf8');
+      if (aBound.length === b.length && crypto.timingSafeEqual(aBound, b)) {
+        return { valid: true, eventId: webhookId || null };
+      }
+      const rawExpectedHex = crypto.createHmac('sha256', keyBuf).update(rawString, 'utf8').digest('hex');
+      const aRaw = Buffer.from(rawExpectedHex, 'utf8');
+      if (aRaw.length === b.length && crypto.timingSafeEqual(aRaw, b)) {
         return { valid: true, eventId: webhookId || null };
       }
     }

@@ -4,12 +4,13 @@
  *
  * Usage:
  *   1. Open https://whop.com/dashboard/biz_ZSCUdrORRsLz2U/developer/ and click "Create API Key"
- *   2. Run: node tools/whop_provision.mjs <YOUR_WHOP_COMPANY_API_KEY>
+ *   2. Run via env var (never shell arguments):
+ *      WHOP_API_KEY=<key> node tools/whop_provision.mjs
  *
  * Automatically creates:
- *   - Product #1: Unpause Night-Run Unlimited Pass ($6.99 USD Early-Bird one-time, redirect -> ?unlocked=1)
+ *   - Product #1: Unpause Sync Pass ($6.99 USD Founders one-time, redirect -> ?unlocked=1)
  *   - Product #2: Unpause 24-Hour Featured Header Sponsor ($149.00 USD one-time)
- *   - Webhook:    https://playunpause.com/api/webhooks/whop (payment.succeeded)
+ *   - Webhook:    https://playunpause.com/api/webhooks/whop (payment, refund & dispute lifecycle events)
  * And writes the exact checkout URLs & secrets into unpause/.env!
  */
 
@@ -90,7 +91,14 @@ async function main() {
     const hook = await whopPost('/webhooks', {
       url: 'https://playunpause.com/api/webhooks/whop',
       enabled: true,
-      events: ['payment.succeeded', 'payment.refunded', 'membership.went_invalid'],
+      events: [
+        'payment.succeeded',
+        'payment.refunded',
+        'refund.created',
+        'dispute.created',
+        'membership.went_valid',
+        'membership.went_invalid',
+      ],
     });
     webhookSecret = hook.webhook_secret || hook.secret || '';
   } catch (err) {
@@ -99,7 +107,8 @@ async function main() {
 
   const passUrl = passPlan.direct_link || `https://whop.com/checkout/${passPlan.id}/`;
   const sponsorUrl = sponsorPlan.direct_link || `https://whop.com/checkout/${sponsorPlan.id}/`;
-  const adminKey = crypto.randomBytes(24).toString('hex');
+  const adminKey = crypto.randomBytes(32).toString('hex');
+  const emailPepper = crypto.randomBytes(32).toString('hex');
 
   const envContent = [
     'PORT=3001',
@@ -108,6 +117,7 @@ async function main() {
     'PUBLIC_SITE_URL=https://playunpause.com',
     'SUPPORT_EMAIL=hello@playunpause.com',
     'SPONSOR_EMAIL=sponsors@playunpause.com',
+    'TRUST_CF_HEADERS=false',
     `WHOP_PASS_CHECKOUT_URL=${passUrl}`,
     `WHOP_SPONSOR_CHECKOUT_URL=${sponsorUrl}`,
     `WHOP_PASS_PLAN_ID=${passPlan.id}`,
@@ -115,6 +125,7 @@ async function main() {
     `WHOP_WEBHOOK_SECRET=${webhookSecret}`,
     `WHOP_API_KEY=${apiKey}`,
     `ADMIN_API_KEY=${adminKey}`,
+    `EMAIL_HASH_PEPPER=${emailPepper}`,
     'ALLOW_DEMO_UNLOCK=false',
     '',
   ].join('\n');

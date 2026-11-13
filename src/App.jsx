@@ -1,27 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   HardDrive,
   KeyRound,
-  Calculator,
-  Compass,
+  Users,
+  Clock,
   Volume2,
   VolumeX,
-  Link2,
   Sun,
-  Sunrise,
+  Moon,
+  ChevronDown,
+  ChevronRight,
+  QrCode,
+  Check,
+  Copy,
   X,
-  ExternalLink,
-  Megaphone,
-  Share2,
-  CheckCircle2,
-  Smartphone,
-  Monitor,
-  ShieldCheck,
-  CreditCard,
-  Gamepad2,
   Sparkles,
+  Megaphone,
+  ExternalLink,
+  RefreshCw,
 } from 'lucide-react';
-import { GAME_PACKS, TOP_GAMES, resolveGameIdFromSlug } from './data/games/index.js';
+import { GAME_PACKS, resolveGameIdFromSlug } from './data/games/index.js';
 import StorageUnlockDeck, { formatCountdownMs } from './components/StorageUnlockDeck.jsx';
 import SafeKeypadVault from './components/SafeKeypadVault.jsx';
 import SquadHeistMarketDeck from './components/SquadHeistMarketDeck.jsx';
@@ -29,1397 +27,1237 @@ import NightRunProDeck from './components/NightRunProDeck.jsx';
 import MultiGameToolDeck from './components/MultiGameToolDeck.jsx';
 import GameSelectorModal from './components/GameSelectorModal.jsx';
 import LegalComplianceModal from './components/LegalComplianceModal.jsx';
+import { generateQrMatrix } from './utils/qrCode.js';
 import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
 
-const STORAGE_KEY = 'unpause_local_state_v4';
-const LEGACY_KEYS = ['unpause_local_state_v3', 'unpause_local_state_v2', 'unpause_local_state_v1'];
-const VALID_TABS = new Set(['storage', 'safes', 'squad', 'nightrun']);
-const VALID_LEGAL_SECTIONS = new Set(['terms', 'privacy', 'refunds', 'ip']);
+const STORAGE_KEY = 'unpause_deck_state_v5';
+const LEGACY_KEYS = [
+  'unpause_deck_state_v4',
+  'unpause_deck_state_v3',
+  'unpause_deck_state_v2',
+  'unpause_deck_state_v1',
+];
 
-function cleanIdArray(val) {
-  if (!Array.isArray(val)) return [];
-  return [...new Set(val.filter((item) => typeof item === 'string' && item.trim().length > 0))];
-}
+const GTA_MODES = [
+  { id: 'storage', label: 'Preload & SSD', mobileLabel: 'SSD', icon: HardDrive },
+  { id: 'safes', label: 'Safe Keypads', mobileLabel: 'Safes', icon: KeyRound },
+  { id: 'squad', label: 'Squad & Cut', mobileLabel: 'Heist', icon: Users },
+  { id: 'nightrun', label: 'Weeknight Route', mobileLabel: 'Route', icon: Clock },
+];
 
-function cleanPinArray(val) {
-  if (!Array.isArray(val)) return [];
-  const seen = new Set();
-  const out = [];
-  for (const item of val) {
-    if (!item || typeof item !== 'object') continue;
-    const id = typeof item.id === 'string' ? item.id.trim().slice(0, 48) : '';
-    const gameId = typeof item.gameId === 'string' ? item.gameId.trim().slice(0, 32) : '';
-    const label = typeof item.label === 'string' ? item.label.trim().slice(0, 80) : '';
-    const value = typeof item.value === 'string' ? item.value.trim().slice(0, 140) : '';
-    if (!id || !gameId || !label || !value || seen.has(id)) continue;
-    seen.add(id);
-    out.push({ id, gameId, label, value });
-    if (out.length >= 50) break;
-  }
-  return out;
-}
-
-function mergeUniqueIds(a, b) {
-  return [...new Set([...cleanIdArray(a), ...cleanIdArray(b)])];
-}
-
-function mergeUniquePins(a, b) {
-  return cleanPinArray([...cleanPinArray(a), ...cleanPinArray(b)]);
-}
-
-function loadLocalState() {
+export function sanitizeHttpsUrl(rawUrl, fallback = null) {
+  if (!rawUrl || typeof rawUrl !== 'string') return fallback;
   try {
-    const v4Raw = localStorage.getItem(STORAGE_KEY);
-    if (v4Raw) {
-      const parsed = JSON.parse(v4Raw);
-      if (parsed && typeof parsed === 'object') {
-        return {
-          theme: parsed.theme === 'sunset' ? 'sunset' : 'coastal',
-          soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : false,
-          crackedSafeIds: cleanIdArray(parsed.crackedSafeIds),
-          checkedRouteIds: cleanIdArray(parsed.checkedRouteIds),
-          savedPins: cleanPinArray(parsed.savedPins),
-          deckCode: typeof parsed.deckCode === 'string' ? parsed.deckCode : '',
-          isPro: Boolean(parsed.isPro && typeof parsed.deckCode === 'string' && parsed.deckCode),
-        };
-      }
+    const parsed = new URL(rawUrl.trim());
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+      return fallback;
     }
-
-    for (const key of LEGACY_KEYS) {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        return {
-          theme: 'coastal',
-          soundEnabled: false,
-          crackedSafeIds: cleanIdArray(parsed.crackedSafeIds),
-          checkedRouteIds: cleanIdArray(parsed.checkedRouteIds),
-          savedPins: [],
-          deckCode: typeof parsed.deckCode === 'string' ? parsed.deckCode : '',
-          isPro: Boolean(parsed.isPro && typeof parsed.deckCode === 'string' && parsed.deckCode),
-        };
-      }
+    const host = parsed.hostname.toLowerCase();
+    if (!host || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) {
+      return fallback;
     }
-    return {};
+    return parsed.toString();
   } catch {
-    return {};
+    return fallback;
   }
 }
 
-function readInitialUrlRouting(defaultLaunchTab) {
+const DEFAULT_RUNTIME = {
+  passPriceUsd: 6.99,
+  sponsorPriceUsd: 149,
+  demoUnlockEnabled: false,
+  passCheckoutUrl: 'https://whop.com/playunpause/unpause-one-time-all-access-pass/',
+  sponsorCheckoutUrl: 'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/',
+  supportEmail: 'hello@playunpause.com',
+  sponsorEmail: 'sponsors@playunpause.com',
+  legalOperatorName: '',
+  legalServiceAddress: '',
+  legalContactPhone: '',
+  affiliates: {
+    ps5SsdUrl: 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink',
+    xboxCardUrl: 'https://www.amazon.com/s?k=WD+Black+C50+Xbox+Expansion+Card',
+    topupsUrl: 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card',
+  },
+  activeSponsor: null,
+};
+
+function hexToRgba(hex, alpha) {
+  const clean = String(hex || '#FF5964').replace('#', '');
+  if (clean.length !== 6) return `rgba(255, 89, 100, ${alpha})`;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return `rgba(255, 89, 100, ${alpha})`;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function loadInitialDeckState() {
+  const fallback = {
+    theme: 'obsidian',
+    soundEnabled: true,
+    isPro: false,
+    deckCode: null,
+    crackedSafeIds: [],
+    checkedRouteIds: [],
+    savedPins: [],
+  };
+  if (typeof window === 'undefined') return fallback;
   try {
-    const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
-    const rawGame = (params.get('game') || '').trim();
-    const gameId = resolveGameIdFromSlug(rawGame);
-    const rawTab = (params.get('tab') || '').toLowerCase();
-    const rawQuery = (params.get('q') || '').trim().slice(0, 80);
-    const syncParam = (hashParams.get('sync') || params.get('sync') || '').trim().toUpperCase();
-    const unlockedParam = params.get('unlocked') === '1';
-    const rawLegal = (params.get('legal') || '').trim().toLowerCase();
-    const legalSection = VALID_LEGAL_SECTIONS.has(rawLegal) ? rawLegal : '';
-
-    let tab = defaultLaunchTab;
-    if (VALID_TABS.has(rawTab)) {
-      tab = rawTab;
-    } else if (rawQuery) {
-      tab = 'safes';
-    } else if (unlockedParam) {
-      tab = 'nightrun';
+    const rawV5 = window.localStorage.getItem(STORAGE_KEY);
+    if (rawV5) {
+      const parsed = JSON.parse(rawV5);
+      return {
+        ...fallback,
+        ...parsed,
+        theme: parsed.theme === 'paper' ? 'paper' : 'obsidian',
+        crackedSafeIds: Array.isArray(parsed.crackedSafeIds) ? parsed.crackedSafeIds : [],
+        checkedRouteIds: Array.isArray(parsed.checkedRouteIds) ? parsed.checkedRouteIds : [],
+        savedPins: Array.isArray(parsed.savedPins) ? parsed.savedPins : [],
+      };
     }
-
-    return { gameId, tab, query: rawQuery, syncParam, unlockedParam, legalSection };
+    for (const oldKey of LEGACY_KEYS) {
+      const legacyRaw = window.localStorage.getItem(oldKey);
+      if (!legacyRaw) continue;
+      const parsed = JSON.parse(legacyRaw);
+      return {
+        ...fallback,
+        soundEnabled: parsed.soundEnabled !== false,
+        isPro: Boolean(parsed.isPro),
+        deckCode: typeof parsed.deckCode === 'string' ? parsed.deckCode : null,
+        crackedSafeIds: Array.isArray(parsed.crackedSafeIds)
+          ? parsed.crackedSafeIds
+          : Array.isArray(parsed.crackedSafes)
+            ? parsed.crackedSafes
+            : [],
+        checkedRouteIds: Array.isArray(parsed.checkedRouteIds) ? parsed.checkedRouteIds : [],
+        savedPins: Array.isArray(parsed.savedPins) ? parsed.savedPins : [],
+      };
+    }
   } catch {
-    return {
-      gameId: 'gta-6',
-      tab: defaultLaunchTab,
-      query: '',
-      syncParam: '',
-      unlockedParam: false,
-      legalSection: '',
-    };
+    // Ignore storage read errors in restricted browsers
   }
+  return fallback;
+}
+
+function readRouteFromLocation() {
+  if (typeof window === 'undefined') {
+    return { gameId: 'gta-6', tab: 'storage', searchQuery: '', legal: null, syncCode: null };
+  }
+  const params = new URLSearchParams(window.location.search);
+  const rawGame = params.get('game');
+  const rawTab = params.get('tab');
+  const rawSearch = params.get('q') || '';
+  const rawLegal = params.get('legal');
+
+  let syncCode = null;
+  const hash = window.location.hash || '';
+  const syncMatch = hash.match(/#sync=(UP-[A-Z0-9]{6,12})/i);
+  if (syncMatch) {
+    syncCode = syncMatch[1].toUpperCase();
+  }
+
+  const validTabs = new Set(['storage', 'safes', 'squad', 'nightrun']);
+  return {
+    gameId: resolveGameIdFromSlug(rawGame),
+    tab: validTabs.has(rawTab) ? rawTab : 'storage',
+    searchQuery: rawSearch,
+    legal: rawLegal && ['terms', 'privacy', 'refunds', 'ip'].includes(rawLegal) ? rawLegal : null,
+    syncCode,
+  };
 }
 
 export default function App() {
-  const initial = loadLocalState();
-  const primaryPack = GAME_PACKS[0];
-  const initialNow = Date.now();
-  const defaultLaunchTab = initialNow >= Date.parse(primaryPack.nzUnlockIsoUtc) ? 'safes' : 'storage';
-  const urlInit = readInitialUrlRouting(defaultLaunchTab);
+  const initialRoute = useMemo(() => readRouteFromLocation(), []);
+  const [deckState, setDeckState] = useState(loadInitialDeckState);
+  const [activeGameId, setActiveGameId] = useState(initialRoute.gameId);
+  const [activeTab, setActiveTab] = useState(initialRoute.tab);
+  const [safeInitialQuery, setSafeInitialQuery] = useState(initialRoute.searchQuery);
+  const [runtimeConfig, setRuntimeConfig] = useState(DEFAULT_RUNTIME);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
-  const [theme, setTheme] = useState(initial.theme || 'coastal');
-  const [activeGameId, setActiveGameId] = useState(urlInit.gameId || 'gta-6');
-  const [gameModalOpen, setGameModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(urlInit.tab);
-  const [safeSearchQuery] = useState(urlInit.query);
-  const [soundEnabled, setSoundEnabled] = useState(initial.soundEnabled ?? false);
-  const [crackedSafeIds, setCrackedSafeIds] = useState(initial.crackedSafeIds || []);
-  const [checkedRouteIds, setCheckedRouteIds] = useState(initial.checkedRouteIds || []);
-  const [savedPins, setSavedPins] = useState(initial.savedPins || []);
-  const [deckCode, setDeckCode] = useState(initial.deckCode || '');
-  const [isPro, setIsPro] = useState(Boolean(initial.isPro && initial.deckCode));
-  const [remoteSyncReady, setRemoteSyncReady] = useState(!initial.isPro);
-  const [nowMs, setNowMs] = useState(initialNow);
+  const [showGameModal, setShowGameModal] = useState(false);
+  const [showProModal, setShowProModal] = useState(false);
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [legalSection, setLegalSection] = useState(initialRoute.legal);
 
-  const [runtimeConfig, setRuntimeConfig] = useState({
-    passPriceUsd: 6.99,
-    launchPriceUsd: 9.99,
-    sponsorPriceUsd: 149,
-    passCheckoutUrl: 'https://whop.com/playunpause/',
-    sponsorCheckoutUrl: 'https://whop.com/playunpause/',
-    supportEmail: 'hello@playunpause.com',
-    sponsorEmail: 'sponsors@playunpause.com',
-    demoUnlockEnabled: false,
-    activeSponsor: null,
-  });
+  const [claimInput, setClaimInput] = useState('');
+  const [claimReceiptInput, setClaimReceiptInput] = useState('');
+  const [claimStatus, setClaimStatus] = useState('');
+  const [claimError, setClaimError] = useState('');
+  const [localDataCleared, setLocalDataCleared] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const [copiedSyncLink, setCopiedSyncLink] = useState(false);
 
-  const [proModalOpen, setProModalOpen] = useState(false);
-  const [returningBuyerView, setReturningBuyerView] = useState(false);
-  const [sponsorModalOpen, setSponsorModalOpen] = useState(false);
-  const [legalModalOpen, setLegalModalOpen] = useState(Boolean(urlInit.legalSection));
-  const [legalSection, setLegalSection] = useState(urlInit.legalSection || 'terms');
-  const [activateInput, setActivateInput] = useState('');
-  const [activateStatus, setActivateStatus] = useState({ loading: false, error: '', success: '' });
+  const gameModalRef = useRef(null);
+  const proModalRef = useRef(null);
+  const sponsorModalRef = useRef(null);
+  const legalModalRef = useRef(null);
+  const syncTimerRef = useRef(null);
+  const skipNextPersistRef = useRef(false);
 
-  const modalCardRef = useRef(null);
-  const lastFocusedRef = useRef(null);
+  const activeGamePack = useMemo(
+    () => GAME_PACKS.find((g) => g.id === activeGameId) || GAME_PACKS[0],
+    [activeGameId]
+  );
 
-  const activeGamePack =
-    GAME_PACKS.find((g) => g.id === activeGameId && !g.comingSoon) || GAME_PACKS[0];
+  const isPreLaunch = nowMs < Date.parse(GAME_PACKS[0].nzUnlockIsoUtc || '2026-11-18T11:00:00Z');
+  const headerNzClock = useMemo(
+    () => formatCountdownMs(Date.parse(GAME_PACKS[0].nzUnlockIsoUtc) - nowMs),
+    [nowMs]
+  );
 
-  const nzTargetMs = Date.parse(GAME_PACKS[0].nzUnlockIsoUtc);
-  const isPreLaunch = nowMs < nzTargetMs;
-  const nzCountdown = formatCountdownMs(nzTargetMs - nowMs);
-
+  // Sync theme attribute and browser address-bar color cleanly
   useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    const theme = deckState.theme === 'paper' ? 'paper' : 'obsidian';
+    document.documentElement.setAttribute('data-theme', theme);
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute('content', theme === 'sunset' ? '#FFF7F2' : '#F3F7FB');
+      metaTheme.setAttribute('content', theme === 'paper' ? '#F4F3EF' : '#0B0E14');
     }
-  }, [theme]);
+  }, [deckState.theme]);
 
-  // Dynamic per-game title, canonical & OpenGraph URL state sync
+  // Persist user companion state (unless explicitly cleared via Clear Local Data)
   useEffect(() => {
-    const canonicalHref = legalModalOpen
-      ? `https://playunpause.com/?legal=${encodeURIComponent(legalSection)}`
-      : activeGameId === 'gta-6'
-        ? activeTab === defaultLaunchTab
-          ? 'https://playunpause.com/'
-          : `https://playunpause.com/?tab=${encodeURIComponent(activeTab)}`
-        : `https://playunpause.com/?game=${encodeURIComponent(activeGameId)}`;
-
-    if (activeGameId === 'gta-6') {
-      document.title = '3-Second Gaming Calculators & Safe Codes — Unpause';
-    } else {
-      document.title = `${activeGamePack.fullTitle || activeGamePack.shortTitle} Calculator & Meta — Unpause`;
-    }
-
-    const linkCanonical = document.querySelector('link[rel="canonical"]');
-    if (linkCanonical) linkCanonical.setAttribute('href', canonicalHref);
-    const metaOgUrl = document.querySelector('meta[property="og:url"]');
-    if (metaOgUrl) metaOgUrl.setAttribute('content', canonicalHref);
-  }, [activeGameId, activeGamePack, activeTab, defaultLaunchTab, legalModalOpen, legalSection]);
-
-  // Global Ctrl+K / Cmd+K Command Palette Shortcut
-  useEffect(() => {
-    const onGlobalKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setProModalOpen(false);
-        setSponsorModalOpen(false);
-        setLegalModalOpen(false);
-        setGameModalOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', onGlobalKey);
-    return () => window.removeEventListener('keydown', onGlobalKey);
-  }, []);
-
-  // Browser Back / Forward navigation sync
-  useEffect(() => {
-    const onPopState = () => {
-      const nextRoute = readInitialUrlRouting(defaultLaunchTab);
-      setActiveGameId(nextRoute.gameId);
-      setActiveTab(nextRoute.tab);
-      if (nextRoute.legalSection) {
-        setLegalSection(nextRoute.legalSection);
-        setLegalModalOpen(true);
-      } else {
-        setLegalModalOpen(false);
-      }
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [defaultLaunchTab]);
-
-  const switchGame = useCallback(
-    (nextGameId, pitch = 710) => {
-      const resolved = resolveGameIdFromSlug(nextGameId);
-      playSwitchTick(soundEnabled, pitch);
-      setActiveGameId(resolved);
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('legal');
-        if (resolved === 'gta-6') {
-          url.searchParams.delete('game');
-        } else {
-          url.searchParams.set('game', resolved);
-          url.searchParams.delete('tab');
-        }
-        window.history.pushState({}, '', url.toString());
-      } catch {
-        // Ignore history errors
-      }
-    },
-    [soundEnabled]
-  );
-
-  const activateWithCodeOrInput = useCallback(
-    async ({ inputVal = '', demoUnlock = false, silentAuto = false }) => {
-      if (!silentAuto) {
-        setActivateStatus({ loading: true, error: '', success: '' });
-      }
-      try {
-        const resp = await fetch('/api/pass/activate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(demoUnlock ? { demoUnlock: true } : { codeOrEmail: inputVal }),
-        });
-        const data = await resp.json();
-        if (!resp.ok || !data.ok) {
-          if (!silentAuto) {
-            setActivateStatus({
-              loading: false,
-              error: data.error || 'Could not verify that code. Check your code or email and try again.',
-              success: '',
-            });
-          }
-          return false;
-        }
-        playUnlockChime(soundEnabled);
-        setDeckCode(data.deckCode);
-        setIsPro(true);
-        setCrackedSafeIds((prev) => mergeUniqueIds(prev, data.state?.crackedSafeIds));
-        setCheckedRouteIds((prev) => mergeUniqueIds(prev, data.state?.checkedRouteIds));
-        setSavedPins((prev) => mergeUniquePins(prev, data.state?.savedPins));
-        setRemoteSyncReady(true);
-        setReturningBuyerView(false);
-        setActivateStatus({
-          loading: false,
-          error: '',
-          success: `Pass active! Your permanent sync code is ${data.deckCode}`,
-        });
-        return true;
-      } catch {
-        if (!silentAuto) {
-          setActivateStatus({
-            loading: false,
-            error: 'Could not reach the sync server. Check your connection and try again.',
-            success: '',
-          });
-        }
-        return false;
-      }
-    },
-    [soundEnabled]
-  );
-
-  useEffect(() => {
-    fetch('/api/config')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) setRuntimeConfig((prev) => ({ ...prev, ...data }));
-      })
-      .catch(() => {});
-
-    if (urlInit.syncParam && /^UP-[A-Z0-9]{8,12}$/.test(urlInit.syncParam)) {
-      setActivateInput(urlInit.syncParam);
-      activateWithCodeOrInput({ inputVal: urlInit.syncParam, silentAuto: false }).then((ok) => {
-        if (ok) {
-          const cleanUrl = new URL(window.location.href);
-          cleanUrl.searchParams.delete('sync');
-          if (cleanUrl.hash.toLowerCase().includes('sync=')) {
-            cleanUrl.hash = '';
-          }
-          window.history.replaceState({}, '', cleanUrl.toString());
-        } else {
-          setProModalOpen(true);
-        }
-      });
-    } else if (urlInit.unlockedParam && !initial.isPro) {
-      setReturningBuyerView(true);
-      setProModalOpen(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!initial.isPro || !initial.deckCode) {
-      setRemoteSyncReady(true);
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
       return;
     }
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(deckState));
+    } catch {
+      // Ignore quota errors
+    }
+  }, [deckState]);
+
+  // Tick minute countdown clock
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Load runtime checkout/sponsor telemetry config from Worker/API
+  useEffect(() => {
     let cancelled = false;
-    fetch(`/api/sync/${encodeURIComponent(initial.deckCode)}`)
-      .then(async (r) => {
-        if (r.status === 403) {
-          if (!cancelled) {
-            setIsPro(false);
-            setDeckCode('');
-          }
-          return null;
+    fetch('/api/config')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cfg) => {
+        if (!cancelled && cfg && typeof cfg === 'object') {
+          const safeSponsorUrl = cfg.activeSponsor?.targetUrl
+            ? sanitizeHttpsUrl(cfg.activeSponsor.targetUrl, null)
+            : null;
+          setRuntimeConfig((prev) => ({
+            ...prev,
+            ...cfg,
+            passCheckoutUrl: sanitizeHttpsUrl(cfg.passCheckoutUrl, prev.passCheckoutUrl),
+            sponsorCheckoutUrl: sanitizeHttpsUrl(cfg.sponsorCheckoutUrl, prev.sponsorCheckoutUrl),
+            affiliates: {
+              ...prev.affiliates,
+              ps5SsdUrl: sanitizeHttpsUrl(cfg.affiliates?.ps5SsdUrl, prev.affiliates.ps5SsdUrl),
+              xboxCardUrl: sanitizeHttpsUrl(cfg.affiliates?.xboxCardUrl, prev.affiliates.xboxCardUrl),
+              topupsUrl: sanitizeHttpsUrl(cfg.affiliates?.topupsUrl, prev.affiliates.topupsUrl),
+            },
+            activeSponsor:
+              cfg.activeSponsor && safeSponsorUrl
+                ? { ...cfg.activeSponsor, targetUrl: safeSponsorUrl }
+                : null,
+          }));
         }
-        return r.ok ? r.json() : null;
       })
-      .then((data) => {
-        if (cancelled) return;
-        if (data?.ok && data.state) {
-          setCrackedSafeIds((prev) => mergeUniqueIds(prev, data.state.crackedSafeIds));
-          setCheckedRouteIds((prev) => mergeUniqueIds(prev, data.state.checkedRouteIds));
-          setSavedPins((prev) => mergeUniquePins(prev, data.state.savedPins));
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Auto-hydrating #sync=UP-XXXXXXXX hash links (Cross-device QR flow) & scrubbing fragment from history
+  useEffect(() => {
+    if (!initialRoute.syncCode) return;
+    fetch(`/api/sync/${encodeURIComponent(initialRoute.syncCode)}`)
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (res.status === 403) {
+          setDeckState((prev) =>
+            prev.deckCode === initialRoute.syncCode
+              ? { ...prev, isPro: false, deckCode: null }
+              : prev
+          );
+          setClaimError(data?.error || 'This Sync Pass was refunded or deactivated.');
+          setShowProModal(true);
+          return;
+        }
+        if (res.ok && data?.ok && data?.state) {
+          setDeckState((prev) => ({
+            ...prev,
+            isPro: true,
+            deckCode: data.deckCode || initialRoute.syncCode,
+            crackedSafeIds: Array.isArray(data.state.crackedSafeIds) ? data.state.crackedSafeIds : prev.crackedSafeIds,
+            checkedRouteIds: Array.isArray(data.state.checkedRouteIds) ? data.state.checkedRouteIds : prev.checkedRouteIds,
+            savedPins: Array.isArray(data.state.savedPins) ? data.state.savedPins : prev.savedPins,
+          }));
+          setShowProModal(true);
         }
       })
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) setRemoteSyncReady(true);
+        try {
+          if (window.location.hash && window.location.hash.toLowerCase().startsWith('#sync=')) {
+            window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+          }
+        } catch {
+          // Ignore history restrictions
+        }
       });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialRoute.syncCode]);
 
+  // Debounced cloud state push when Sync Pass active
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          theme,
-          soundEnabled,
-          crackedSafeIds,
-          checkedRouteIds,
-          savedPins,
-          deckCode,
-          isPro,
-        })
-      );
-    } catch {
-      // Ignore storage quota errors
-    }
-  }, [theme, soundEnabled, crackedSafeIds, checkedRouteIds, savedPins, deckCode, isPro]);
-
-  useEffect(() => {
-    if (!isPro || !deckCode || !remoteSyncReady) return undefined;
-    const timer = setTimeout(() => {
-      fetch(`/api/sync/${encodeURIComponent(deckCode)}`, {
+    if (!deckState.isPro || !deckState.deckCode) return undefined;
+    clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      fetch(`/api/sync/${encodeURIComponent(deckState.deckCode)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          state: { crackedSafeIds, checkedRouteIds, savedPins },
+          state: {
+            crackedSafeIds: deckState.crackedSafeIds,
+            checkedRouteIds: deckState.checkedRouteIds,
+            savedPins: deckState.savedPins,
+          },
         }),
-      }).catch(() => {});
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [crackedSafeIds, checkedRouteIds, savedPins, deckCode, isPro, remoteSyncReady]);
+      })
+        .then((res) => {
+          if (res.status === 403) {
+            setDeckState((prev) => ({ ...prev, isPro: false, deckCode: null }));
+            setClaimError('Sync Pass inactive or refunded.');
+          }
+        })
+        .catch(() => {});
+    }, 600);
+    return () => clearTimeout(syncTimerRef.current);
+  }, [deckState.isPro, deckState.deckCode, deckState.crackedSafeIds, deckState.checkedRouteIds, deckState.savedPins]);
 
-  const switchTab = (nextTab, pitch = 700) => {
-    playSwitchTick(soundEnabled, pitch);
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      try {
-        navigator.vibrate(8);
-      } catch {
-        // Ignore
+  // Keyboard shortcuts: Ctrl/Cmd + K opens Game Selector, Escape closes active modal
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowGameModal((open) => !open);
+      } else if (e.key === 'Escape') {
+        setShowGameModal(false);
+        setShowProModal(false);
+        setShowSponsorModal(false);
+        setLegalSection(null);
       }
-    }
-    setActiveTab(nextTab);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Browser back/forward URL navigation support
+  useEffect(() => {
+    const onPopState = () => {
+      const next = readRouteFromLocation();
+      setActiveGameId(next.gameId);
+      setActiveTab(next.tab);
+      setSafeInitialQuery(next.searchQuery);
+      setLegalSection(next.legal);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const syncUrlParams = (gameId, tabId) => {
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete('legal');
-      if (nextTab === defaultLaunchTab) {
+      if (gameId && gameId !== 'gta-6') {
+        url.searchParams.set('game', gameId);
         url.searchParams.delete('tab');
       } else {
-        url.searchParams.set('tab', nextTab);
-      }
-      window.history.pushState({}, '', url.toString());
-    } catch {
-      // Ignore history errors
-    }
-  };
-
-  const openLegalSection = useCallback(
-    (section = 'terms') => {
-      const cleanSec = VALID_LEGAL_SECTIONS.has(section) ? section : 'terms';
-      playSwitchTick(soundEnabled, 710);
-      setProModalOpen(false);
-      setSponsorModalOpen(false);
-      setGameModalOpen(false);
-      setLegalSection(cleanSec);
-      setLegalModalOpen(true);
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('legal', cleanSec);
-        window.history.pushState({}, '', url.toString());
-      } catch {
-        // Ignore history errors
-      }
-    },
-    [soundEnabled]
-  );
-
-  const anyModalOpen = proModalOpen || sponsorModalOpen || gameModalOpen || legalModalOpen;
-  const closeModals = useCallback(() => {
-    setProModalOpen(false);
-    setSponsorModalOpen(false);
-    setGameModalOpen(false);
-    setLegalModalOpen(false);
-    try {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has('legal')) {
-        url.searchParams.delete('legal');
-        window.history.replaceState({}, '', url.toString());
-      }
-    } catch {
-      // Ignore history errors
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!anyModalOpen) return undefined;
-    lastFocusedRef.current = document.activeElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusTimer = setTimeout(() => {
-      const card = modalCardRef.current;
-      if (!card) return;
-      const firstInput = card.querySelector('input:not([disabled]), a[href], button:not([disabled])');
-      if (firstInput) firstInput.focus();
-    }, 20);
-
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        closeModals();
-        return;
-      }
-      if (e.key === 'Tab' && modalCardRef.current) {
-        const focusables = modalCardRef.current.querySelectorAll(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
+        url.searchParams.delete('game');
+        if (tabId && tabId !== 'storage') {
+          url.searchParams.set('tab', tabId);
+        } else {
+          url.searchParams.delete('tab');
         }
       }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      clearTimeout(focusTimer);
-      document.body.style.overflow = prevOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-      if (lastFocusedRef.current && typeof lastFocusedRef.current.focus === 'function') {
-        lastFocusedRef.current.focus();
-      }
-    };
-  }, [anyModalOpen, closeModals]);
-
-  const toggleSafe = (safeId) => {
-    setCrackedSafeIds((prev) =>
-      prev.includes(safeId) ? prev.filter((id) => id !== safeId) : [...prev, safeId]
-    );
+      const safeHash = url.hash && url.hash.toLowerCase().startsWith('#sync=') ? '' : url.hash;
+      window.history.pushState({}, '', `${url.pathname}${url.search}${safeHash}`);
+    } catch {
+      // Ignore history edge cases
+    }
   };
 
-  const toggleRouteStop = (stopId) => {
-    setCheckedRouteIds((prev) =>
-      prev.includes(stopId) ? prev.filter((id) => id !== stopId) : [...prev, stopId]
-    );
+  const handleSelectGame = (nextGameId) => {
+    playSwitchTick(deckState.soundEnabled, 700);
+    setActiveGameId(nextGameId);
+    if (nextGameId === 'gta-6') {
+      syncUrlParams('gta-6', activeTab);
+    } else {
+      syncUrlParams(nextGameId, null);
+    }
   };
 
-  const addSavedPin = (pinObj) => {
-    setSavedPins((prev) => cleanPinArray([pinObj, ...prev]));
+  const handleSelectTab = (tabId) => {
+    playSwitchTick(deckState.soundEnabled, 660);
+    setActiveGameId('gta-6');
+    setActiveTab(tabId);
+    syncUrlParams('gta-6', tabId);
   };
 
-  const removeSavedPin = (pinId) => {
-    setSavedPins((prev) => prev.filter((p) => p.id !== pinId));
+  const toggleTheme = () => {
+    playSwitchTick(deckState.soundEnabled, 720);
+    setDeckState((prev) => ({
+      ...prev,
+      theme: prev.theme === 'paper' ? 'obsidian' : 'paper',
+    }));
   };
 
-  const handleActivateSubmit = async (e, demoUnlock = false) => {
-    if (e) e.preventDefault();
-    await activateWithCodeOrInput({ inputVal: activateInput, demoUnlock, silentAuto: false });
+  const toggleSound = () => {
+    setDeckState((prev) => {
+      const next = !prev.soundEnabled;
+      if (next) playSwitchTick(true, 760);
+      return { ...prev, soundEnabled: next };
+    });
   };
 
-  const shareMagicSyncUrl = async () => {
-    if (!deckCode) return;
-    const magicUrl = `${window.location.origin}/#sync=${encodeURIComponent(deckCode)}`;
+  const handleToggleSafe = (safeId) => {
+    playSwitchTick(deckState.soundEnabled, 740);
+    setDeckState((prev) => {
+      const exists = prev.crackedSafeIds.includes(safeId);
+      const nextSafes = exists
+        ? prev.crackedSafeIds.filter((id) => id !== safeId)
+        : [...prev.crackedSafeIds, safeId];
+      return { ...prev, crackedSafeIds: nextSafes };
+    });
+  };
+
+  const handleToggleRouteStop = (stopId) => {
+    playSwitchTick(deckState.soundEnabled, 740);
+    setDeckState((prev) => {
+      const exists = prev.checkedRouteIds.includes(stopId);
+      const nextStops = exists
+        ? prev.checkedRouteIds.filter((id) => id !== stopId)
+        : [...prev.checkedRouteIds, stopId];
+      return { ...prev, checkedRouteIds: nextStops };
+    });
+  };
+
+  const handleSavePin = (pinObj) => {
+    setDeckState((prev) => ({
+      ...prev,
+      savedPins: [pinObj, ...prev.savedPins].slice(0, 60),
+    }));
+  };
+
+  const handleRemovePin = (pinId) => {
+    playSwitchTick(deckState.soundEnabled, 580);
+    setDeckState((prev) => ({
+      ...prev,
+      savedPins: prev.savedPins.filter((p) => p.id !== pinId),
+    }));
+  };
+
+  const handleActivatePass = async (e) => {
+    e.preventDefault();
+    const raw = claimInput.trim();
+    const rawReceipt = claimReceiptInput.trim();
+    if (!raw) {
+      setClaimError('Enter your UP-XXXXXXXX sync code, purchase email + receipt ID, or Whop mem_ / pay_ ID.');
+      return;
+    }
+    if (raw.includes('@') && !rawReceipt) {
+      setClaimError('For account security, enter your Whop receipt ID (mem_... or pay_...) alongside your checkout email.');
+      return;
+    }
+    setClaimError('');
+    setClaimStatus('');
+    setIsActivating(true);
+
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Unpause Sync Link',
-          text: `Open on your phone or PC to mirror Unpause (${deckCode})`,
-          url: magicUrl,
-        });
-        return;
+      const resp = await fetch('/api/pass/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codeOrEmail: raw,
+          ...(rawReceipt ? { receiptRef: rawReceipt } : {}),
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.ok) {
+        setClaimError(data?.error || 'Could not verify code or receipt.');
+      } else {
+        playUnlockChime(deckState.soundEnabled);
+        setDeckState((prev) => ({
+          ...prev,
+          isPro: true,
+          deckCode: data.deckCode,
+          crackedSafeIds:
+            Array.isArray(data.state?.crackedSafeIds) && data.state.crackedSafeIds.length
+              ? data.state.crackedSafeIds
+              : prev.crackedSafeIds,
+          checkedRouteIds:
+            Array.isArray(data.state?.checkedRouteIds) && data.state.checkedRouteIds.length
+              ? data.state.checkedRouteIds
+              : prev.checkedRouteIds,
+          savedPins:
+            Array.isArray(data.state?.savedPins) && data.state.savedPins.length
+              ? data.state.savedPins
+              : prev.savedPins,
+        }));
+        setClaimStatus(`Synced to ${data.deckCode}`);
+        setClaimInput('');
+        setClaimReceiptInput('');
       }
     } catch {
-      // Fallback to clipboard
+      setClaimError('Network error while checking pass activation. Try again.');
+    } finally {
+      setIsActivating(false);
     }
+  };
+
+  const handlePullCloudNow = async () => {
+    if (!deckState.deckCode) return;
     try {
-      await navigator.clipboard.writeText(magicUrl);
-      setActivateStatus({
-        loading: false,
-        error: '',
-        success: `Copied sync link: ${magicUrl}`,
-      });
+      const res = await fetch(`/api/sync/${encodeURIComponent(deckState.deckCode)}`);
+      const data = await res.json().catch(() => null);
+      if (res.status === 403) {
+        setDeckState((prev) => ({ ...prev, isPro: false, deckCode: null }));
+        setClaimError(data?.error || 'Sync Pass inactive or refunded.');
+        return;
+      }
+      if (res.ok && data?.ok && data?.state) {
+        playSwitchTick(deckState.soundEnabled, 820);
+        setDeckState((prev) => ({
+          ...prev,
+          crackedSafeIds: data.state.crackedSafeIds || [],
+          checkedRouteIds: data.state.checkedRouteIds || [],
+          savedPins: data.state.savedPins || [],
+        }));
+        setClaimStatus('Synced latest state from cloud.');
+        setTimeout(() => setClaimStatus(''), 2000);
+      }
     } catch {
       // Ignore
     }
   };
 
-  const activeFaqs =
-    Array.isArray(activeGamePack.faqs) && activeGamePack.faqs.length >= 2
-      ? activeGamePack.faqs.slice(0, 2)
-      : GAME_PACKS[0].faqs.slice(0, 2);
+  const handleClearLocalData = () => {
+    playSwitchTick(deckState.soundEnabled, 520);
+    skipNextPersistRef.current = true;
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      for (const oldKey of LEGACY_KEYS) {
+        window.localStorage.removeItem(oldKey);
+      }
+      if (window.location.hash && window.location.hash.toLowerCase().startsWith('#sync=')) {
+        window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+      }
+    } catch {
+      // Ignore storage access restrictions
+    }
+    setDeckState({
+      theme: deckState.theme,
+      soundEnabled: deckState.soundEnabled,
+      isPro: false,
+      deckCode: null,
+      crackedSafeIds: [],
+      checkedRouteIds: [],
+      savedPins: [],
+    });
+    setClaimInput('');
+    setClaimReceiptInput('');
+    setClaimError('');
+    setClaimStatus('');
+    setLocalDataCleared(true);
+    setTimeout(() => setLocalDataCleared(false), 3000);
+  };
+
+  const syncShareUrl = useMemo(() => {
+    if (!deckState.deckCode) return '';
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'https://playunpause.com';
+    return `${origin}/#sync=${deckState.deckCode}`;
+  }, [deckState.deckCode]);
+
+  const qrMatrix = useMemo(() => {
+    if (!syncShareUrl) return null;
+    try {
+      return generateQrMatrix(syncShareUrl);
+    } catch {
+      return null;
+    }
+  }, [syncShareUrl]);
+
+  const accentStyle = useMemo(
+    () => ({
+      '--game-accent': activeGamePack.accentColor,
+      '--game-accent-soft': activeGamePack.accentSoft || hexToRgba(activeGamePack.accentColor, 0.14),
+      '--game-accent-ring': hexToRgba(activeGamePack.accentColor, 0.38),
+    }),
+    [activeGamePack.accentColor, activeGamePack.accentSoft]
+  );
+
+  const faqCards = useMemo(() => {
+    const packFaqs = activeGamePack.faqs || [];
+    return [
+      ...packFaqs,
+      {
+        q: `What does the one-time $${runtimeConfig.passPriceUsd} Sync Pass unlock?`,
+        a: 'Instant QR and UP-XXXXXXXX cloud synchronization between Phone and Desktop across safes, weeknight routes, and unlimited multi-game pins, plus extended 90m/120m routes and Act II–III Shield. Digital delivery starts immediately on activation; GTA VI data remains pre-launch estimate until Nov 18 (11:00 UTC) and Whop calculates applicable VAT/sales tax at checkout.',
+      },
+    ];
+  }, [activeGamePack.faqs, runtimeConfig.passPriceUsd]);
+
+  const activeSponsorHref = sanitizeHttpsUrl(runtimeConfig.activeSponsor?.targetUrl, null);
+  const passCheckoutHref = sanitizeHttpsUrl(
+    runtimeConfig.passCheckoutUrl,
+    DEFAULT_RUNTIME.passCheckoutUrl
+  );
+  const sponsorCheckoutHref = sanitizeHttpsUrl(
+    runtimeConfig.sponsorCheckoutUrl,
+    DEFAULT_RUNTIME.sponsorCheckoutUrl
+  );
 
   return (
-    <>
-      {runtimeConfig.activeSponsor && !isPro && (
+    <div style={accentStyle}>
+      {/* OPTIONAL SPONSOR BAR (HIDDEN WHEN SYNC PASS ACTIVE) */}
+      {!deckState.isPro && runtimeConfig.activeSponsor && activeSponsorHref && (
         <div className="sponsor-strip">
           <div className="sponsor-strip-inner">
             <a
-              href={runtimeConfig.activeSponsor.targetUrl}
+              href={activeSponsorHref}
               target="_blank"
-              rel="sponsored noopener noreferrer"
+              rel="sponsored nofollow noopener noreferrer"
               className="sponsor-tag"
             >
-              <span className="sponsor-dot" aria-hidden="true" />
-              <span>Sponsored · {runtimeConfig.activeSponsor.badgeText}</span>
-              <ExternalLink size={13} aria-hidden="true" />
+              <span className="sponsor-dot" />
+              <span>Sponsored: {runtimeConfig.activeSponsor.badgeText}</span>
+              <ExternalLink size={12} />
             </a>
           </div>
         </div>
       )}
 
-      {/* Sticky Bright Coastal Header */}
+      {/* STICKY COMMAND HEADER + SLIM TOP-10 UNDERLINE GAME RAIL */}
       <header className="hud-header-wrap">
         <div className="hud-command-bar">
-          <div className="brand-cluster">
-            <div className="brand-mark" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <rect x="4" y="5" width="4.4" height="14" rx="1.4" fill="#FFFFFF" />
-                <path d="M12.2 5.2L21 12L12.2 18.8V5.2Z" fill="#FFFFFF" />
-              </svg>
-            </div>
-            <div className="brand-wordmark">
+          <div className="brand-left-group">
+            <a
+              href="/"
+              className="brand-cluster"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSelectTab('storage');
+              }}
+            >
+              <div className="brand-mark" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <rect x="4" y="5" width="4" height="14" rx="1.2" fill="#FFFFFF" />
+                  <path d="M11 5.5L20 12L11 18.5V5.5Z" fill="#FFFFFF" />
+                </svg>
+              </div>
               <span className="brand-name">Unpause</span>
-              <span className="brand-tagline">
-                {activeGameId === 'gta-6'
-                  ? 'Unofficial Tools for GTA VI'
-                  : `Unofficial ${activeGamePack.shortTitle || activeGamePack.name} Utility`}
-              </span>
-            </div>
+            </a>
+
+            <button
+              type="button"
+              className="game-switch-btn"
+              onClick={() => {
+                playSwitchTick(deckState.soundEnabled, 660);
+                setShowGameModal(true);
+              }}
+              aria-haspopup="dialog"
+              aria-expanded={showGameModal}
+            >
+              <span>{activeGamePack.shortTitle}</span>
+              <ChevronDown size={14} />
+              <span className="kbd-hint">Ctrl+K</span>
+            </button>
           </div>
 
-          <button
-            type="button"
-            className="game-switch-btn"
-            onClick={() => {
-              playSwitchTick(soundEnabled, 700);
-              setGameModalOpen(true);
-            }}
-            title="Switch companion game (Ctrl+K)"
-            aria-label={`Current game: ${activeGamePack.shortTitle || activeGamePack.name}. Press to search all 10 games.`}
-          >
-            <Gamepad2 size={15} className="game-switch-icon" />
-            <span className="game-switch-label">{activeGamePack.shortTitle || activeGamePack.name}</span>
-            <span className="game-switch-badge">10 Games</span>
-            <span className="kbd-hint" aria-hidden="true">Ctrl K</span>
-          </button>
-
-          {/* Desktop Color-Coded Tool Navigation (>860px) */}
-          {activeGameId === 'gta-6' ? (
-            <nav className="mode-rail desktop-only-rail" aria-label="GTA VI companion tools">
-              <button
-                type="button"
-                data-accent="ocean"
-                aria-current={activeTab === 'storage' ? 'page' : undefined}
-                className={`mode-tab ${activeTab === 'storage' ? 'active' : ''}`}
-                onClick={() => switchTab('storage', 680)}
-              >
-                <HardDrive size={16} className="mode-tab-icon" />
-                <span>212 GB Check</span>
-              </button>
-
-              <button
-                type="button"
-                data-accent="teal"
-                aria-current={activeTab === 'safes' ? 'page' : undefined}
-                className={`mode-tab ${activeTab === 'safes' ? 'active' : ''}`}
-                onClick={() => switchTab('safes', 710)}
-              >
-                <KeyRound size={16} className="mode-tab-icon" />
-                <span>Safe Codes</span>
-              </button>
-
-              <button
-                type="button"
-                data-accent="gold"
-                aria-current={activeTab === 'squad' ? 'page' : undefined}
-                className={`mode-tab ${activeTab === 'squad' ? 'active' : ''}`}
-                onClick={() => switchTab('squad', 740)}
-              >
-                <Calculator size={16} className="mode-tab-icon" />
-                <span>Heist Split</span>
-              </button>
-
-              <button
-                type="button"
-                data-accent="coral"
-                aria-current={activeTab === 'nightrun' ? 'page' : undefined}
-                className={`mode-tab ${activeTab === 'nightrun' ? 'active' : ''}`}
-                onClick={() => switchTab('nightrun', 770)}
-              >
-                <Compass size={16} className="mode-tab-icon" />
-                <span>Night Run</span>
-              </button>
-            </nav>
-          ) : (
-            <nav className="mode-rail desktop-only-rail" aria-label="Game companion navigation">
-              <button
-                type="button"
-                className="mode-tab"
-                onClick={() => switchGame('gta-6', 700)}
-              >
-                <Gamepad2 size={16} className="mode-tab-icon" />
-                <span>← GTA VI Tools</span>
-              </button>
-              <button
-                type="button"
-                className="mode-tab active"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 720);
-                  setGameModalOpen(true);
-                }}
-              >
-                <Sparkles size={16} className="mode-tab-icon" style={{ color: activeGamePack.accentColor }} />
-                <span>{activeGamePack.shortTitle} Deck</span>
-              </button>
-            </nav>
-          )}
-
           <div className="topbar-controls">
-            {activeGameId === 'gta-6' && (
-              <span className="nz-hud-pill" title="New Zealand rolling midnight unlock countdown">
-                <span className="nz-live-dot" />
-                <span className="nz-full-text">NZ Unlock: {nzCountdown}</span>
-                <span className="nz-compact-text">{nzCountdown.split(' ').slice(0, 2).join(' ')}</span>
-              </span>
-            )}
+            <div className="nz-hud-pill" title="New Zealand Early Launch Clock (Nov 18 @ 11:00 UTC)">
+              <span className="nz-live-dot" />
+              <span className="nz-full-text">NZ Unlock: {headerNzClock}</span>
+              <span className="nz-compact-text">NZ: {headerNzClock}</span>
+            </div>
 
             <button
               type="button"
               className="tactile-icon-btn"
-              title={theme === 'coastal' ? 'Switch to Warm Sunset palette' : 'Switch to Cool Coastal palette'}
-              aria-label={theme === 'coastal' ? 'Switch to Warm Sunset palette' : 'Switch to Cool Coastal palette'}
-              onClick={() => {
-                const next = theme === 'coastal' ? 'sunset' : 'coastal';
-                playSwitchTick(soundEnabled, 750);
-                setTheme(next);
-              }}
+              onClick={toggleSound}
+              aria-label={deckState.soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
+              title={deckState.soundEnabled ? 'Mute clicks' : 'Enable clicks'}
             >
-              {theme === 'coastal' ? <Sunrise size={16} color="var(--coral)" /> : <Sun size={16} color="var(--ocean)" />}
+              {deckState.soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
             </button>
 
             <button
               type="button"
               className="tactile-icon-btn"
-              title={soundEnabled ? 'Mute sound effects' : 'Enable keypad sound effects'}
-              aria-label={soundEnabled ? 'Mute sound effects' : 'Enable keypad sound effects'}
-              onClick={() => {
-                const next = !soundEnabled;
-                setSoundEnabled(next);
-                if (next) playSwitchTick(true, 760);
-              }}
+              onClick={toggleTheme}
+              aria-label={
+                deckState.theme === 'paper'
+                  ? 'Switch to Obsidian dark studio theme'
+                  : 'Switch to Paper daylight theme'
+              }
+              title={deckState.theme === 'paper' ? 'Obsidian Dark Mode' : 'Paper Light Mode'}
             >
-              {soundEnabled ? <Volume2 size={16} color="var(--teal)" /> : <VolumeX size={16} />}
+              {deckState.theme === 'paper' ? <Moon size={15} /> : <Sun size={15} />}
             </button>
 
             <button
               type="button"
-              className={`tactile-icon-btn ${isPro ? 'sync-pill-pro' : 'pass-header-btn'}`}
+              className={`tactile-icon-btn pass-header-btn ${deckState.isPro ? 'sync-pill-pro' : ''}`}
               onClick={() => {
-                playSwitchTick(soundEnabled, 780);
-                setReturningBuyerView(false);
-                setProModalOpen(true);
+                playSwitchTick(deckState.soundEnabled, 700);
+                setShowProModal(true);
               }}
             >
-              <Link2 size={14} />
+              <QrCode size={14} />
               <span className="pass-full-label">
-                {isPro ? `UP-••••${deckCode.slice(-4)}` : `Full Pass $${runtimeConfig.passPriceUsd}`}
+                {deckState.isPro ? `Synced · ${deckState.deckCode}` : `Sync Pass · $${runtimeConfig.passPriceUsd}`}
               </span>
               <span className="pass-short-label">
-                {isPro ? 'Synced' : `$${runtimeConfig.passPriceUsd}`}
+                {deckState.isPro ? 'Sync' : 'Pass'}
               </span>
             </button>
           </div>
         </div>
+
+        {/* SLIM TOP-10 GAME DOCK */}
+        <nav className="quick-game-dock-wrap" aria-label="Quick Top 10 Games">
+          <div className="quick-game-dock">
+            {GAME_PACKS.map((g) => {
+              const isActive = g.id === activeGameId;
+              const href = g.id === 'gta-6' ? '/' : `/?game=${g.id}`;
+              return (
+                <a
+                  key={g.id}
+                  href={href}
+                  className={`quick-game-pill ${isActive ? 'active' : ''}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectGame(g.id);
+                  }}
+                >
+                  <span
+                    className="quick-game-dot"
+                    style={{ background: g.accentColor }}
+                    aria-hidden="true"
+                  />
+                  <span>{g.shortTitle}</span>
+                </a>
+              );
+            })}
+          </div>
+        </nav>
       </header>
 
-      {/* 1-Click Top-10 Quick Game Dock (Crawlable <a href> Links + <=2-Click Depth) */}
-      <div className="quick-game-dock-wrap">
-        <nav className="quick-game-dock" aria-label="Quick switch top 10 games">
-          <span className="quick-dock-eyebrow">Top 10 Games:</span>
-          {TOP_GAMES.map((g) => {
-            const selected = g.id === activeGameId;
-            const href = g.id === 'gta-6' ? '/' : `/?game=${g.id}`;
-            return (
-              <a
-                key={g.id}
-                href={href}
-                className={`quick-game-pill ${selected ? 'active' : ''}`}
-                aria-current={selected ? 'page' : undefined}
-                onClick={(e) => {
-                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0) {
-                    e.preventDefault();
-                    switchGame(g.id, 715);
-                  }
-                }}
-              >
-                <span
-                  className="quick-game-dot"
-                  style={{ backgroundColor: selected ? '#FFFFFF' : g.accentColor }}
-                  aria-hidden="true"
-                />
-                <span>{g.shortTitle}</span>
-              </a>
-            );
-          })}
-        </nav>
-      </div>
+      {/* MAIN STUDIO WORKBENCH */}
+      <main className="app-shell">
+        {activeGamePack.isGta6Suite ? (
+          <div className="deck-stage-transition" key={`gta-${activeTab}`}>
+            <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Tools">
+              {GTA_MODES.map((m) => {
+                const IconM = m.icon;
+                const active = activeTab === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={`mode-tab ${active ? 'active' : ''}`}
+                    onClick={() => handleSelectTab(m.id)}
+                  >
+                    <IconM size={15} className="mode-tab-icon" />
+                    <span>{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-      {/* Mobile Fixed Bottom Navigation (<=860px) */}
-      {activeGameId === 'gta-6' ? (
-        <nav className="mobile-bottom-rail" aria-label="Mobile companion tools">
-          <button
-            type="button"
-            aria-current={activeTab === 'storage' ? 'page' : undefined}
-            className={`mode-tab ${activeTab === 'storage' ? 'active' : ''}`}
-            onClick={() => switchTab('storage', 680)}
-          >
-            <HardDrive size={17} className="mode-tab-icon" />
-            <span>212 GB</span>
-          </button>
-
-          <button
-            type="button"
-            aria-current={activeTab === 'safes' ? 'page' : undefined}
-            className={`mode-tab ${activeTab === 'safes' ? 'active' : ''}`}
-            onClick={() => switchTab('safes', 710)}
-          >
-            <KeyRound size={17} className="mode-tab-icon" />
-            <span>Safe Codes</span>
-          </button>
-
-          <button
-            type="button"
-            aria-current={activeTab === 'squad' ? 'page' : undefined}
-            className={`mode-tab ${activeTab === 'squad' ? 'active' : ''}`}
-            onClick={() => switchTab('squad', 740)}
-          >
-            <Calculator size={17} className="mode-tab-icon" />
-            <span>Heist Split</span>
-          </button>
-
-          <button
-            type="button"
-            aria-current={activeTab === 'nightrun' ? 'page' : undefined}
-            className={`mode-tab ${activeTab === 'nightrun' ? 'active' : ''}`}
-            onClick={() => switchTab('nightrun', 770)}
-          >
-            <Compass size={17} className="mode-tab-icon" />
-            <span>Night Run</span>
-          </button>
-        </nav>
-      ) : (
-        <nav
-          className="mobile-bottom-rail"
-          style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
-          aria-label="Mobile companion tools"
-        >
-          <button
-            type="button"
-            className="mode-tab"
-            onClick={() => switchGame('gta-6', 700)}
-          >
-            <Gamepad2 size={17} className="mode-tab-icon" />
-            <span>GTA VI Tools</span>
-          </button>
-
-          <button
-            type="button"
-            className="mode-tab active"
-            onClick={() => {
-              playSwitchTick(soundEnabled, 720);
-              setGameModalOpen(true);
-            }}
-          >
-            <Sparkles size={17} className="mode-tab-icon" />
-            <span>10 Games</span>
-          </button>
-
-          <button
-            type="button"
-            className="mode-tab"
-            onClick={() => {
-              playSwitchTick(soundEnabled, 760);
-              setReturningBuyerView(false);
-              setProModalOpen(true);
-            }}
-          >
-            <Link2 size={17} className="mode-tab-icon" />
-            <span>{isPro ? 'Synced' : `Pass $${runtimeConfig.passPriceUsd}`}</span>
-          </button>
-        </nav>
-      )}
-
-      <div className="app-shell">
-        <main>
-          <div
-            key={`${activeGameId}-${activeGameId === 'gta-6' ? activeTab : 'suite'}`}
-            className="deck-stage-transition"
-          >
-            {activeGameId !== 'gta-6' ? (
-              <MultiGameToolDeck
-                game={activeGamePack}
-                isPro={isPro}
-                onOpenProModal={() => {
-                  setReturningBuyerView(false);
-                  setProModalOpen(true);
-                }}
-                soundEnabled={soundEnabled}
-                savedPins={savedPins}
-                onSavePin={addSavedPin}
-                onRemovePin={removeSavedPin}
+            {activeTab === 'storage' && (
+              <StorageUnlockDeck
+                gamePack={activeGamePack}
+                runtimeConfig={runtimeConfig}
+                soundEnabled={deckState.soundEnabled}
+                nowMs={nowMs}
               />
-            ) : (
-              <>
-                {activeTab === 'storage' && (
-                  <StorageUnlockDeck
-                    gamePack={activeGamePack}
-                    runtimeConfig={runtimeConfig}
-                    soundEnabled={soundEnabled}
-                    nowMs={nowMs}
-                  />
-                )}
+            )}
 
-                {activeTab === 'safes' && (
-                  <SafeKeypadVault
-                    gamePack={activeGamePack}
-                    crackedSafeIds={crackedSafeIds}
-                    onToggleSafe={toggleSafe}
-                    soundEnabled={soundEnabled}
-                    isPro={isPro}
-                    isPreLaunch={isPreLaunch}
-                    initialQuery={safeSearchQuery}
-                    onOpenProModal={() => {
-                      setReturningBuyerView(false);
-                      setProModalOpen(true);
-                    }}
-                  />
-                )}
+            {activeTab === 'safes' && (
+              <SafeKeypadVault
+                gamePack={activeGamePack}
+                crackedSafeIds={deckState.crackedSafeIds}
+                onToggleSafe={handleToggleSafe}
+                soundEnabled={deckState.soundEnabled}
+                isPro={deckState.isPro}
+                isPreLaunch={isPreLaunch}
+                initialQuery={safeInitialQuery}
+                onOpenProModal={() => setShowProModal(true)}
+              />
+            )}
 
-                {activeTab === 'squad' && (
-                  <SquadHeistMarketDeck gamePack={activeGamePack} soundEnabled={soundEnabled} />
-                )}
+            {activeTab === 'squad' && (
+              <SquadHeistMarketDeck
+                gamePack={activeGamePack}
+                soundEnabled={deckState.soundEnabled}
+                isPreLaunch={isPreLaunch}
+              />
+            )}
 
-                {activeTab === 'nightrun' && (
-                  <NightRunProDeck
-                    gamePack={activeGamePack}
-                    isPro={isPro}
-                    isPreLaunch={isPreLaunch}
-                    deckCode={deckCode}
-                    checkedRouteIds={checkedRouteIds}
-                    onToggleRouteStop={toggleRouteStop}
-                    onOpenProModal={() => {
-                      setReturningBuyerView(false);
-                      setProModalOpen(true);
-                    }}
-                    runtimeConfig={runtimeConfig}
-                    soundEnabled={soundEnabled}
-                  />
-                )}
-              </>
+            {activeTab === 'nightrun' && (
+              <NightRunProDeck
+                gamePack={activeGamePack}
+                isPro={deckState.isPro}
+                isPreLaunch={isPreLaunch}
+                deckCode={deckState.deckCode}
+                checkedRouteIds={deckState.checkedRouteIds}
+                onToggleRouteStop={handleToggleRouteStop}
+                onOpenProModal={() => setShowProModal(true)}
+                runtimeConfig={runtimeConfig}
+                soundEnabled={deckState.soundEnabled}
+              />
             )}
           </div>
-
-          {/* Dynamic Per-Game Answer-First Editorial Guide & Buyer Confidence Strip */}
-          <section aria-label="Quick companion answers" className="trust-faq-grid">
-            {activeFaqs.map((faqItem) => (
-              <article key={faqItem.q} className="trust-card">
-                <h2>{faqItem.q}</h2>
-                <p>{faqItem.a}</p>
-              </article>
-            ))}
-
-            <article className="trust-card">
-              <h2>How does the ${runtimeConfig.passPriceUsd} All-Access sync work?</h2>
-              <p>
-                Pay once with Apple Pay or card to get a permanent <code>UP-XXXXXXXX</code> sync link. Open it on your phone and PC to mirror safe checklists, Pro Meta tables, and pinned targets across all 10 games with zero login.
-              </p>
-            </article>
-          </section>
-        </main>
-
-        <footer
-          style={{
-            marginTop: 26,
-            paddingTop: 18,
-            borderTop: '1px solid var(--border-subtle)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-            fontSize: '0.79rem',
-            color: 'var(--ink-muted)',
-          }}
-        >
-          <div style={{ lineHeight: 1.55 }}>
-            <strong style={{ color: 'var(--ink-primary)' }}>playunpause.com</strong> is an independent, unofficial read-only browser calculator &amp; reference utility (we do not sell game software, cheats, mods, or in-game currency) and is not affiliated with, endorsed, or sponsored by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Electronic Arts, Respawn, Valve, Riot Games, Roblox Corp., Sony Interactive Entertainment, or Microsoft.{' '}
-            <strong>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</strong>{' '}
-            IP / DMCA:{' '}
-            <a href="mailto:dmca@playunpause.com" style={{ color: 'var(--ocean)', fontWeight: 600, textDecoration: 'none' }}>
-              dmca@playunpause.com
-            </a>
-            .
+        ) : (
+          <div className="deck-stage-transition" key={`mg-${activeGamePack.id}`}>
+            <MultiGameToolDeck
+              game={activeGamePack}
+              isPro={deckState.isPro}
+              onOpenProModal={() => setShowProModal(true)}
+              soundEnabled={deckState.soundEnabled}
+              savedPins={deckState.savedPins}
+              onSavePin={handleSavePin}
+              onRemovePin={handleRemovePin}
+            />
           </div>
+        )}
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <nav aria-label="Legal and buyer policies" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <a
-                href="/?legal=terms"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openLegalSection('terms');
-                }}
-                style={{ color: 'var(--ink-secondary)', fontWeight: 600, textDecoration: 'none' }}
-              >
-                Terms of Service
-              </a>
-              <a
-                href="/?legal=privacy"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openLegalSection('privacy');
-                }}
-                style={{ color: 'var(--ink-secondary)', fontWeight: 600, textDecoration: 'none' }}
-              >
-                Privacy (POPIA · GDPR)
-              </a>
-              <a
-                href="/?legal=refunds"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openLegalSection('refunds');
-                }}
-                style={{ color: 'var(--ink-secondary)', fontWeight: 600, textDecoration: 'none' }}
-              >
-                14-Day Refund Policy
-              </a>
-              <a
-                href="/?legal=ip"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openLegalSection('ip');
-                }}
-                style={{ color: 'var(--ink-secondary)', fontWeight: 600, textDecoration: 'none' }}
-              >
-                IP &amp; Affiliate Disclosure
-              </a>
-            </nav>
+        {/* TRUST / GAME DOMAIN FAQ GRID */}
+        <section className="trust-faq-grid" aria-label="Quick Reference FAQs">
+          {faqCards.map((faq) => (
+            <article key={faq.q} className="trust-card">
+              <h2>{faq.q}</h2>
+              <p>{faq.a}</p>
+            </article>
+          ))}
+        </section>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        {/* TRANSPARENT STUDIO FOOTER */}
+        <footer className="studio-footer">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span>Unpause (playunpause.com) · Independent Player Companion</span>
+              <span>·</span>
               <a
                 href={`mailto:${runtimeConfig.supportEmail}`}
-                style={{ color: 'var(--ocean)', fontWeight: 600, textDecoration: 'none' }}
+                style={{ color: 'var(--ink-secondary)', textDecoration: 'none' }}
               >
                 {runtimeConfig.supportEmail}
               </a>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 className="subtle-pill-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 740);
-                  setSponsorModalOpen(true);
-                }}
+                onClick={() => setLegalSection('terms')}
               >
-                <Megaphone size={13} color="var(--coral)" aria-hidden="true" />
-                <span>Sponsor Top Bar (${runtimeConfig.sponsorPriceUsd}/day)</span>
+                Terms
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => setLegalSection('privacy')}
+              >
+                Privacy (POPIA/GDPR)
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => setLegalSection('refunds')}
+              >
+                Refund &amp; Ads
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => setLegalSection('ip')}
+              >
+                IP &amp; DMCA
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={handleClearLocalData}
+              >
+                {localDataCleared ? 'Local Data Cleared' : 'Clear Local Data'}
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => setShowSponsorModal(true)}
+              >
+                <Megaphone size={13} />
+                <span>Sponsor 24h</span>
               </button>
             </div>
           </div>
-        </footer>
-      </div>
 
-      {/* Modal 1: Full Pass & Device Sync */}
-      {proModalOpen && (
+          <p style={{ margin: '10px 0 0', fontSize: '0.73rem', lineHeight: 1.55, color: 'var(--ink-muted)' }}>
+            Unofficial Player Companion &amp; Non-Affiliation Notice: Unpause is an independent utility
+            built cleanly for second-screen speed. Not affiliated with, endorsed by, or sponsored by
+            Rockstar Games, Take-Two Interactive, Activision, Epic Games, Mojang AB, Microsoft,
+            Electronic Arts, CD PROJEKT S.A., Respawn Entertainment, Valve Corp., Riot Games,
+            Roblox Corp., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT
+            APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
+          </p>
+        </footer>
+      </main>
+
+      {/* MOBILE BOTTOM NAVIGATION RAIL FOR GTA VI MODES */}
+      {activeGamePack.isGta6Suite && (
+        <nav className="mobile-bottom-rail" aria-label="Mobile GTA VI Modes">
+          {GTA_MODES.map((m) => {
+            const IconM = m.icon;
+            const active = activeTab === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                className={`mode-tab ${active ? 'active' : ''}`}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => handleSelectTab(m.id)}
+              >
+                <IconM size={16} className="mode-tab-icon" />
+                <span>{m.mobileLabel}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {/* MODAL 1: GAME SWITCHER */}
+      <GameSelectorModal
+        isOpen={showGameModal}
+        onClose={() => setShowGameModal(false)}
+        activeGameId={activeGameId}
+        onSelectGame={handleSelectGame}
+        soundEnabled={deckState.soundEnabled}
+        modalRef={gameModalRef}
+      />
+
+      {/* MODAL 2: UNPAUSE SYNC PASS & QR CROSS-DEVICE LINK */}
+      {showProModal && (
         <div
           className="modal-backdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="pro-modal-title"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeModals();
-          }}
+          onClick={() => setShowProModal(false)}
         >
-          <div className="modal-card" ref={modalCardRef}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <h2
-                id="pro-modal-title"
-                style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.26rem', fontWeight: 700, letterSpacing: '-0.022em' }}
-              >
-                {isPro
-                  ? `Active Pass: ${deckCode}`
-                  : returningBuyerView
-                    ? 'Claim your sync code'
-                    : `Unpause One-Time All-Access Pass ($${runtimeConfig.passPriceUsd})`}
-              </h2>
+          <div
+            ref={proModalRef}
+            className="modal-card"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="selector-modal-header">
+              <div>
+                <h2 id="pro-modal-title" className="selector-modal-title">
+                  {deckState.isPro
+                    ? `Cloud Sync Active · ${deckState.deckCode}`
+                    : `Unpause Sync Pass · $${runtimeConfig.passPriceUsd} Once`}
+                </h2>
+                <p className="selector-modal-sub">
+                  Zero subscriptions. Instant Phone ↔ PC QR sync, extended GTA VI weeknight chains, and
+                  unlimited multi-game saved pins across CoD: MW4, EA FC 27, Minecraft &amp; Valorant.
+                </p>
+              </div>
               <button
                 type="button"
                 className="tactile-icon-btn"
-                aria-label="Close dialog"
-                onClick={closeModals}
+                aria-label="Close Sync Pass modal"
+                onClick={() => setShowProModal(false)}
               >
                 <X size={16} />
               </button>
             </div>
 
-            {isPro && (
-              <div
-                style={{
-                  padding: 14,
-                  borderRadius: 14,
-                  background: 'var(--teal-soft)',
-                  border: '1px solid var(--teal)',
-                  marginBottom: 16,
-                }}
-              >
-                <div style={{ fontWeight: 700, color: 'var(--teal-dark)', display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <CheckCircle2 size={17} /> Active on this device with zero login
+            {deckState.isPro && deckState.deckCode ? (
+              <div className="mg-subcard" style={{ marginBottom: '16px', textAlign: 'center' }}>
+                {qrMatrix && (
+                  <div
+                    style={{
+                      display: 'inline-block',
+                      padding: '12px',
+                      background: '#FFFFFF',
+                      borderRadius: '12px',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <svg
+                      width="148"
+                      height="148"
+                      viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
+                      role="img"
+                      aria-label={`QR sync code for ${deckState.deckCode}`}
+                      shapeRendering="crispEdges"
+                    >
+                      <rect width={qrMatrix.length} height={qrMatrix.length} fill="#FFFFFF" />
+                      {qrMatrix.map((row, y) =>
+                        row.map((cell, x) =>
+                          cell ? <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#0B0E14" /> : null
+                        )
+                      )}
+                    </svg>
+                  </div>
+                )}
+
+                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '6px' }}>
+                  {deckState.deckCode}
                 </div>
-                <p style={{ margin: '6px 0 12px', fontSize: '0.87rem', color: 'var(--ink-primary)', lineHeight: 1.5 }}>
-                  Open <strong>playunpause.com/#sync={deckCode}</strong> on your phone or PC to mirror every checked safe, route stop, and pinned target automatically.
+                <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: 'var(--ink-secondary)' }}>
+                  Scan on your phone while playing on console or PC — safes, routes &amp; pinned calcs sync automatically.
                 </p>
-                <button type="button" className="secondary-key-btn" onClick={shareMagicSyncUrl} style={{ width: '100%' }}>
-                  <Share2 size={15} />
-                  <span>Copy or share sync link</span>
-                </button>
+                <p style={{ margin: '0 0 12px', fontSize: '0.73rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+                  Security notice: Your <code>UP-</code> code and QR link act as a bearer sync key. Keep screenshots private.
+                </p>
+
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="secondary-key-btn"
+                    onClick={() => {
+                      if (navigator?.clipboard?.writeText && syncShareUrl) {
+                        navigator.clipboard.writeText(syncShareUrl).catch(() => {});
+                      }
+                      setCopiedSyncLink(true);
+                      setTimeout(() => setCopiedSyncLink(false), 1800);
+                    }}
+                  >
+                    {copiedSyncLink ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copiedSyncLink ? 'Sync Link Copied' : 'Copy Sync Link'}</span>
+                  </button>
+                  <button type="button" className="subtle-pill-btn" onClick={handlePullCloudNow}>
+                    <RefreshCw size={13} /> Refresh Cloud
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pass-value-bento">
+                <div className="pass-feature-grid">
+                  <div className="pass-feature-item">
+                    <QrCode size={14} color="var(--ocean)" />
+                    <span>Phone ↔ PC QR Sync</span>
+                  </div>
+                  <div className="pass-feature-item">
+                    <Clock size={14} color="var(--teal-dark)" />
+                    <span>90m &amp; 120m Weeknight Routes</span>
+                  </div>
+                  <div className="pass-feature-item">
+                    <Sparkles size={14} color="var(--gold)" />
+                    <span>Acts II–III Missables Shield</span>
+                  </div>
+                  <div className="pass-feature-item">
+                    <Check size={14} color="var(--game-accent)" />
+                    <span>Unlimited Pins &amp; No Sponsor Bar</span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '14px' }}>
+                  <a
+                    href={passCheckoutHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="primary-coral-btn"
+                    style={{ width: '100%' }}
+                  >
+                    <span>Unlock Sync Pass · ${runtimeConfig.passPriceUsd} One-Time</span>
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+                <p style={{ margin: '10px 0 0', fontSize: '0.73rem', color: 'var(--ink-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+                  18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery; GTA VI modules remain pre-launch previews until Nov 18 (11:00 UTC). Includes 14-day hassle-free refunds.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.73rem' }}>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                    onClick={() => {
+                      setShowProModal(false);
+                      setLegalSection('terms');
+                    }}
+                  >
+                    Terms
+                  </button>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                    onClick={() => {
+                      setShowProModal(false);
+                      setLegalSection('privacy');
+                    }}
+                  >
+                    Privacy
+                  </button>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                    onClick={() => {
+                      setShowProModal(false);
+                      setLegalSection('refunds');
+                    }}
+                  >
+                    Refund Policy
+                  </button>
+                  <a
+                    href={`mailto:${runtimeConfig.supportEmail}`}
+                    style={{ color: 'var(--ink-secondary)', textDecoration: 'underline' }}
+                  >
+                    {runtimeConfig.supportEmail}
+                  </a>
+                </div>
               </div>
             )}
 
-            {!isPro && returningBuyerView && (
-              <div
-                style={{
-                  padding: 14,
-                  borderRadius: 14,
-                  background: 'var(--teal-soft)',
-                  border: '1px solid var(--teal)',
-                  marginBottom: 16,
-                  fontSize: '0.88rem',
-                }}
-              >
-                <strong>Thank you for your purchase!</strong> Enter your checkout email or Whop receipt ID (<code>mem_</code> / <code>pay_</code>) below to claim your permanent <strong>UP-XXXXXXXX</strong> code.
-              </div>
-            )}
-
-            {!isPro && !returningBuyerView && (
-              <>
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 12,
-                    background: 'var(--ocean-soft)',
-                    border: '1px solid var(--ocean-border)',
-                    marginBottom: 14,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: 'var(--ocean)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 8,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Smartphone size={15} /> Phone + <Monitor size={15} /> PC Sync
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                    <ShieldCheck size={15} /> One-time purchase · No subscription
-                  </span>
-                </div>
-
-                <ul style={{ margin: '0 0 16px', paddingLeft: 18, fontSize: '0.89rem', color: 'var(--ink-primary)', lineHeight: 1.62 }}>
-                  <li>
-                    <strong>Instant Unlock Today (9 Live Game Suites):</strong> CoD BO6/Warzone, Fortnite, Minecraft, FC 25, Roblox, CS2, Valorant, Apex &amp; GTA Online Pro Meta tables
-                  </li>
-                  <li>
-                    <strong>GTA VI Vault &amp; Missables Shield:</strong>{' '}
-                    {isPreLaunch
-                      ? 'Pre-order access—verified safe codes & spoiler-free checkpoints populate live starting Nov 18 (simulated UI demos live today)'
-                      : 'Acts I to III Missables Shield & verified safe codes with spoiler-free pause checkpoints'}
-                  </li>
-                  <li>
-                    <strong>Passwordless Phone + PC Cloud Sync:</strong> Mirror checklists &amp; pinned calculator targets across screens via one <code>UP-XXXXXXXX</code> code
-                  </li>
-                  <li>
-                    <strong>Ad-Free Utility Access:</strong> Hides top sponsor banners and delivers 3-second answers for the operational life of playunpause.com
-                  </li>
-                </ul>
-
-                <a
-                  href={runtimeConfig.passCheckoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="primary-coral-btn"
-                  style={{ width: '100%', marginBottom: 8 }}
-                >
-                  <CreditCard size={16} />
-                  <span>
-                    {isPreLaunch
-                      ? `Lock In Founders Pass — $${runtimeConfig.passPriceUsd} (Apple Pay / Card)`
-                      : `Unlock One-Time Pass — $${runtimeConfig.passPriceUsd} (Apple Pay / Card)`}
-                  </span>
-                  <ExternalLink size={15} />
-                </a>
-                <div style={{ textAlign: 'center', fontSize: '0.76rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 14 }}>
-                  <div>
-                    {isPreLaunch
-                      ? `Founders rate $${runtimeConfig.passPriceUsd} USD before Nov 18 ($${runtimeConfig.launchPriceUsd} standard). Instant digital unlock · Statement: WHOP*PLAYUNPAUSE.`
-                      : `One-time $${runtimeConfig.passPriceUsd} USD payment · Instant digital unlock · Statement: WHOP*PLAYUNPAUSE.`}
-                  </div>
-                  <div style={{ marginTop: 3 }}>
-                    <strong>14-day hassle-free refund</strong> via {runtimeConfig.supportEmail} ·{' '}
-                    <button
-                      type="button"
-                      onClick={() => openLegalSection('terms')}
-                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ocean)', fontWeight: 600, fontSize: 'inherit', textDecoration: 'underline' }}
-                    >
-                      Terms
-                    </button>
-                    {' · '}
-                    <button
-                      type="button"
-                      onClick={() => openLegalSection('privacy')}
-                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ocean)', fontWeight: 600, fontSize: 'inherit', textDecoration: 'underline' }}
-                    >
-                      Privacy
-                    </button>
-                    {' · '}
-                    <button
-                      type="button"
-                      onClick={() => openLegalSection('refunds')}
-                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ocean)', fontWeight: 600, fontSize: 'inherit', textDecoration: 'underline' }}
-                    >
-                      Refund Policy
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <form
-              onSubmit={(e) => handleActivateSubmit(e, false)}
-              style={{
-                paddingTop: 14,
-                borderTop: '1px solid var(--border-subtle)',
-              }}
-            >
-              <label
-                htmlFor="sync-claim-input"
-                style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, color: 'var(--ink-secondary)', marginBottom: 8 }}
-              >
-                {isPro
-                  ? 'Load a different UP-XXXXXXXX sync code:'
-                  : 'Already purchased? Enter your UP-XXXXXXXX code, checkout email, or receipt ID:'}
+            <form onSubmit={handleActivatePass}>
+              <label htmlFor="claim-code-input" className="section-label">
+                Already purchased? Restore via Sync Code, Whop ID, or Email + Receipt
               </label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '7px' }}>
                 <input
-                  id="sync-claim-input"
+                  id="claim-code-input"
                   type="text"
-                  autoComplete="email"
-                  className="deck-input no-icon"
-                  style={{ flex: '1 1 190px' }}
-                  placeholder="UP-7K4M9P2X or checkout email"
-                  value={activateInput}
-                  onChange={(e) => setActivateInput(e.target.value)}
+                  className="deck-input no-icon mono"
+                  placeholder="UP-XXXXXXXX, mem_..., or buyer@email.com"
+                  value={claimInput}
+                  onChange={(e) => setClaimInput(e.target.value)}
                 />
-                <button type="submit" className="secondary-key-btn" disabled={activateStatus.loading}>
-                  {activateStatus.loading ? 'Checking...' : 'Activate'}
+                <button type="submit" className="secondary-key-btn" disabled={isActivating}>
+                  {isActivating ? 'Checking…' : 'Restore'}
                 </button>
               </div>
-
-              {!isPro && returningBuyerView && (
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
-                  onClick={() => setReturningBuyerView(false)}
-                >
-                  Need to complete checkout first? View Full Pass details
-                </button>
+              {claimInput.includes('@') && (
+                <div style={{ marginTop: '8px' }}>
+                  <label htmlFor="claim-receipt-input" className="section-label">
+                    Whop Receipt ID (required with email for account security)
+                  </label>
+                  <input
+                    id="claim-receipt-input"
+                    type="text"
+                    className="deck-input no-icon mono"
+                    style={{ marginTop: '5px' }}
+                    placeholder="mem_... or pay_..."
+                    value={claimReceiptInput}
+                    onChange={(e) => setClaimReceiptInput(e.target.value)}
+                  />
+                </div>
               )}
-
-              {runtimeConfig.demoUnlockEnabled && !isPro && (
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
-                  onClick={() => handleActivateSubmit(null, true)}
-                >
-                  Local Preview: Generate test UP-XXXXXXXX sync code
-                </button>
+              {claimError && (
+                <div style={{ marginTop: '7px', fontSize: '0.79rem', color: 'var(--coral)', fontWeight: 600 }}>
+                  {claimError}
+                </div>
               )}
-
-              {activateStatus.error && (
-                <p style={{ color: 'var(--coral)', fontSize: '0.84rem', fontWeight: 600, margin: '10px 0 0' }}>
-                  {activateStatus.error}
-                </p>
-              )}
-              {activateStatus.success && (
-                <p style={{ color: 'var(--teal-dark)', fontSize: '0.85rem', fontWeight: 600, margin: '10px 0 0' }}>
-                  {activateStatus.success}
-                </p>
+              {claimStatus && (
+                <div style={{ marginTop: '7px', fontSize: '0.79rem', color: 'var(--teal-dark)', fontWeight: 600 }}>
+                  {claimStatus}
+                </div>
               )}
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal 2: 24-Hour Sponsor Slot */}
-      {sponsorModalOpen && (
+      {/* MODAL 3: 24H HEADER SPONSOR SLOT */}
+      {showSponsorModal && (
         <div
           className="modal-backdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="sponsor-modal-title"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeModals();
-          }}
+          onClick={() => setShowSponsorModal(false)}
         >
-          <div className="modal-card" ref={modalCardRef}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h2
-                id="sponsor-modal-title"
-                style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.2rem',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <Megaphone size={18} color="var(--coral)" />
-                Sponsor the top bar for 24 hours
-              </h2>
+          <div
+            ref={sponsorModalRef}
+            className="modal-card"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="selector-modal-header">
+              <div>
+                <h2 id="sponsor-modal-title" className="selector-modal-title">
+                  Book 24h Header Sponsor Slot (${runtimeConfig.sponsorPriceUsd}/day)
+                </h2>
+                <p className="selector-modal-sub">
+                  Single clean text-pill above free calculator views across GTA VI, CoD: MW4, Minecraft &amp; EA Sports FC 27. Zero pop-ups or malware banners.
+                </p>
+              </div>
               <button
                 type="button"
                 className="tactile-icon-btn"
-                aria-label="Close sponsor dialog"
-                onClick={closeModals}
+                aria-label="Close sponsor modal"
+                onClick={() => setShowSponsorModal(false)}
               >
                 <X size={16} />
               </button>
             </div>
 
-            <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--ink-secondary)', lineHeight: 1.55 }}>
-              Place your gaming hardware deal, SSD promotion, creator stream, or community server at the top of <strong>playunpause.com</strong> for 24 hours.
-            </p>
-
-            <ul style={{ margin: '0 0 14px', paddingLeft: 18, fontSize: '0.87rem', lineHeight: 1.6 }}>
-              <li><strong>Single exclusive header banner</strong> across desktop and mobile (badged <strong>Sponsored</strong>)</li>
-              <li>Clean headline copy (up to 60 characters) + direct <code>https://</code> link</li>
-              <li>Book below, then send your link and copy to <strong>{runtimeConfig.sponsorEmail}</strong></li>
-            </ul>
-
-            <div
-              style={{
-                padding: '10px 12px',
-                borderRadius: 12,
-                background: 'var(--surface-tint)',
-                border: '1px solid var(--border-subtle)',
-                fontSize: '0.78rem',
-                color: 'var(--ink-secondary)',
-                lineHeight: 1.5,
-                marginBottom: 14,
-              }}
-            >
-              <strong style={{ color: 'var(--ink-primary)' }}>Acceptable Ad &amp; Review Policy:</strong> Placements undergo manual safety review (4–12 hrs). Booked dates queue to the next open 24h window or qualify for a 100% pre-live refund. <strong>Strictly prohibited:</strong> cheats, aimbots, modded accounts, RMT/coin sellers, skin casinos/gambling, crypto/NFTs, URL shorteners, or infringing pages.{' '}
-              <button
-                type="button"
-                onClick={() => openLegalSection('refunds')}
-                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ocean)', fontWeight: 600, fontSize: 'inherit', textDecoration: 'underline' }}
-              >
-                Full Ad Terms
-              </button>
+            <div className="mg-subcard" style={{ marginBottom: '14px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: '0.83rem', color: 'var(--ink-secondary)', lineHeight: 1.55 }}>
+                Reserve a clean 24-hour hardware, peripheral, or creator header pill labeled{' '}
+                <strong>Sponsored:</strong>. Strictly HTTPS-verified destinations only. Questions?
+                Email <strong>{runtimeConfig.sponsorEmail}</strong>.
+              </p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+                <strong>Pre-Checkout Ad Rules:</strong> 18+ / business buyers only; no gambling, real-money
+                trading (RMT), malware, NSFW, deceptive urgency, or Punycode domains. Subject to
+                moderation review before publishing; tax calculated by Whop. See{' '}
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                  onClick={() => {
+                    setShowSponsorModal(false);
+                    setLegalSection('refunds');
+                  }}
+                >
+                  Refund &amp; Ad Disclosure Policy
+                </button>
+                .
+              </p>
             </div>
 
             <a
-              href={runtimeConfig.sponsorCheckoutUrl}
+              href={sponsorCheckoutHref}
               target="_blank"
               rel="noopener noreferrer"
               className="primary-coral-btn"
               style={{ width: '100%' }}
             >
-              <span>Reserve 24-Hour Slot (${runtimeConfig.sponsorPriceUsd} USD)</span>
-              <ExternalLink size={16} />
+              <span>Reserve 24h Slot via Whop · ${runtimeConfig.sponsorPriceUsd}</span>
+              <ExternalLink size={14} />
             </a>
           </div>
         </div>
       )}
 
-      {/* Modal 3: Game Switcher Command Palette (10 Worldwide Titles) */}
-      <GameSelectorModal
-        isOpen={gameModalOpen}
-        onClose={() => setGameModalOpen(false)}
-        activeGameId={activeGameId}
-        onSelectGame={(gId) => switchGame(gId, 720)}
-        soundEnabled={soundEnabled}
-        modalRef={modalCardRef}
-      />
-
-      {/* Modal 4: Legal, Privacy (POPIA/GDPR/CCPA), Refunds & IP Compliance Center */}
+      {/* MODAL 4: COMPLIANCE & LEGAL */}
       <LegalComplianceModal
-        isOpen={legalModalOpen}
-        activeSection={legalSection}
-        onSelectSection={(sec) => openLegalSection(sec)}
-        onClose={closeModals}
-        modalRef={modalCardRef}
+        isOpen={Boolean(legalSection)}
+        activeSection={legalSection || 'terms'}
+        onSelectSection={setLegalSection}
+        onClose={() => setLegalSection(null)}
+        modalRef={legalModalRef}
         runtimeConfig={runtimeConfig}
-        soundEnabled={soundEnabled}
+        soundEnabled={deckState.soundEnabled}
       />
-    </>
+    </div>
   );
 }

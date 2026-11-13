@@ -26,7 +26,7 @@ services:
       - key: ALLOW_DEMO_UNLOCK
         value: "false"
       - key: TRUST_CF_HEADERS
-        value: "true"
+        value: "false"
       - key: WHOP_PASS_CHECKOUT_URL
         value: https://whop.com/playunpause/unpause-one-time-all-access-pass/
       - key: WHOP_SPONSOR_CHECKOUT_URL

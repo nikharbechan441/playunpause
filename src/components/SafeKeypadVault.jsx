@@ -1,6 +1,18 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Check, KeyRound, RotateCcw, Copy } from 'lucide-react';
-import { playKeypadBeep, playSwitchTick, playUnlockChime } from '../utils/soundHaptics.js';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  KeyRound,
+  Search,
+  Volume2,
+  Copy,
+  Check,
+  CheckCircle2,
+  Circle,
+  Cloud,
+  Info,
+} from 'lucide-react';
+import { playKeypadBeep, playSwitchTick, playUnlockChime, triggerHaptic } from '../utils/soundHaptics.js';
+
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '#'];
 
 export default function SafeKeypadVault({
   gamePack,
@@ -12,389 +24,424 @@ export default function SafeKeypadVault({
   initialQuery = '',
   onOpenProModal,
 }) {
-  const [query, setQuery] = useState(initialQuery);
-  const [district, setDistrict] = useState('All Districts');
-  const [selectedSafeId, setSelectedSafeId] = useState(gamePack.safes[0]?.id || null);
-  const [activeDigit, setActiveDigit] = useState(null);
-  const [activeStepIdx, setActiveStepIdx] = useState(-1);
-  const [copiedCodeId, setCopiedCodeId] = useState(null);
-  const playbackTimersRef = useRef([]);
-  const copyTimerRef = useRef(null);
+  const safes = gamePack.safes || [];
+  const districts = gamePack.districts || ['All Districts'];
 
-  const clearPlaybackTimers = () => {
-    for (const id of playbackTimersRef.current) {
-      clearTimeout(id);
-    }
-    playbackTimersRef.current = [];
+  const [selectedDistrict, setSelectedDistrict] = useState('All Districts');
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedSafeId, setSelectedSafeId] = useState(safes[0]?.id || '');
+  const [activeStepIdx, setActiveStepIdx] = useState(-1);
+  const [litDigit, setLitDigit] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(null);
+  const [isPlayingSeq, setIsPlayingSeq] = useState(false);
+
+  const timersRef = useRef([]);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
+  const clearTimers = () => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
   };
 
-  useEffect(() => {
-    return () => {
-      clearPlaybackTimers();
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (initialQuery) setQuery(initialQuery);
-  }, [initialQuery]);
+  useEffect(() => () => clearTimers(), []);
 
   const filteredSafes = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return gamePack.safes.filter((s) => {
-      const matchDistrict = district === 'All Districts' || s.district === district;
-      if (!matchDistrict) return false;
-      if (!q) return true;
-      return (
-        s.title.toLowerCase().includes(q) ||
-        s.district.toLowerCase().includes(q) ||
-        s.code.includes(q) ||
-        s.reward.toLowerCase().includes(q) ||
-        s.clueLocation.toLowerCase().includes(q)
-      );
+    return safes.filter((safe) => {
+      const matchDistrict = selectedDistrict === 'All Districts' || safe.district === selectedDistrict;
+      const matchQuery =
+        !q ||
+        safe.title.toLowerCase().includes(q) ||
+        safe.district.toLowerCase().includes(q) ||
+        safe.clueLocation.toLowerCase().includes(q) ||
+        safe.reward.toLowerCase().includes(q) ||
+        safe.code.includes(q);
+      return matchDistrict && matchQuery;
     });
-  }, [gamePack.safes, query, district]);
+  }, [safes, selectedDistrict, query]);
 
   const selectedSafe = useMemo(
-    () =>
-      gamePack.safes.find((s) => s.id === selectedSafeId) ||
-      filteredSafes[0] ||
-      gamePack.safes[0],
-    [gamePack.safes, selectedSafeId, filteredSafes]
+    () => safes.find((s) => s.id === selectedSafeId) || filteredSafes[0] || safes[0],
+    [safes, selectedSafeId, filteredSafes]
   );
 
-  const animateCodePlayback = (codeStr) => {
-    clearPlaybackTimers();
-    setActiveDigit(null);
-    setActiveStepIdx(-1);
-    const chars = String(codeStr).split('');
-    const stepMs = 160;
-    const litMs = 105;
+  const codeDigits = useMemo(
+    () => String(selectedSafe?.code || '0000').split('').slice(0, 4),
+    [selectedSafe]
+  );
 
-    chars.forEach((digit, idx) => {
-      const onTimer = setTimeout(() => {
-        setActiveDigit(digit);
-        setActiveStepIdx(idx);
-        playKeypadBeep(soundEnabled, digit);
-      }, idx * stepMs);
-
-      const offTimer = setTimeout(() => {
-        setActiveDigit(null);
-        if (idx === chars.length - 1) {
-          setActiveStepIdx(-1);
-        }
-      }, idx * stepMs + litMs);
-
-      playbackTimersRef.current.push(onTimer, offTimer);
-    });
-  };
+  const crackedCount = useMemo(
+    () => safes.filter((s) => crackedSafeIds.includes(s.id)).length,
+    [safes, crackedSafeIds]
+  );
 
   const handleSelectSafe = (safe) => {
+    clearTimers();
+    setIsPlayingSeq(false);
+    setActiveStepIdx(-1);
+    setLitDigit(null);
     setSelectedSafeId(safe.id);
-    animateCodePlayback(safe.code);
+    playSwitchTick(soundEnabled, 660);
+    triggerHaptic(8);
   };
 
-  const handleCopyCode = async (safe, e) => {
-    if (e) e.stopPropagation();
-    playSwitchTick(soundEnabled, 820);
-    try {
-      await navigator.clipboard.writeText(safe.code);
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-      setCopiedCodeId(safe.id);
-      copyTimerRef.current = setTimeout(() => setCopiedCodeId(null), 1600);
-    } catch {
-      // Ignore
+  const copyCode = (code) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).catch(() => {});
     }
+    playSwitchTick(soundEnabled, 880);
+    triggerHaptic(10);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 1800);
   };
 
-  const handleToggleCracked = (safeId) => {
-    const alreadyChecked = crackedSafeIds.includes(safeId);
-    if (!alreadyChecked && !isPro && crackedSafeIds.length >= 35) {
-      onOpenProModal();
+  const handlePlaySequence = () => {
+    if (!selectedSafe) return;
+    clearTimers();
+    setIsPlayingSeq(true);
+    triggerHaptic(12);
+
+    codeDigits.forEach((digit, idx) => {
+      const startDelay = idx * 340;
+      const t1 = setTimeout(() => {
+        setActiveStepIdx(idx);
+        setLitDigit(digit);
+        playKeypadBeep(digit, soundEnabled);
+        triggerHaptic(8);
+      }, startDelay);
+      timersRef.current.push(t1);
+    });
+
+    const finishTimer = setTimeout(() => {
+      setLitDigit(null);
+      setActiveStepIdx(-1);
+      setIsPlayingSeq(false);
+      playUnlockChime(soundEnabled);
+    }, codeDigits.length * 340 + 260);
+    timersRef.current.push(finishTimer);
+  };
+
+  const handleManualKeyPress = (key) => {
+    if (key === 'Clear') {
+      clearTimers();
+      setIsPlayingSeq(false);
+      setActiveStepIdx(-1);
+      setLitDigit(null);
+      playSwitchTick(soundEnabled, 460);
       return;
     }
-    if (!alreadyChecked) {
-      playUnlockChime(soundEnabled);
-    } else {
-      playSwitchTick(soundEnabled, 520);
+    if (key === '#') {
+      handlePlaySequence();
+      return;
     }
-    onToggleSafe(safeId);
+    playKeypadBeep(key, soundEnabled);
+    triggerHaptic(8);
+    setLitDigit(key);
+    const t = setTimeout(() => setLitDigit(null), 220);
+    timersRef.current.push(t);
   };
 
-  const codeDigits = selectedSafe ? String(selectedSafe.code).split('') : [];
-
   return (
-    <section className="deck-panel">
-      <div className="coastal-hero-band" data-tone="teal">
+    <section className="deck-panel" aria-label="Safe & Door Keypad Combination Vault">
+      <div className="studio-hero-band">
         <div>
-          <h1 className="panel-title">Safe &amp; door combinations</h1>
+          <div className="panel-eyebrow">
+            <KeyRound size={13} />
+            <span>
+              {isPreLaunch
+                ? 'PRE-LAUNCH VAULT ENGINE · UI PREVIEW DEMO · VERIFIES LIVE NOV 18 (11:00 UTC)'
+                : 'LIVE SAFE COMBINATION VAULT · INSTANT KEYPAD PLAYBACK'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h1 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h1>
+            <span className="district-pill">Unofficial Companion</span>
+          </div>
           <p className="panel-subtitle">
             {isPreLaunch
-              ? 'UI Demo Mode: 6 fictional placeholder examples to test keypad playback. Zero leaked or NDA data—verified GTA VI codes drop Nov 18.'
-              : 'Search by room, clue, or district. Tap any row to play back the keypad sequence.'}
+              ? 'Interactive UI preview with fictional placeholder codes ahead of launch — verified live on Nov 18 as safe combos are confirmed in-game.'
+              : 'Search any Leonida district while paused, copy the 4-digit pin in one tap, or step through the tone sequence on the tactile 10-key pad.'}
           </p>
         </div>
-        <div className="hud-readout">
-          <KeyRound size={16} color="var(--teal)" />
+
+        <div className="hud-readout" aria-live="polite">
           <span>
-            {crackedSafeIds.length} / {gamePack.safes.length}{' '}
-            {isPreLaunch ? 'UI Demo (Verified Nov 18)' : 'Opened'}
+            Cleared: <strong className="mono">{crackedCount}</strong> / {safes.length}
           </span>
         </div>
       </div>
 
       <div className="deck-body-pad">
+        {selectedSafe && (
+          <div className="mobile-keypad-strip" aria-label="Quick Mobile Safe Controls">
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                {selectedSafe.district} · PIN
+              </div>
+              <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+                {selectedSafe.code}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="secondary-key-btn"
+                onClick={() => copyCode(selectedSafe.code)}
+              >
+                {copiedCode === selectedSafe.code ? <Check size={15} /> : <Copy size={15} />}
+                <span>{copiedCode === selectedSafe.code ? 'Copied' : 'Copy'}</span>
+              </button>
+              <button
+                type="button"
+                className="primary-coral-btn"
+                onClick={handlePlaySequence}
+                disabled={isPlayingSeq}
+              >
+                <Volume2 size={15} />
+                <span>{isPlayingSeq ? 'Playing' : 'Play'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="vault-layout">
-          {/* Left Column: Search + District Filter Pills + Safe Cards */}
+          {/* LEFT: DISTRICT SEARCH + SAFE LIST */}
           <div>
             <div className="search-input-wrap">
-              <Search size={18} className="search-icon-pos" aria-hidden="true" />
+              <Search size={16} className="search-icon-pos" aria-hidden="true" />
               <input
                 type="search"
                 className="deck-input"
-                placeholder="Search pawn shop, motel, marina, clue, or loot..."
+                aria-label="Search safes by district, clue, or reward"
+                placeholder="Search Port Gellhorn, Vice Beach, pawn shop, motel..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                aria-label="Search safe and keypad codes"
               />
             </div>
 
-            <div className="filter-row" role="group" aria-label="Filter by district">
-              {gamePack.districts.map((d) => (
+            <div className="filter-row" role="tablist" aria-label="Filter safes by district">
+              {districts.map((dist) => (
                 <button
-                  key={d}
+                  key={dist}
                   type="button"
-                  aria-pressed={district === d}
-                  className={`filter-pill ${district === d ? 'active' : ''}`}
+                  role="tab"
+                  aria-selected={selectedDistrict === dist}
+                  className={`filter-pill ${selectedDistrict === dist ? 'active' : ''}`}
                   onClick={() => {
-                    playSwitchTick(soundEnabled, 660);
-                    setDistrict(d);
+                    playSwitchTick(soundEnabled, 640);
+                    setSelectedDistrict(dist);
                   }}
                 >
-                  {d}
+                  {dist}
                 </button>
               ))}
             </div>
 
-            {/* Mobile Sticky Sequence Bar (<860px) */}
-            {selectedSafe && (
-              <div className="mobile-keypad-strip" aria-label="Selected safe keypad sequence">
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      color: 'var(--ink-secondary)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {selectedSafe.title}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                    {codeDigits.map((d, i) => (
-                      <span
-                        key={`${selectedSafe.id}-mpip-${i}`}
-                        className={`keypad-pip ${activeStepIdx === i ? 'pulsing' : ''}`}
-                        style={{ width: 34, padding: '3px 0', fontSize: '1.04rem' }}
-                      >
-                        {d}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  style={{ minHeight: 38, padding: '6px 12px', fontSize: '0.8rem' }}
-                  onClick={() => animateCodePlayback(selectedSafe.code)}
-                >
-                  <RotateCcw size={13} />
-                  <span>Replay</span>
-                </button>
-              </div>
-            )}
-
             {filteredSafes.length === 0 ? (
               <div
-                style={{
-                  padding: 18,
-                  borderRadius: 14,
-                  background: 'var(--surface-tint)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--ink-secondary)',
-                  fontSize: '0.92rem',
-                }}
+                className="nz-compact-card"
+                style={{ textAlign: 'center', padding: '24px 16px' }}
               >
-                No safes match &ldquo;{query}&rdquo; in {district}. Try clearing search or choosing All Districts.
+                No safes match &ldquo;{query}&rdquo;. Clear the search filter or select All Districts.
               </div>
             ) : (
-              filteredSafes.map((safe) => {
-                const isCracked = crackedSafeIds.includes(safe.id);
-                const isSelected = selectedSafe?.id === safe.id;
-                return (
-                  <article
-                    key={safe.id}
-                    className={`safe-card ${isSelected ? 'selected' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      aria-pressed={isSelected}
-                      className="safe-select-trigger"
-                      onClick={() => handleSelectSafe(safe)}
+              <div>
+                {filteredSafes.map((safe) => {
+                  const isSelected = selectedSafe?.id === safe.id;
+                  const isCracked = crackedSafeIds.includes(safe.id);
+                  return (
+                    <div
+                      key={safe.id}
+                      className={`safe-card ${isSelected ? 'selected' : ''}`}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <strong
+                      <button
+                        type="button"
+                        className="safe-select-trigger"
+                        onClick={() => handleSelectSafe(safe)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                          <span className="district-pill">{safe.district}</span>
+                          {isPreLaunch ? (
+                            <span className="district-pill" style={{ color: 'var(--gold)' }}>
+                              Fictional UI Demo
+                            </span>
+                          ) : safe.verifiedStatus ? (
+                            <span className="district-pill" style={{ color: 'var(--teal-dark)' }}>
+                              {safe.verifiedStatus}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div
                           style={{
-                            fontSize: '0.98rem',
-                            textDecoration: isCracked ? 'line-through' : 'none',
-                            color: isCracked ? 'var(--ink-muted)' : 'var(--ink-primary)',
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700,
+                            fontSize: '0.96rem',
+                            color: 'var(--ink-primary)',
+                            marginBottom: '3px',
                           }}
                         >
                           {safe.title}
-                        </strong>
-                        <span className="district-pill">{safe.district}</span>
-                        {!safe.verified && (
-                          <span
-                            className="district-pill"
-                            style={{
-                              background: 'var(--gold-soft)',
-                              color: 'var(--gold)',
-                              border: '1px solid var(--gold-border)',
-                            }}
-                          >
-                            {safe.verifiedStatus || 'Simulated Demo'}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '0.83rem', color: 'var(--ink-secondary)', marginTop: 4 }}>
-                        Clue: {safe.clueLocation}
-                      </div>
-                      <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--teal-dark)', marginTop: 3 }}>
-                        Reward: {safe.reward}
-                      </div>
-                    </button>
-
-                    <div className="safe-card-actions">
-                      <span className="safe-code-badge" onClick={() => handleSelectSafe(safe)} style={{ cursor: 'pointer' }}>
-                        {safe.code}
-                      </span>
-                      <button
-                        type="button"
-                        className="tactile-icon-btn"
-                        aria-label={isCracked ? `Unmark ${safe.title}` : `Mark ${safe.title} opened`}
-                        onClick={() => handleToggleCracked(safe.id)}
-                        style={{
-                          borderColor: isCracked ? 'var(--teal)' : undefined,
-                          background: isCracked ? 'var(--teal-soft)' : undefined,
-                          color: isCracked ? 'var(--teal-dark)' : undefined,
-                        }}
-                      >
-                        <Check size={16} />
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--ink-secondary)', lineHeight: 1.4 }}>
+                          Clue: {safe.clueLocation} · <strong style={{ color: 'var(--ink-primary)' }}>{safe.reward}</strong>
+                        </div>
                       </button>
+
+                      <div className="safe-card-actions">
+                        <span className="safe-code-badge">{safe.code}</span>
+                        <button
+                          type="button"
+                          className="subtle-pill-btn"
+                          aria-label={`Copy ${safe.title} code ${safe.code}`}
+                          onClick={() => copyCode(safe.code)}
+                        >
+                          {copiedCode === safe.code ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedCode === safe.code ? 'Copied' : 'Copy'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`subtle-pill-btn ${isCracked ? 'active' : ''}`}
+                          aria-pressed={isCracked}
+                          aria-label={isCracked ? `Mark ${safe.title} unclear` : `Mark ${safe.title} cracked`}
+                          onClick={() => onToggleSafe(safe.id)}
+                        >
+                          {isCracked ? (
+                            <CheckCircle2 size={15} color="var(--teal-dark)" />
+                          ) : (
+                            <Circle size={15} />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </article>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
+
+            <div className="nz-compact-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 240px' }}>
+                <Cloud size={15} color="var(--ocean)" />
+                <span>
+                  {isPro
+                    ? 'Cloud Sync Active — cracked safes mirror cleanly between Phone and Desktop.'
+                    : 'Every safe code and keypad works 100% free. Sync Pass adds QR checklist backup across Phone + PC.'}
+                </span>
+              </div>
+              {!isPro && (
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={onOpenProModal}
+                >
+                  Sync Phone + PC
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Right Column (Desktop >=860px): Bright Sculpted Anodized Hardware Keypad */}
-          {selectedSafe && (
-            <aside className="keypad-box" aria-label="Safe keypad visualiser">
+          {/* RIGHT: HARDWARE 10-KEY PAD */}
+          <div>
+            <div className="keypad-box" aria-label="Interactive Safe Keypad">
               <div
                 style={{
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 10,
-                  fontSize: '0.76rem',
-                  fontWeight: 700,
-                  color: 'var(--ink-secondary)',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  marginBottom: '12px',
                 }}
               >
-                <span>Keypad Sequence</span>
-                <span
-                  style={{
-                    color: selectedSafe.verified ? 'var(--teal-dark)' : 'var(--gold)',
-                    fontFamily: 'var(--font-mono)',
-                  }}
-                >
-                  {selectedSafe.verified ? 'Verified In-Game' : 'Simulated Demo (Not Real Code)'}
-                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="mono" style={{ fontSize: '0.71rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    ACTIVE KEYPAD TARGET
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
+                      fontSize: '0.94rem',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {selectedSafe?.title || 'Select Safe'}
+                  </div>
+                </div>
+                <span className="district-pill">{selectedSafe?.district || 'Leonida'}</span>
               </div>
 
-              <div className="keypad-pip-row">
-                {codeDigits.map((digit, idx) => (
+              <div className="keypad-pip-row" aria-label="4-digit pin readout">
+                {codeDigits.map((digit, i) => (
                   <div
-                    key={`${selectedSafe.id}-pip-${idx}`}
-                    className={`keypad-pip ${activeStepIdx === idx ? 'pulsing' : ''}`}
+                    key={`${i}-${digit}`}
+                    className={`keypad-pip ${activeStepIdx === i ? 'pulsing' : ''}`}
                   >
                     {digit}
                   </div>
                 ))}
               </div>
 
-              <div className="keypad-grid">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'COPY', '0', 'PLAY'].map((keyLabel) => {
-                  const isLit = activeDigit === keyLabel;
-                  const isInCode = keyLabel.length === 1 && selectedSafe.code.includes(keyLabel);
-                  const isAction = keyLabel.length > 1;
+              <div className="keypad-grid" role="group" aria-label="10-key keypad buttons">
+                {KEYPAD_KEYS.map((key) => {
+                  const isLit = litDigit === key;
                   return (
                     <button
-                      key={keyLabel}
+                      key={key}
                       type="button"
-                      className={`keypad-digit ${isLit ? 'lit' : ''} ${!isLit && isInCode ? 'in-code' : ''}`}
-                      style={{
-                        fontSize: isAction ? '0.78rem' : undefined,
-                      }}
-                      onClick={() => {
-                        if (keyLabel === 'PLAY') {
-                          animateCodePlayback(selectedSafe.code);
-                        } else if (keyLabel === 'COPY') {
-                          handleCopyCode(selectedSafe);
-                        } else {
-                          clearPlaybackTimers();
-                          setActiveDigit(keyLabel);
-                          playKeypadBeep(soundEnabled, keyLabel);
-                          const t = setTimeout(() => setActiveDigit(null), 130);
-                          playbackTimersRef.current.push(t);
-                        }
-                      }}
+                      className={`keypad-digit ${isLit ? 'lit' : ''}`}
+                      onClick={() => handleManualKeyPress(key)}
                     >
-                      {keyLabel === 'PLAY' ? (
-                        <>
-                          <RotateCcw size={13} /> Play
-                        </>
-                      ) : keyLabel === 'COPY' ? (
-                        <>
-                          <Copy size={12} /> {copiedCodeId === selectedSafe.id ? 'Copied' : 'Copy'}
-                        </>
-                      ) : (
-                        keyLabel
-                      )}
+                      {key}
                     </button>
                   );
                 })}
               </div>
 
-              <div
-                style={{
-                  marginTop: 14,
-                  paddingTop: 12,
-                  borderTop: '1px solid var(--border-strong)',
-                  fontSize: '0.81rem',
-                  color: 'var(--ink-secondary)',
-                  lineHeight: 1.45,
-                }}
-              >
-                <div style={{ fontWeight: 800, color: 'var(--ink-primary)' }}>{selectedSafe.title}</div>
-                <div style={{ marginTop: 3 }}>Clue: {selectedSafe.clueLocation}</div>
+              <div className="stage-action-row" style={{ marginTop: '14px' }}>
+                <button
+                  type="button"
+                  className="primary-coral-btn"
+                  onClick={handlePlaySequence}
+                  disabled={isPlayingSeq}
+                >
+                  <Volume2 size={15} />
+                  <span>{isPlayingSeq ? 'Playing Sequence…' : 'Play Sequence'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="secondary-key-btn"
+                  onClick={() => selectedSafe && copyCode(selectedSafe.code)}
+                >
+                  {copiedCode === selectedSafe?.code ? <Check size={15} /> : <Copy size={15} />}
+                  <span>{copiedCode === selectedSafe?.code ? 'Copied PIN' : 'Copy PIN'}</span>
+                </button>
               </div>
-            </aside>
-          )}
+
+              {isPreLaunch && (
+                <div
+                  style={{
+                    marginTop: '12px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '7px',
+                    fontSize: '0.73rem',
+                    lineHeight: 1.45,
+                    color: 'var(--ink-muted)',
+                  }}
+                >
+                  <Info size={13} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span>
+                    Pre-launch UI preview samples shown cleanly prior to launch; verified in-game codes
+                    go live starting Nov 18 at 11:00 UTC.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </section>

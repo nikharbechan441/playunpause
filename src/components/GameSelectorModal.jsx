@@ -1,7 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { X, Search, Gamepad2, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Search,
+  X,
+  Car,
+  Crosshair,
+  Zap,
+  Box,
+  Trophy,
+  Sparkles,
+  Shield,
+  Target,
+  Flame,
+  DollarSign,
+  Gamepad2,
+} from 'lucide-react';
 import { TOP_GAMES } from '../data/games/allGames.js';
 import { playSwitchTick } from '../utils/soundHaptics.js';
+
+const ICON_MAP = {
+  Car,
+  Crosshair,
+  Zap,
+  Box,
+  Trophy,
+  Sparkles,
+  Shield,
+  Target,
+  Flame,
+  DollarSign,
+};
 
 export default function GameSelectorModal({
   isOpen,
@@ -13,44 +40,55 @@ export default function GameSelectorModal({
 }) {
   const [search, setSearch] = useState('');
   const [focusedIdx, setFocusedIdx] = useState(0);
+  const inputRef = useRef(null);
 
-  const filtered = TOP_GAMES.filter((g) => {
+  const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      g.fullTitle.toLowerCase().includes(q) ||
-      g.shortTitle.toLowerCase().includes(q) ||
-      g.genre.toLowerCase().includes(q) ||
-      g.tagline.toLowerCase().includes(q)
+    if (!q) return TOP_GAMES;
+    return TOP_GAMES.filter(
+      (g) =>
+        g.shortTitle.toLowerCase().includes(q) ||
+        g.fullTitle.toLowerCase().includes(q) ||
+        g.genre.toLowerCase().includes(q) ||
+        g.tagline.toLowerCase().includes(q)
     );
-  });
+  }, [search]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    setSearch('');
-    const currentIdx = TOP_GAMES.findIndex((g) => g.id === activeGameId);
-    setFocusedIdx(currentIdx >= 0 ? currentIdx : 0);
+    if (isOpen) {
+      setSearch('');
+      const idx = TOP_GAMES.findIndex((g) => g.id === activeGameId);
+      setFocusedIdx(idx >= 0 ? idx : 0);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 20);
+    }
   }, [isOpen, activeGameId]);
 
   useEffect(() => {
-    setFocusedIdx(0);
-  }, [search]);
+    if (focusedIdx >= filteredGames.length) {
+      setFocusedIdx(Math.max(0, filteredGames.length - 1));
+    }
+  }, [filteredGames.length, focusedIdx]);
 
   if (!isOpen) return null;
 
   const handleKeyDown = (e) => {
-    if (filtered.length === 0) return;
-    if (e.key === 'ArrowDown') {
+    if (!filteredGames.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
       e.preventDefault();
-      setFocusedIdx((prev) => (prev + 1) % filtered.length);
-    } else if (e.key === 'ArrowUp') {
+      setFocusedIdx((prev) => (prev + 1) % filteredGames.length);
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      setFocusedIdx((prev) => (prev - 1 + filtered.length) % filtered.length);
-    } else if (e.key === 'Enter' && filtered[focusedIdx]) {
+      setFocusedIdx((prev) => (prev - 1 + filteredGames.length) % filteredGames.length);
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      playSwitchTick(soundEnabled, 720);
-      onSelectGame(filtered[focusedIdx].id);
-      onClose();
+      const picked = filteredGames[focusedIdx];
+      if (picked) {
+        playSwitchTick(soundEnabled, 740);
+        onSelectGame(picked.id);
+        onClose();
+      }
     }
   };
 
@@ -60,105 +98,99 @@ export default function GameSelectorModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="game-selector-title"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      onClick={onClose}
     >
-      <div className="modal-card game-selector-card" ref={modalRef} onKeyDown={handleKeyDown}>
+      <div
+        ref={modalRef}
+        className="modal-card game-selector-card"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
+      >
         <div className="selector-modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="selector-icon-badge">
-              <Gamepad2 size={20} color="#FF5964" />
+              <Gamepad2 size={18} color="var(--game-accent)" />
             </div>
             <div>
               <h2 id="game-selector-title" className="selector-modal-title">
-                Switch Companion Game (10 Titles)
+                Switch Game Calculator Suite
               </h2>
               <p className="selector-modal-sub">
-                Jump between games in one keystroke. Your $6.99 All-Access Pass covers every suite.
+                Top 10 global titles — arrow keys or type a game name, press Enter to launch
               </p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <span className="kbd-hint" aria-hidden="true">Esc</span>
-            <button
-              type="button"
-              className="tactile-icon-btn"
-              aria-label="Close dialog"
-              onClick={onClose}
-            >
-              <X size={16} />
-            </button>
-          </div>
+
+          <button
+            type="button"
+            className="tactile-icon-btn"
+            aria-label="Close game selector"
+            onClick={onClose}
+          >
+            <X size={16} />
+          </button>
         </div>
 
         <div className="selector-search-wrap">
           <Search size={16} className="search-icon-pos" aria-hidden="true" />
           <input
+            ref={inputRef}
             type="search"
             className="deck-input"
-            aria-label="Search supported games and calculators"
-            aria-activedescendant={filtered[focusedIdx] ? `game-opt-${filtered[focusedIdx].id}` : undefined}
-            placeholder="Type a game or tool (GTA, Warzone, Fortnite, Minecraft, FC 25, CS2...)"
+            aria-label="Search supported games"
+            placeholder="Filter games: GTA VI, CoD: MW4, Minecraft, EA FC 27, Valorant, CS2..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            autoFocus
           />
         </div>
 
-        <div className="game-grid-selector" role="listbox" aria-label="Supported games">
-          {filtered.length === 0 ? (
-            <div
-              style={{
-                gridColumn: '1 / -1',
-                padding: '22px 16px',
-                textAlign: 'center',
-                color: 'var(--ink-muted)',
-                fontSize: '0.88rem',
-              }}
-            >
-              No matching game found for &ldquo;{search}&rdquo;. Try GTA, Warzone, Minecraft, or FC 25.
-            </div>
-          ) : (
-            filtered.map((g, idx) => {
-              const isSelected = g.id === activeGameId;
+        {filteredGames.length === 0 ? (
+          <div className="nz-compact-card" style={{ textAlign: 'center', padding: '24px 16px' }}>
+            No games match &ldquo;{search}&rdquo;. Try &ldquo;GTA VI&rdquo;, &ldquo;MW4&rdquo;, &ldquo;EA FC 27&rdquo;, &ldquo;Minecraft&rdquo;, or &ldquo;Valorant&rdquo;.
+          </div>
+        ) : (
+          <div className="game-grid-selector" role="listbox" aria-label="Supported Games">
+            {filteredGames.map((game, idx) => {
+              const isSelected = game.id === activeGameId;
               const isFocused = idx === focusedIdx;
+              const IconComp = ICON_MAP[game.icon] || Gamepad2;
               return (
                 <button
-                  key={g.id}
-                  id={`game-opt-${g.id}`}
+                  key={game.id}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
                   className={`game-selector-item ${isSelected ? 'active' : ''} ${isFocused ? 'kbd-focused' : ''}`}
+                  style={{ '--game-accent': game.accentColor, '--game-accent-soft': game.accentSoft }}
                   onMouseEnter={() => setFocusedIdx(idx)}
                   onClick={() => {
-                    playSwitchTick(soundEnabled, 720);
-                    onSelectGame(g.id);
+                    playSwitchTick(soundEnabled, 740);
+                    onSelectGame(game.id);
                     onClose();
                   }}
                 >
                   <div className="game-item-top">
                     <span className="game-item-genre">
-                      <span
-                        className="quick-game-dot"
-                        style={{ backgroundColor: g.accentColor }}
-                        aria-hidden="true"
-                      />
-                      {g.genre}
+                      <IconComp size={13} color={game.accentColor} />
+                      <span>{game.genre}</span>
                     </span>
-                    <span className="game-item-audience">{g.audienceBadge}</span>
+                    <span className="district-pill">{game.audienceBadge}</span>
                   </div>
                   <div className="game-item-title-row">
-                    <strong className="game-item-title">{g.fullTitle}</strong>
-                    {isSelected && <Check size={16} color={g.accentColor} />}
+                    <span className="game-item-title">{game.shortTitle}</span>
+                    {isSelected && (
+                      <span className="mono" style={{ fontSize: '0.71rem', color: game.accentColor, fontWeight: 700 }}>
+                        ACTIVE
+                      </span>
+                    )}
                   </div>
-                  <p className="game-item-tagline">{g.tagline}</p>
+                  <p className="game-item-tagline">{game.tagline}</p>
                 </button>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

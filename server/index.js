@@ -5,6 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import express from 'express';
 import { verifyWhopWebhook, generateDeckCode } from './webhookAuth.js';
+import {
+  isSafePublicHttpsUrl,
+  extractWebhookAmountCents,
+  checkAndSweepRateLimit,
+} from './securityHelpers.js';
 import { TOP_GAMES, resolveGameIdFromSlug } from '../src/data/games/allGames.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,7 +37,6 @@ function loadDotEnvIfPresent(envPath) {
 loadDotEnvIfPresent(path.join(__dirname, '..', '.env'));
 
 const DECK_CODE_REGEX = /^UP-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8,12}$/;
-const EMAIL_CLAIM_WINDOW_MS = 30 * 60 * 1000; // 30-min post-checkout instant email claim window
 const DEFAULT_LAUNCH_CUTOFF_ISO = '2026-11-18T11:00:00Z';
 
 function escapeHtml(str) {
@@ -47,27 +51,27 @@ function escapeHtml(str) {
 const LEGAL_META = {
   terms: {
     title: 'Terms of Service & ECTA Supplier Disclosures — Unpause',
-    desc: 'Plain-English Terms of Service for playunpause.com: independent read-only gaming calculator utility, one-time All-Access Pass scope, and pre-launch transparency.',
+    desc: 'Terms of Service for playunpause.com: independent unofficial gaming calculator, 18+/parental age rule, Whop Merchant of Record taxes, Nov 18 launch estimates, and EU/UK digital rights.',
     h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and checklist utility. We do not sell game software, cheats, unauthorized modifications, or in-game currency. The Unpause One-Time All-Access Pass ($6.99 USD pre-launch / $9.99 USD standard) is a single non-recurring payment granting access across all supported game suites and Phone + PC sync for the operational lifetime of playunpause.com. Support: hello@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. Users must be 18+ or have verifiable parent/guardian consent. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. The Unpause One-Time Sync Pass ($6.99 USD Founders until Nov 18 2026 11:00 UTC, then $9.99 USD; plus VAT/sales tax via Whop Merchant of Record) unlocks cross-device cloud sync and extended routes during service lifetime (minimum 12 months digital conformity commitment / 30 days shutdown notice). Support: hello@playunpause.com.',
   },
   privacy: {
     title: 'Privacy Notice (POPIA · GDPR · CCPA) — Unpause',
-    desc: 'Privacy-first architecture for playunpause.com: zero behavioral ad trackers, keyed HMAC email hashing, Cloudflare D1 edge storage, and 7-day deletion rights.',
+    desc: 'Privacy architecture for playunpause.com: Information Officer contact, keyed HMAC-SHA256 email hashing, Cloudflare Web Analytics & Google Fonts disclosure, 5-7 yr tax retention, and DELETE erasure.',
     h1: 'Unpause Privacy Notice (POPIA · EU/UK GDPR · CCPA)',
-    body: 'Unpause runs zero third-party behavioral ad networks and never sells personal information. Free calculator inputs stay in your browser localStorage. Paid pass fulfillment via Whop/Stripe stores only a keyed HMAC-SHA256 hash of your checkout email, receipt reference, and checklist JSON on Cloudflare Workers & D1 encrypted storage. Request access or deletion anytime via hello@playunpause.com.',
+    body: 'playunpause.com runs zero behavioral ad networks and never sells personal information. Information Officer: hello@playunpause.com. Free tool inputs stay in localStorage; paid Whop orders store HMAC-SHA256 email hashes, receipt IDs, and state JSON on Cloudflare Workers & D1 (with privacy-first Cloudflare Web Analytics and Google Fonts). No directed collection from children under 13/16/18. Tax ledgers kept 5-7 years; inactive sync state purged cleanly via email or authenticated DELETE /api/sync/:code. Escalate unresolved POPIA queries to the Information Regulator (South Africa) at POPIAComplaints@inforegulator.org.za.',
   },
   refunds: {
-    title: '14-Day Refund Guarantee & Acceptable Ad Policy — Unpause',
-    desc: '14-day no-questions-asked buyer refund policy on the Unpause All-Access Pass plus $149/day top-bar sponsor review and prohibited ad rules.',
-    h1: '14-Day Refund Policy & Acceptable Ad Rules',
-    body: 'Every Unpause One-Time All-Access Pass includes a 14-day hassle-free refund guarantee via hello@playunpause.com (statement descriptor: WHOP*PLAYUNPAUSE). Paid 24-hour top-bar sponsorships ($149/day via sponsors@playunpause.com) undergo manual review, carry an explicit Sponsored badge, and strictly prohibit cheats, aimbots, RMT/coin sellers, gambling, crypto, and infringing pages.',
+    title: '14-Day Refund Guarantee & Sponsored Ad Policy — Unpause',
+    desc: '14-day no-questions-asked Sync Pass refunds alongside EU/UK 14-day withdrawal & CRA 2015 remedies, plus $149/day Sponsored header pill disclosure and prohibited ad rules.',
+    h1: '14-Day Refund Policy & Sponsored Ad Rules',
+    body: 'Unpause Sync Pass carries a 14-day hassle-free refund guarantee via hello@playunpause.com (or Whop Resolution Center; statement reads WHOP*PLAYUNPAUSE), honoring EU/UK 14-day statutory rights and UK CRA 2015 remedies. Header sponsors ($149/24h via sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited.',
   },
   ip: {
     title: 'IP, Trademarks, DMCA & Affiliate Disclosure — Unpause',
-    desc: 'Nominative fair use, publisher non-affiliation, DMCA designated contact (dmca@playunpause.com), and FTC 16 CFR Part 255 affiliate disclosures.',
+    desc: 'Publisher non-affiliation, Mojang & CD PROJEKT S.A. attributions, 17 U.S.C. § 512(c)(3) DMCA notice agent (dmca@playunpause.com), and verbatim Amazon Associates disclosure.',
     h1: 'Intellectual Property, DMCA & FTC Affiliate Disclosure',
-    body: 'playunpause.com is an independent, unofficial utility not affiliated with or endorsed by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Mojang, Microsoft, Electronic Arts, Respawn, Valve, Riot Games, Roblox Corp., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. Hardware links may earn an Amazon Associate / partner commission at no extra cost to you. IP/DMCA contact: dmca@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial utility not affiliated with or endorsed by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Mojang AB, Microsoft, Electronic Arts, CD PROJEKT S.A., Respawn Entertainment, Valve, Riot Games, Roblox Corp., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA. As an Amazon Associate I earn from qualifying purchases. DMCA / IP agent: dmca@playunpause.com.',
   },
 };
 
@@ -94,16 +98,16 @@ function renderDynamicIndexHtml(baseHtml, query = {}, passPriceUsd = 6.99) {
   const rawGame = String(query.game || '').trim();
   const rawTab = String(query.tab || '').trim().toLowerCase();
 
-  let pageTitle = '3-Second Gaming Calculators & Safe Codes — Unpause';
+  let pageTitle = '3-Second Unofficial Gaming Calculators & Safe Codes — Unpause';
   let pageDesc =
-    'Instant, ad-free unofficial calculators for Top 10 games: GTA 6 212 GB SSD fit & keypad vault, Minecraft portals, CoD TTK, Fortnite XP & FC 25 tax.';
+    'Instant unofficial calculators for Top 10 games: GTA VI SSD preload (212/225 GB) & keypad vault, CoD MW4 TTK, Minecraft portals, Fortnite XP & EA Sports FC 27 tax.';
   let canonicalUrl = 'https://playunpause.com/';
   let mainHtml = '';
   let faqEntities = [];
 
   const syncFaq = {
-    q: `How does the $${passPriceUsd} All-Access sync work?`,
-    a: 'Pay once with Apple Pay or card to get a permanent UP-XXXXXXXX sync link. Open it on your phone and PC to mirror safe checklists, Pro Meta tables, and pinned targets across all 10 games with zero login.',
+    q: `How does the $${passPriceUsd} Sync Pass work?`,
+    a: 'Pay once with Apple Pay or card (Whop calculates applicable VAT/sales tax before payment) for a permanent UP-XXXXXXXX sync link and QR handoff across all 10 games. Pre-launch GTA VI modules show estimates until Nov 18 (11:00 UTC) and include 14-day hassle-free refunds.',
   };
 
   if (LEGAL_META[rawLegal]) {
@@ -111,12 +115,12 @@ function renderDynamicIndexHtml(baseHtml, query = {}, passPriceUsd = 6.99) {
     pageTitle = lm.title;
     pageDesc = lm.desc;
     canonicalUrl = `https://playunpause.com/?legal=${encodeURIComponent(rawLegal)}`;
-    mainHtml = `<main style="max-width:960px;margin:32px auto;padding:0 16px;font-family:sans-serif;color:#0B2545;"><h1>${escapeHtml(lm.h1)}</h1><p>${escapeHtml(lm.body)}</p></main>`;
+    mainHtml = `<main class="ssr-fallback-shell"><h1>${escapeHtml(lm.h1)}</h1><p>${escapeHtml(lm.body)}</p></main>`;
   } else if (rawGame && resolveGameIdFromSlug(rawGame) !== 'gta-6') {
     const resolvedId = resolveGameIdFromSlug(rawGame);
     const pack = TOP_GAMES.find((g) => g.id === resolvedId) || TOP_GAMES[0];
     pageTitle = `${pack.fullTitle} Calculator & Meta — Unpause`;
-    pageDesc = `Independent, unofficial ${pack.fullTitle} utility: ${pack.tagline}. Instant 3-second math with zero pop-up ads.`;
+    pageDesc = `Independent, unofficial ${pack.fullTitle} utility: ${pack.tagline}. Instant 3-second telemetry with zero pop-up ads.`;
     canonicalUrl = `https://playunpause.com/?game=${encodeURIComponent(pack.id)}`;
 
     const metaRowsHtml = Array.isArray(pack.proMetaRows)
@@ -127,7 +131,11 @@ function renderDynamicIndexHtml(baseHtml, query = {}, passPriceUsd = 6.99) {
     const faqHtml = faqs
       .map((f) => `<article><h2>${escapeHtml(f.q)}</h2><p>${escapeHtml(f.a)}</p></article>`)
       .join('');
-    mainHtml = `<main style="max-width:960px;margin:32px auto;padding:0 16px;font-family:sans-serif;color:#0B2545;"><h1>${escapeHtml(pack.fullTitle)} — ${escapeHtml(pack.tagline)}</h1><p>Unofficial, ad-free second-screen companion calculator for ${escapeHtml(pack.fullTitle)}.</p>${metaRowsHtml}${faqHtml}</main>`;
+    const mojNotice =
+      pack.id === 'minecraft'
+        ? '<p><strong>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</strong></p>'
+        : '';
+    mainHtml = `<main class="ssr-fallback-shell"><h1>${escapeHtml(pack.fullTitle)} — ${escapeHtml(pack.tagline)}</h1><p>Unofficial second-screen companion calculator for ${escapeHtml(pack.fullTitle)}.</p>${mojNotice}${metaRowsHtml}${faqHtml}</main>`;
   } else {
     const gtaPack = TOP_GAMES[0];
     if (GTA_TAB_META[rawTab]) {
@@ -143,42 +151,46 @@ function renderDynamicIndexHtml(baseHtml, query = {}, passPriceUsd = 6.99) {
     const h1Text = GTA_TAB_META[rawTab]
       ? GTA_TAB_META[rawTab].h1
       : 'Unpause: 3-Second Unofficial Gaming Calculators & Safe Codes for Top 10 Games';
-    mainHtml = `<main style="max-width:960px;margin:32px auto;padding:0 16px;font-family:sans-serif;color:#0B2545;"><h1>${escapeHtml(h1Text)}</h1><p>${escapeHtml(pageDesc)}</p>${faqHtml}</main>`;
+    mainHtml = `<main class="ssr-fallback-shell"><h1>${escapeHtml(h1Text)}</h1><p>${escapeHtml(pageDesc)}</p>${faqHtml}</main>`;
   }
 
   let html = baseHtml
-    .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(pageTitle)}</title>`)
+    .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${escapeHtml(pageTitle)}</title>`)
     .replace(
       /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
-      `<meta name="description" content="${escapeHtml(pageDesc)}" />`
+      () => `<meta name="description" content="${escapeHtml(pageDesc)}" />`
     )
     .replace(
       /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/,
-      `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`
+      () => `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`
     )
     .replace(
       /<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/,
-      `<meta property="og:title" content="${escapeHtml(pageTitle)}" />`
+      () => `<meta property="og:title" content="${escapeHtml(pageTitle)}" />`
     )
     .replace(
       /<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/,
-      `<meta property="og:description" content="${escapeHtml(pageDesc)}" />`
+      () => `<meta property="og:description" content="${escapeHtml(pageDesc)}" />`
     )
     .replace(
       /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/,
-      `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`
+      () => `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`
     )
     .replace(
       /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/,
-      `<meta name="twitter:title" content="${escapeHtml(pageTitle)}" />`
+      () => `<meta name="twitter:title" content="${escapeHtml(pageTitle)}" />`
     )
     .replace(
       /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/,
-      `<meta name="twitter:description" content="${escapeHtml(pageDesc)}" />`
+      () => `<meta name="twitter:description" content="${escapeHtml(pageDesc)}" />`
+    )
+    .replace(
+      /("price"\s*:\s*")6\.99(")/,
+      (_, prefix, suffix) => `${prefix}${Number(passPriceUsd).toFixed(2)}${suffix}`
     );
 
   if (mainHtml) {
-    html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root">${mainHtml}</div>`);
+    html = html.replace(/<div id="root">[\s\S]*?<\/div>/, () => `<div id="root">${mainHtml}</div>`);
   }
 
   if (faqEntities.length > 0) {
@@ -195,7 +207,7 @@ function renderDynamicIndexHtml(baseHtml, query = {}, passPriceUsd = 6.99) {
       })),
     };
     const safeJson = JSON.stringify(faqSchema).replace(/</g, '\\u003c');
-    html = html.replace('</head>', `  <script type="application/ld+json">${safeJson}</script>\n  </head>`);
+    html = html.replace('</head>', () => `  <script type="application/ld+json">${safeJson}</script>\n  </head>`);
   }
 
   return html;
@@ -311,33 +323,47 @@ export function createApp({ dbPath, env = process.env } = {}) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       badge_text TEXT NOT NULL,
       target_url TEXT NOT NULL,
+      whop_ref TEXT,
       starts_at INTEGER NOT NULL,
       expires_at INTEGER NOT NULL,
       active INTEGER NOT NULL DEFAULT 1
     );
+
+    CREATE TABLE IF NOT EXISTS processed_webhooks (
+      webhook_key TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      received_at INTEGER NOT NULL
+    );
   `);
 
-  // Backward-compatible migration if existing SQLite DB predates `active` column on sync_decks
+  // Backward-compatible migrations for existing SQLite databases
   const cols = db.prepare('PRAGMA table_info(sync_decks)').all();
   if (!cols.some((c) => c.name === 'active')) {
     db.exec('ALTER TABLE sync_decks ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
   }
+  const sponsorCols = db.prepare('PRAGMA table_info(sponsors)').all();
+  if (!sponsorCols.some((c) => c.name === 'whop_ref')) {
+    db.exec('ALTER TABLE sponsors ADD COLUMN whop_ref TEXT');
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_sponsors_whop_ref ON sponsors(whop_ref)');
 
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
 
-  // Strict HTTP Security & Cross-Origin Isolation Headers (Zero 'unsafe-inline' in script-src)
+  // Strict HTTP Security & Cross-Origin Isolation Headers (Zero 'unsafe-inline')
   app.use((req, res, next) => {
+    const isPublicAsset =
+      /^\/(?:og-cover\.png|icon-[^/]+\.png|apple-touch-icon\.png|favicon\.[^/]+)$/i.test(req.path);
     res.setHeader(
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self'",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "script-src 'self' https://static.cloudflareinsights.com",
+        "style-src 'self' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
         "img-src 'self' data: blob: https:",
-        "connect-src 'self'",
+        "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com",
         "manifest-src 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
@@ -348,16 +374,25 @@ export function createApp({ dbPath, env = process.env } = {}) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()'
+    );
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', isPublicAsset ? 'cross-origin' : 'same-origin');
     if (env.NODE_ENV === 'production') {
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     }
     next();
   });
 
-  // Per-scope isolated IP token-bucket rate limiter (prevents cross-scope bucket eviction & header spoofing)
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    next();
+  });
+
+  // Per-scope isolated IP LRU + TTL sliding rate limiter
   function getClientIp(req) {
     if (String(env.TRUST_CF_HEADERS).toLowerCase() === 'true') {
       const cfIp = req.headers['cf-connecting-ip'];
@@ -368,32 +403,17 @@ export function createApp({ dbPath, env = process.env } = {}) {
 
   function rateLimit(maxPerMinute = 90, scope = 'global') {
     const scopeBuckets = new Map();
-    const MAX_SCOPE_BUCKETS = 5_000;
-    let localCounter = 0;
 
     return (req, res, next) => {
-      const now = Date.now();
-      localCounter += 1;
-      if (localCounter % 200 === 0) {
-        for (const [k, v] of scopeBuckets.entries()) {
-          if (now - v.windowStart > 60_000) scopeBuckets.delete(k);
-        }
-      }
-
       const key = `${scope}:${getClientIp(req)}`;
-      let bucket = scopeBuckets.get(key);
-      if (!bucket || now - bucket.windowStart > 60_000) {
-        if (scopeBuckets.size >= MAX_SCOPE_BUCKETS) {
-          res.setHeader('Retry-After', '60');
-          return res.status(429).json({ error: 'Server busy. Try again in a moment.' });
-        }
-        bucket = { windowStart: now, count: 0 };
-        scopeBuckets.set(key, bucket);
-      }
-
-      bucket.count += 1;
-      if (bucket.count > maxPerMinute) {
-        res.setHeader('Retry-After', '60');
+      const rl = checkAndSweepRateLimit(scopeBuckets, key, {
+        limit: maxPerMinute,
+        windowMs: 60_000,
+        maxBuckets: 5_000,
+      });
+      if (!rl.allowed) {
+        const retryAfterSec = String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000)));
+        res.setHeader('Retry-After', retryAfterSec);
         return res.status(429).json({ error: 'Rate limit exceeded. Try again in a moment.' });
       }
       return next();
@@ -401,20 +421,25 @@ export function createApp({ dbPath, env = process.env } = {}) {
   }
 
   const emailPepper =
-    env.EMAIL_HASH_PEPPER || env.WHOP_WEBHOOK_SECRET || 'unpause-local-dev-pepper';
+    env.EMAIL_HASH_PEPPER ||
+    (env.WHOP_WEBHOOK_SECRET
+      ? crypto
+          .createHmac('sha256', env.WHOP_WEBHOOK_SECRET)
+          .update('unpause-email-pepper-v1')
+          .digest('hex')
+      : null);
 
   function hashIdentifier(value) {
     if (!value) return null;
     const clean = String(value).trim().toLowerCase();
     if (!clean) return null;
+    if (!emailPepper) {
+      if ((env.NODE_ENV || 'production') === 'production') {
+        throw new Error('EMAIL_HASH_PEPPER not configured in production');
+      }
+      return crypto.createHmac('sha256', 'unpause-local-dev-pepper').update(clean).digest('hex');
+    }
     return crypto.createHmac('sha256', emailPepper).update(clean).digest('hex');
-  }
-
-  function legacyUnsaltedHash(value) {
-    if (!value) return null;
-    const clean = String(value).trim().toLowerCase();
-    if (!clean) return null;
-    return crypto.createHash('sha256').update(clean).digest('hex');
   }
 
   function computePassPriceUsd(nowMs = Date.now()) {
@@ -438,13 +463,10 @@ export function createApp({ dbPath, env = process.env } = {}) {
         .prepare('SELECT deck_code, active FROM sync_decks WHERE whop_ref = ? LIMIT 1')
         .get(whopRef);
       if (existing) {
-        if (existing.active === 0) {
-          db.prepare('UPDATE sync_decks SET active = 1, updated_at = ? WHERE deck_code = ?').run(
-            Date.now(),
-            existing.deck_code
-          );
+        if (Number(existing.active) === 0) {
+          return { deckCode: existing.deck_code, revoked: true };
         }
-        return existing.deck_code;
+        return { deckCode: existing.deck_code, revoked: false };
       }
     }
 
@@ -458,7 +480,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
       const code = generateDeckCode(8);
       try {
         insertStmt.run(code, tier, emailHash, whopRef, initialJson, now, now);
-        return code;
+        return { deckCode: code, revoked: false };
       } catch {
         // Retry on rare collision
       }
@@ -487,6 +509,25 @@ export function createApp({ dbPath, env = process.env } = {}) {
         return res.status(401).json({ error: 'Invalid webhook signature' });
       }
 
+      const payloadSha256 = crypto.createHash('sha256').update(req.body).digest('hex');
+      const replayKeys = [`wh_body:${payloadSha256}`];
+      if (check.eventId) {
+        replayKeys.unshift(`wh_id:${String(check.eventId).trim()}`);
+      }
+
+      const replaySeen =
+        replayKeys.length === 2
+          ? db
+              .prepare('SELECT webhook_key FROM processed_webhooks WHERE webhook_key IN (?, ?) LIMIT 1')
+              .get(replayKeys[0], replayKeys[1])
+          : db
+              .prepare('SELECT webhook_key FROM processed_webhooks WHERE webhook_key = ? LIMIT 1')
+              .get(replayKeys[0]);
+
+      if (replaySeen) {
+        return res.status(200).json({ ok: true, duplicate: true });
+      }
+
       let payload;
       try {
         payload = JSON.parse(req.body.toString('utf8'));
@@ -502,6 +543,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
         return res.status(400).json({ error: 'Missing transaction reference' });
       }
 
+      const nowMs = Date.now();
       // Handle Refund / Dispute / Membership Invalid Revocation Events (Whop v2/v5 + 2026-11-10-1)
       const revocationEvents = new Set([
         'payment.refunded',
@@ -518,16 +560,20 @@ export function createApp({ dbPath, env = process.env } = {}) {
       ]);
 
       if (revocationEvents.has(eventType)) {
-        const refCandidates = [
-          data.membership_id,
-          data.membership?.id,
-          data.license_key,
-          data.payment_id,
-          data.payment?.id,
-          data.id,
-        ]
-          .filter((v) => typeof v === 'string' && v.trim())
-          .map((v) => v.trim());
+        const refCandidates = Array.from(
+          new Set(
+            [
+              data.membership_id,
+              data.membership?.id,
+              data.license_key,
+              data.payment_id,
+              data.payment?.id,
+              data.id,
+            ]
+              .filter((v) => typeof v === 'string' && v.trim())
+              .map((v) => v.trim())
+          )
+        );
 
         let revokedDeck = null;
         for (const ref of refCandidates) {
@@ -544,13 +590,53 @@ export function createApp({ dbPath, env = process.env } = {}) {
           }
         }
 
-        if (revokedDeck) {
-          db.prepare('UPDATE sync_decks SET active = 0, updated_at = ? WHERE deck_code = ?').run(
-            Date.now(),
-            revokedDeck
-          );
+        const sponsorRevokeRefs = [];
+        for (const ref of refCandidates) {
+          const matchedSponsor = db
+            .prepare('SELECT id FROM sponsors WHERE whop_ref = ? AND active = 1 LIMIT 1')
+            .get(ref);
+          if (matchedSponsor) {
+            sponsorRevokeRefs.push(ref);
+          }
         }
-        return res.status(200).json({ ok: true, revoked: Boolean(revokedDeck), deckCode: revokedDeck });
+
+        const emptyState = JSON.stringify({
+          crackedSafeIds: [],
+          checkedRouteIds: [],
+          savedPins: [],
+        });
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          if (revokedDeck) {
+            db.prepare(
+              'UPDATE sync_decks SET email_hash = NULL, state_json = ?, active = 0, updated_at = ? WHERE deck_code = ?'
+            ).run(emptyState, nowMs, revokedDeck);
+          }
+          const deactivateSponsorStmt = db.prepare('UPDATE sponsors SET active = 0 WHERE whop_ref = ?');
+          for (const sRef of sponsorRevokeRefs) {
+            deactivateSponsorStmt.run(sRef);
+          }
+          const insertWebhookStmt = db.prepare(
+            'INSERT OR IGNORE INTO processed_webhooks (webhook_key, event_type, received_at) VALUES (?, ?, ?)'
+          );
+          for (const rk of replayKeys) {
+            insertWebhookStmt.run(rk, eventType, nowMs);
+          }
+          db.prepare('DELETE FROM processed_webhooks WHERE received_at < ?').run(
+            nowMs - 30 * 86_400_000
+          );
+          db.exec('COMMIT');
+        } catch (err) {
+          db.exec('ROLLBACK');
+          throw err;
+        }
+
+        return res.status(200).json({
+          ok: true,
+          revoked: Boolean(revokedDeck || sponsorRevokeRefs.length > 0),
+          sponsorRevoked: sponsorRevokeRefs.length > 0,
+          deckCode: revokedDeck,
+        });
       }
 
       // Idempotency guard: return existing code if already processed
@@ -577,34 +663,10 @@ export function createApp({ dbPath, env = process.env } = {}) {
         return res.status(200).json({ ok: true, ignored: true });
       }
 
-      // Never fall back to subtotal (prevents 100%-discount promo $0 bypass)
-      const rawAmountField =
-        data.final_amount !== undefined && data.final_amount !== null
-          ? data.final_amount
-          : data.amount_after_fees ?? data.amount;
-
-      if (rawAmountField === undefined || rawAmountField === null || rawAmountField === '') {
-        return res.status(400).json({ error: 'Missing payment amount' });
-      }
-      const rawAmount = Number(rawAmountField);
-      if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
-        return res.status(400).json({ error: 'Non-positive payment amount rejected' });
-      }
-
-      // Reject ambiguous integer amounts in (250, 500) so underpaid cent integers (e.g. 489c) never multiply by 100
-      if (Number.isInteger(rawAmount) && rawAmount > 250 && rawAmount < 500) {
-        return res.status(400).json({ error: 'Ambiguous payment amount rejected' });
-      }
-
       const currency = String(data.currency || '').trim().toLowerCase();
       if (currency !== 'usd') {
         return res.status(400).json({ error: 'Unsupported payment currency' });
       }
-
-      const amountCents =
-        rawAmount >= 500 && Number.isInteger(rawAmount)
-          ? rawAmount
-          : Math.round(rawAmount * 100);
 
       const planId = String(data.plan?.id || data.plan_id || '').trim();
       const productId = String(data.product?.id || data.product_id || '').trim();
@@ -632,7 +694,21 @@ export function createApp({ dbPath, env = process.env } = {}) {
       } else if (passIds.length || sponsorIds.length) {
         return res.status(400).json({ error: 'Missing or unrecognized product plan ID' });
       } else {
-        productKind = amountCents >= 9900 ? 'sponsor_24h' : 'nightrun_pass';
+        const provisionalCents = extractWebhookAmountCents(payload, { isSponsorPlan: false });
+        if (provisionalCents === null) {
+          return res.status(400).json({ error: 'Missing payment amount' });
+        }
+        productKind = provisionalCents >= 9900 ? 'sponsor_24h' : 'nightrun_pass';
+      }
+
+      const amountCents = extractWebhookAmountCents(payload, {
+        isSponsorPlan: productKind === 'sponsor_24h',
+      });
+      if (amountCents === null) {
+        return res.status(400).json({ error: 'Missing payment amount' });
+      }
+      if (Number.isInteger(Number(data.final_amount ?? data.amount)) && amountCents > 250 && amountCents < 500) {
+        return res.status(400).json({ error: 'Ambiguous payment amount rejected' });
       }
 
       const minCentsRequired = productKind === 'sponsor_24h' ? 9900 : 500;
@@ -650,7 +726,20 @@ export function createApp({ dbPath, env = process.env } = {}) {
       db.exec('BEGIN IMMEDIATE');
       try {
         if (productKind === 'nightrun_pass') {
-          deckCode = issueOrReuseDeckCode({ tier: 'pro', emailHash, whopRef });
+          const issued = issueOrReuseDeckCode({ tier: 'pro', emailHash, whopRef });
+          if (issued.revoked) {
+            const insertWebhookStmt = db.prepare(
+              'INSERT OR IGNORE INTO processed_webhooks (webhook_key, event_type, received_at) VALUES (?, ?, ?)'
+            );
+            for (const rk of replayKeys) {
+              insertWebhookStmt.run(rk, eventType, nowMs);
+            }
+            db.exec('COMMIT');
+            return res
+              .status(200)
+              .json({ ok: true, ignored: true, revoked: true, deckCode: issued.deckCode });
+          }
+          deckCode = issued.deckCode;
         }
 
         // Prevent duplicate revenue accounting when both payment.succeeded & membership.went_valid fire
@@ -674,9 +763,18 @@ export function createApp({ dbPath, env = process.env } = {}) {
             currency,
             emailHash,
             deckCode,
-            Date.now()
+            nowMs
           );
         }
+        const insertWebhookStmt = db.prepare(
+          'INSERT OR IGNORE INTO processed_webhooks (webhook_key, event_type, received_at) VALUES (?, ?, ?)'
+        );
+        for (const rk of replayKeys) {
+          insertWebhookStmt.run(rk, eventType, nowMs);
+        }
+        db.prepare('DELETE FROM processed_webhooks WHERE received_at < ?').run(
+          nowMs - 30 * 86_400_000
+        );
         db.exec('COMMIT');
       } catch (err) {
         db.exec('ROLLBACK');
@@ -687,17 +785,47 @@ export function createApp({ dbPath, env = process.env } = {}) {
     }
   );
 
+  // Enforce strict JSON Content-Type on body-bearing API calls (blocks CSRF simple text/plain posts)
+  app.use('/api', (req, res, next) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      const len = Number(req.headers['content-length'] || 0);
+      const hasBody = (Number.isFinite(len) && len > 0) || Boolean(req.headers['transfer-encoding']);
+      if (hasBody && !req.is('application/json')) {
+        return res.status(415).json({ error: 'Content-Type must be application/json' });
+      }
+    }
+    return next();
+  });
+
   // Standard JSON parser for application APIs (64kb max)
   app.use('/api', express.json({ limit: '64kb' }));
 
   // 2. Public Runtime Config & Active Sponsor Slot
   app.get('/api/config', rateLimit(120, 'config'), (req, res) => {
     const now = Date.now();
-    const activeSponsor = db
+    const rawSponsor = db
       .prepare(
         'SELECT badge_text, target_url, expires_at FROM sponsors WHERE active = 1 AND starts_at <= ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
       )
       .get(now, now);
+
+    let activeSponsor = null;
+    if (rawSponsor) {
+      const urlCheck = isSafePublicHttpsUrl(rawSponsor.target_url);
+      if (urlCheck.ok) {
+        activeSponsor = {
+          badgeText: rawSponsor.badge_text,
+          targetUrl: urlCheck.normalizedUrl,
+          expiresAt: rawSponsor.expires_at,
+        };
+      }
+    }
+
+    const defaultPassCheckout = 'https://whop.com/playunpause/unpause-one-time-all-access-pass/';
+    const defaultSponsorCheckout =
+      'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/';
+    const passUrlCheck = isSafePublicHttpsUrl(env.WHOP_PASS_CHECKOUT_URL);
+    const sponsorUrlCheck = isSafePublicHttpsUrl(env.WHOP_SPONSOR_CHECKOUT_URL);
 
     res.setHeader('Cache-Control', 'no-store');
     res.json({
@@ -705,11 +833,16 @@ export function createApp({ dbPath, env = process.env } = {}) {
       domain: 'playunpause.com',
       supportEmail: env.SUPPORT_EMAIL || 'hello@playunpause.com',
       sponsorEmail: env.SPONSOR_EMAIL || 'sponsors@playunpause.com',
+      legalOperatorName: env.LEGAL_OPERATOR_NAME || '',
+      legalServiceAddress: env.LEGAL_SERVICE_ADDRESS || '',
+      legalContactPhone: env.LEGAL_CONTACT_PHONE || '',
       passPriceUsd: computePassPriceUsd(now),
       launchPriceUsd: 9.99,
       sponsorPriceUsd: 149,
-      passCheckoutUrl: env.WHOP_PASS_CHECKOUT_URL || 'https://whop.com/playunpause/',
-      sponsorCheckoutUrl: env.WHOP_SPONSOR_CHECKOUT_URL || 'https://whop.com/playunpause/',
+      passCheckoutUrl: passUrlCheck.ok ? passUrlCheck.normalizedUrl : defaultPassCheckout,
+      sponsorCheckoutUrl: sponsorUrlCheck.ok
+        ? sponsorUrlCheck.normalizedUrl
+        : defaultSponsorCheckout,
       affiliates: {
         ps5SsdUrl:
           env.AFFILIATE_PS5_SSD_URL ||
@@ -720,13 +853,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
         topupsUrl: env.AFFILIATE_TOPUPS_URL || 'https://www.loaded.com/',
       },
       demoUnlockEnabled: isDemoUnlockPermitted(),
-      activeSponsor: activeSponsor
-        ? {
-            badgeText: activeSponsor.badge_text,
-            targetUrl: activeSponsor.target_url,
-            expiresAt: activeSponsor.expires_at,
-          }
-        : null,
+      activeSponsor,
     });
   });
 
@@ -740,13 +867,16 @@ export function createApp({ dbPath, env = process.env } = {}) {
       if (!isDemoUnlockPermitted()) {
         return res.status(403).json({ error: 'Demo unlock is disabled in production.' });
       }
-      const code = issueOrReuseDeckCode({ tier: 'pro', whopRef: 'demo' });
+      const issued = issueOrReuseDeckCode({ tier: 'pro', whopRef: 'demo' });
+      if (issued.revoked) {
+        return res.status(403).json({ error: 'Demo deck deactivated.' });
+      }
       const existingDemo = db
         .prepare('SELECT state_json FROM sync_decks WHERE deck_code = ?')
-        .get(code);
+        .get(issued.deckCode);
       return res.json({
         ok: true,
-        deckCode: code,
+        deckCode: issued.deckCode,
         tier: 'pro',
         state: parseStoredState(existingDemo?.state_json),
       });
@@ -754,7 +884,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
 
     if (!rawInput || rawInput.length > 120) {
       return res.status(400).json({
-        error: 'Enter your UP-XXXXXXXX sync code, Whop receipt ID (mem_ / pay_), or checkout email.',
+        error: 'Enter your UP-XXXXXXXX sync code, Whop receipt ID (mem_ / pay_), or checkout email + receipt.',
       });
     }
 
@@ -780,46 +910,40 @@ export function createApp({ dbPath, env = process.env } = {}) {
       });
     }
 
-    // Case B: Lookup by buyer email (allowed within 30m post-checkout claim window, or with matching receiptRef)
+    // Case B: Lookup by buyer email (strictly requires matching receiptRef; zero email existence oracle)
     if (rawInput.includes('@')) {
-      const emailHash = hashIdentifier(rawInput);
-      const legacyHash = legacyUnsaltedHash(rawInput);
-      const deck = db
-        .prepare(
-          'SELECT deck_code, tier, whop_ref, active, state_json, created_at FROM sync_decks WHERE email_hash IN (?, ?) ORDER BY created_at DESC LIMIT 1'
-        )
-        .get(emailHash, legacyHash);
-
-      if (deck) {
-        if (deck.active === 0) {
-          return res.status(403).json({
-            error: 'This pass was refunded or deactivated. Contact hello@playunpause.com for help.',
-          });
-        }
-        const withinClaimWindow = Date.now() - Number(deck.created_at) <= EMAIL_CLAIM_WINDOW_MS;
-        let matchingProof = Boolean(receiptRef && deck.whop_ref && receiptRef === deck.whop_ref);
-        if (!matchingProof && receiptRef) {
-          const orderMatch = db
-            .prepare('SELECT 1 FROM orders WHERE transaction_id = ? AND deck_code = ? LIMIT 1')
-            .get(receiptRef, deck.deck_code);
-          matchingProof = Boolean(orderMatch);
-        }
-        if (withinClaimWindow || matchingProof) {
-          return res.json({
-            ok: true,
-            deckCode: deck.deck_code,
-            tier: deck.tier,
-            state: parseStoredState(deck.state_json),
-          });
-        }
-        return res.status(403).json({
-          error:
-            'For security on older orders, enter your saved UP-XXXXXXXX sync code or the mem_ / pay_ receipt ID from your Whop confirmation email.',
-        });
+      const uniformEmailError =
+        'For account security, enter your checkout email together with your Whop receipt ID (mem_ / pay_), or use your UP-XXXXXXXX sync code. Contact hello@playunpause.com if refunded or locked.';
+      if (!receiptRef || receiptRef.length < 6 || receiptRef.length > 120) {
+        return res.status(403).json({ error: uniformEmailError });
       }
-      return res.status(404).json({
-        error:
-          'No recent pass found for that email yet. Wait 5 seconds after Whop checkout or paste your mem_ / pay_ receipt ID.',
+
+      const emailHash = hashIdentifier(rawInput);
+      const deck = emailHash
+        ? db
+            .prepare(
+              'SELECT deck_code, tier, whop_ref, active, state_json FROM sync_decks WHERE email_hash = ? ORDER BY created_at DESC LIMIT 1'
+            )
+            .get(emailHash)
+        : null;
+
+      let matchingProof = Boolean(deck && deck.whop_ref && receiptRef === deck.whop_ref);
+      if (deck && !matchingProof) {
+        const orderMatch = db
+          .prepare('SELECT 1 FROM orders WHERE transaction_id = ? AND deck_code = ? LIMIT 1')
+          .get(receiptRef, deck.deck_code);
+        matchingProof = Boolean(orderMatch);
+      }
+
+      if (!deck || deck.active === 0 || !matchingProof) {
+        return res.status(403).json({ error: uniformEmailError });
+      }
+
+      return res.json({
+        ok: true,
+        deckCode: deck.deck_code,
+        tier: deck.tier,
+        state: parseStoredState(deck.state_json),
       });
     }
 
@@ -862,28 +986,41 @@ export function createApp({ dbPath, env = process.env } = {}) {
         );
         if (resp.ok) {
           const mem = await resp.json();
-          const passPlanId = String(env.WHOP_PASS_PLAN_ID || '').trim();
+          const passIds = String(env.WHOP_PASS_PLAN_ID || '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
           const memPlanId = String(mem?.plan || mem?.plan_id || '').trim();
+          const memProductId = String(mem?.product || mem?.product_id || '').trim();
           const planMatches =
             env.NODE_ENV === 'production'
-              ? Boolean(passPlanId) && memPlanId === passPlanId
-              : !passPlanId || memPlanId === passPlanId;
+              ? passIds.length > 0 && passIds.some((t) => t === memPlanId || t === memProductId)
+              : !passIds.length || passIds.some((t) => t === memPlanId || t === memProductId);
           if (
             mem &&
             planMatches &&
-            (mem.valid === true || mem.status === 'completed' || mem.status === 'active')
+            mem.valid === true &&
+            !mem.refunded &&
+            mem.status !== 'canceled' &&
+            mem.status !== 'refunded'
           ) {
-            const newCode = issueOrReuseDeckCode({
+            const issued = issueOrReuseDeckCode({
               tier: 'pro',
               emailHash: hashIdentifier(mem.email || ''),
               whopRef: rawInput,
             });
+            if (issued.revoked) {
+              return res.status(403).json({
+                error:
+                  'This pass was refunded or deactivated. Contact hello@playunpause.com for help.',
+              });
+            }
             const stored = db
               .prepare('SELECT state_json FROM sync_decks WHERE deck_code = ?')
-              .get(newCode);
+              .get(issued.deckCode);
             return res.json({
               ok: true,
-              deckCode: newCode,
+              deckCode: issued.deckCode,
               tier: 'pro',
               state: parseStoredState(stored?.state_json),
             });
@@ -899,7 +1036,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
     });
   });
 
-  // 4. Read & Save Cloud Sync State by Deck Code
+  // 4. Read, Save & Erase Cloud Sync State by Deck Code
   app.get('/api/sync/:code', rateLimit(60, 'sync_read'), (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
     if (!DECK_CODE_REGEX.test(code)) {
@@ -914,7 +1051,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
       return res.status(404).json({ error: 'Deck code not found' });
     }
     if (deck.active === 0) {
-      return res.status(403).json({ error: 'This pass has been deactivated following a refund.' });
+      return res.status(403).json({ error: 'This pass is inactive (refunded or deleted).' });
     }
     res.setHeader('Cache-Control', 'no-store');
     return res.json({
@@ -944,7 +1081,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
       return res.status(404).json({ error: 'Deck code not found' });
     }
     if (deck.active === 0) {
-      return res.status(403).json({ error: 'This pass has been deactivated following a refund.' });
+      return res.status(403).json({ error: 'This pass is inactive (refunded or deleted).' });
     }
     const now = Date.now();
     db.prepare('UPDATE sync_decks SET state_json = ?, updated_at = ? WHERE deck_code = ?').run(
@@ -953,6 +1090,56 @@ export function createApp({ dbPath, env = process.env } = {}) {
       code
     );
     return res.json({ ok: true, updatedAt: now, state: sanitized });
+  });
+
+  app.delete('/api/sync/:code', rateLimit(20, 'sync_delete'), (req, res) => {
+    const code = String(req.params.code || '').trim().toUpperCase();
+    if (!DECK_CODE_REGEX.test(code)) {
+      return res.status(400).json({ error: 'Invalid sync code format' });
+    }
+    const receiptRef = String(req.body?.receiptRef || '').trim();
+    if (!receiptRef || receiptRef.length < 6 || receiptRef.length > 120) {
+      return res
+        .status(403)
+        .json({ error: 'Valid receiptRef (Whop mem_ / pay_ ID) is required for erasure.' });
+    }
+    const deck = db
+      .prepare('SELECT deck_code, whop_ref FROM sync_decks WHERE deck_code = ?')
+      .get(code);
+    if (!deck) {
+      return res.status(404).json({ error: 'Deck code not found' });
+    }
+
+    let authorized = Boolean(deck.whop_ref && receiptRef === deck.whop_ref);
+    if (!authorized) {
+      const ord = db
+        .prepare('SELECT 1 FROM orders WHERE transaction_id = ? AND deck_code = ? LIMIT 1')
+        .get(receiptRef, code);
+      authorized = Boolean(ord);
+    }
+    if (!authorized) {
+      return res.status(403).json({ error: 'Receipt reference does not match this sync code.' });
+    }
+
+    const now = Date.now();
+    const emptyState = JSON.stringify({
+      crackedSafeIds: [],
+      checkedRouteIds: [],
+      savedPins: [],
+    });
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare(
+        'UPDATE sync_decks SET email_hash = NULL, whop_ref = NULL, state_json = ?, active = 0, updated_at = ? WHERE deck_code = ?'
+      ).run(emptyState, now, code);
+      db.prepare('UPDATE orders SET buyer_email_hash = NULL WHERE deck_code = ?').run(code);
+      db.exec('COMMIT');
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
+
+    return res.json({ ok: true, deleted: true, deckCode: code });
   });
 
   // 5. Admin Endpoint to Publish a 24h Header Sponsor
@@ -971,35 +1158,23 @@ export function createApp({ dbPath, env = process.env } = {}) {
 
     const badgeText = String(req.body?.badgeText || '').trim().slice(0, 60);
     const rawUrl = String(req.body?.targetUrl || '').trim();
+    const whopRef = String(req.body?.whopRef || '').trim().slice(0, 120) || null;
     const rawHours = Number(req.body?.durationHours ?? 24);
     const durationHours = Number.isFinite(rawHours) ? Math.min(720, Math.max(1, rawHours)) : 24;
 
-    let normalizedTargetUrl = '';
-    try {
-      if (rawUrl.length <= 512) {
-        const parsedUrl = new URL(rawUrl);
-        if (
-          parsedUrl.protocol === 'https:' &&
-          parsedUrl.hostname.includes('.') &&
-          !parsedUrl.username &&
-          !parsedUrl.password
-        ) {
-          normalizedTargetUrl = parsedUrl.toString();
-        }
-      }
-    } catch {
-      normalizedTargetUrl = '';
+    const urlCheck = isSafePublicHttpsUrl(rawUrl);
+    if (!badgeText || !urlCheck.ok) {
+      return res.status(400).json({
+        error: urlCheck.reason || 'Valid badgeText and public https:// targetUrl required',
+      });
     }
-
-    if (!badgeText || !normalizedTargetUrl) {
-      return res.status(400).json({ error: 'Valid badgeText and https:// targetUrl required' });
-    }
+    const normalizedTargetUrl = urlCheck.normalizedUrl;
 
     const now = Date.now();
     const expiresAt = now + Math.round(durationHours * 3600 * 1000);
     db.prepare(
-      'INSERT INTO sponsors (badge_text, target_url, starts_at, expires_at, active) VALUES (?, ?, ?, ?, 1)'
-    ).run(badgeText, normalizedTargetUrl, now, expiresAt);
+      'INSERT INTO sponsors (badge_text, target_url, whop_ref, starts_at, expires_at, active) VALUES (?, ?, ?, ?, ?, 1)'
+    ).run(badgeText, normalizedTargetUrl, whopRef, now, expiresAt);
 
     return res.json({ ok: true, badgeText, targetUrl: normalizedTargetUrl, expiresAt });
   });

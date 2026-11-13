@@ -1,18 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  ShieldAlert,
   Clock,
-  Check,
+  ShieldAlert,
   Lock,
-  Link2,
-  Copy,
-  Share2,
-  Smartphone,
+  CheckCircle2,
+  Circle,
   MapPin,
-  ShieldCheck,
+  Copy,
+  Check,
+  QrCode,
   Sparkles,
 } from 'lucide-react';
-import { playSwitchTick, playUnlockChime } from '../utils/soundHaptics.js';
+import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
+
+const SESSION_DURATIONS = [
+  { mins: 45, label: '45m Express (Free)', free: true },
+  { mins: 90, label: '90m Standard (Pass)', free: false },
+  { mins: 120, label: '120m Deep Clear (Pass)', free: false },
+];
 
 export default function NightRunProDeck({
   gamePack,
@@ -25,456 +30,410 @@ export default function NightRunProDeck({
   runtimeConfig,
   soundEnabled,
 }) {
-  const [sessionMinutes, setSessionMinutes] = useState(90);
-  const [copiedState, setCopiedState] = useState('');
-  const copyTimerRef = useRef(null);
+  const [sessionMins, setSessionMins] = useState(45);
+  const [activeWaypointId, setActiveWaypointId] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    };
-  }, []);
+  const waypoints = gamePack.routeWaypoints || [];
+  const missables = gamePack.missablesShield || [];
+  const routesMap = gamePack.nightRoutes || {};
+  const activeRouteStops = routesMap[sessionMins] || routesMap[45] || [];
 
-  const stops = gamePack.nightRoutes[sessionMinutes] || gamePack.nightRoutes[90];
-  const isRouteLocked = !isPro && sessionMinutes !== 45;
-  const freeStops = isRouteLocked ? stops.slice(0, 2) : stops;
-  const lockedStops = isRouteLocked ? stops.slice(2) : [];
+  const passPrice = runtimeConfig?.passPriceUsd ?? 6.99;
+  const routeLocked = !isPro && sessionMins > 45;
 
-  const completedMins = stops
-    .filter((s) => checkedRouteIds.includes(s.id))
-    .reduce((acc, s) => acc + s.mins, 0);
+  const completedStopsCount = useMemo(
+    () => activeRouteStops.filter((stop) => checkedRouteIds.includes(stop.id)).length,
+    [activeRouteStops, checkedRouteIds]
+  );
 
-  const flashCopied = (label) => {
-    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    setCopiedState(label);
-    copyTimerRef.current = setTimeout(() => setCopiedState(''), 2000);
+  const focusedWaypoint = useMemo(
+    () => waypoints.find((w) => w.id === activeWaypointId) || null,
+    [waypoints, activeWaypointId]
+  );
+
+  const handleSelectWaypoint = (wpId) => {
+    playSwitchTick(soundEnabled, 700);
+    triggerHaptic(8);
+    setActiveWaypointId((prev) => (prev === wpId ? null : wpId));
   };
 
-  const copySyncCode = async () => {
+  const handleCopyDeckCode = () => {
     if (!deckCode) return;
-    try {
-      await navigator.clipboard.writeText(deckCode);
-      playSwitchTick(soundEnabled, 880);
-      flashCopied('Code copied');
-    } catch {
-      // Ignore
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(deckCode).catch(() => {});
     }
-  };
-
-  const shareMagicLink = async () => {
-    if (!deckCode) return;
-    const magicUrl = `${window.location.origin}/#sync=${encodeURIComponent(deckCode)}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Unpause Sync Link',
-          text: `Tap to mirror my Unpause checklist (${deckCode})`,
-          url: magicUrl,
-        });
-        return;
-      }
-    } catch {
-      // Fallback
-    }
-    try {
-      await navigator.clipboard.writeText(magicUrl);
-      playSwitchTick(soundEnabled, 880);
-      flashCopied('Link copied');
-    } catch {
-      // Ignore
-    }
-  };
-
-  const passPrice = runtimeConfig?.passPriceUsd ?? '6.99';
-  const launchPrice = runtimeConfig?.launchPriceUsd ?? '9.99';
-
-  const renderStopCard = (stop, idx) => {
-    const done = checkedRouteIds.includes(stop.id);
-    return (
-      <div
-        key={stop.id}
-        role="button"
-        tabIndex={0}
-        aria-pressed={done}
-        className="safe-card"
-        onClick={() => {
-          playUnlockChime(soundEnabled);
-          onToggleRouteStop(stop.id);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            playUnlockChime(soundEnabled);
-            onToggleRouteStop(stop.id);
-          }
-        }}
-        style={{
-          cursor: 'pointer',
-          borderColor: done ? 'var(--teal)' : undefined,
-          background: done ? 'var(--teal-soft)' : undefined,
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.73rem',
-                fontWeight: 800,
-                padding: '3px 9px',
-                borderRadius: 999,
-                background: 'var(--ocean-soft)',
-                color: 'var(--ocean)',
-              }}
-            >
-              Stop {idx + 1} ({stop.mins}m)
-            </span>
-            <strong
-              style={{
-                fontSize: '0.96rem',
-                textDecoration: done ? 'line-through' : 'none',
-                color: done ? 'var(--ink-muted)' : 'var(--ink-primary)',
-              }}
-            >
-              {stop.title}
-            </strong>
-          </div>
-          <div style={{ fontSize: '0.83rem', color: 'var(--ink-secondary)', marginTop: 4 }}>
-            {stop.detail}
-          </div>
-        </div>
-
-        <div
-          className="tactile-icon-btn"
-          aria-hidden="true"
-          style={{
-            flexShrink: 0,
-            borderColor: done ? 'var(--teal)' : undefined,
-            background: done ? '#ffffff' : undefined,
-            color: done ? 'var(--teal-dark)' : undefined,
-          }}
-        >
-          <Check size={16} />
-        </div>
-      </div>
-    );
+    playSwitchTick(soundEnabled, 880);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 1800);
   };
 
   return (
-    <section className="deck-panel">
-      <div className="coastal-hero-band" data-tone="coral">
+    <section className="deck-panel" aria-label="Weeknight Route Planner & Missables Shield">
+      <div className="studio-hero-band">
         <div>
-          <h1 className="panel-title">Weeknight routes &amp; missables shield</h1>
+          <div className="panel-eyebrow">
+            <Clock size={13} />
+            <span>
+              {isPreLaunch
+                ? 'PRE-LAUNCH UI PREVIEW · UPDATES LIVE NOV 18–19'
+                : 'WEEKNIGHT TIME-BOXED CHECKLIST · ZERO SPOILERS'}
+            </span>
+          </div>
+          <h1 className="panel-title">GTA VI Weeknight Route &amp; Missables Shield</h1>
           <p className="panel-subtitle">
-            {isPreLaunch
-              ? `Founders Pass is $${passPrice} pre-launch ($${launchPrice} Nov 18). Routes & missables below are simulated pre-launch templates—verified spoiler-free Leonida checkpoints populate live Nov 18.`
-              : 'Chained 45, 90, and 120-minute loops so every weeknight session builds your bankroll without spoilers.'}
+            Finish a productive Leonida circuit inside 45 minutes on a weeknight, inspect coastal
+            waypoints, and keep story missables protected before crossing Act gates.
           </p>
         </div>
 
-        {isPro ? (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="tactile-icon-btn sync-pill-pro" onClick={copySyncCode} title="Copy your full sync code">
-              <Link2 size={14} />
-              <span>{copiedState || `UP-••••${deckCode.slice(-4)}`}</span>
-              <Copy size={13} />
-            </button>
+        <div className="subtab-bar" role="tablist" aria-label="Session length selector">
+          {SESSION_DURATIONS.map((opt) => (
             <button
+              key={opt.mins}
               type="button"
-              className="tactile-icon-btn"
-              onClick={shareMagicLink}
-              title="Send sync link to your PC or squad"
+              role="tab"
+              aria-selected={sessionMins === opt.mins}
+              className={`subtab-btn ${sessionMins === opt.mins ? 'active' : ''}`}
+              onClick={() => {
+                playSwitchTick(soundEnabled, 660);
+                setSessionMins(opt.mins);
+              }}
             >
-              <Share2 size={14} />
-              <span>Share link</span>
+              {!isPro && !opt.free && <Lock size={12} style={{ marginRight: '5px', verticalAlign: '-1px' }} />}
+              {opt.label}
             </button>
-          </div>
-        ) : (
-          <div className="hud-readout">
-            <Clock size={16} color="var(--coral)" />
-            <span>
-              {completedMins} / {sessionMinutes} min done
-            </span>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
       <div className="deck-body-pad">
         <div className="night-stage-grid">
-          {/* LEFT COLUMN: Illustrated Coastal Route Map + Interactive Stops */}
+          {/* LEFT: INTERACTIVE LEONIDA ROUTE MAP + TIME-BOXED STOPS */}
           <div>
-            {/* Handcrafted Sunlit Leonida Coastal Route Map */}
-            <div className="coastal-map-card" aria-label="Leonida coastal route overview">
+            <div className="coastal-map-card">
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-recessed)',
+                  fontSize: '0.77rem',
+                }}
+              >
+                <span className="mono" style={{ fontWeight: 700, color: 'var(--ink-primary)' }}>
+                  LEONIDA SECTOR WAYPOINTS ({waypoints.length})
+                </span>
+                {focusedWaypoint ? (
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    style={{ minHeight: '28px', padding: '2px 9px', fontSize: '0.72rem' }}
+                    onClick={() => setActiveWaypointId(null)}
+                  >
+                    Filter: {focusedWaypoint.name} ×
+                  </button>
+                ) : (
+                  <span style={{ color: 'var(--ink-muted)' }}>Tap a waypoint pin to focus stops</span>
+                )}
+              </div>
+
               <svg
-                viewBox="0 0 560 165"
+                viewBox="0 0 420 205"
                 width="100%"
                 role="img"
-                aria-label="Coastal route connecting Port Gellhorn, Grassrivers, Vice Beach, and Leonida Keys"
-                style={{ display: 'block', width: '100%', height: 'auto' }}
+                aria-label="Interactive Leonida coastal waypoint telemetry map"
+                style={{ display: 'block', background: 'var(--bg-canvas)' }}
               >
                 <defs>
-                  <linearGradient id="bayWater" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#cdeeff" />
-                    <stop offset="100%" stopColor="#b5e6fa" />
-                  </linearGradient>
-                </defs>
-                <rect width="560" height="165" fill="url(#bayWater)" />
-                {/* Sunlit Coastal Peninsula & Barrier Islands */}
-                <path
-                  d="M0,18 L195,12 L255,34 L388,26 L445,58 L430,110 L330,118 L240,98 L120,112 L0,92 Z"
-                  fill="#faf4dd"
-                  stroke="#d5c9a3"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M458,42 L512,38 L525,88 L472,102 Z"
-                  fill="#e6f7ec"
-                  stroke="#a7d7b8"
-                  strokeWidth="1.5"
-                />
-                {/* Southern Keys Island Chain */}
-                <path
-                  d="M342,136 Q385,128 420,140 Q458,148 498,144"
-                  fill="none"
-                  stroke="#faf4dd"
-                  strokeWidth="14"
-                  strokeLinecap="round"
-                />
-                {/* Highway US-1 Chained Route Path */}
-                <path
-                  d="M84,62 C158,52 214,76 286,68 C358,60 434,54 488,68 C482,110 444,136 392,140"
-                  fill="none"
-                  stroke="#ff5964"
-                  strokeWidth="3.5"
-                  strokeDasharray="7 5"
-                  strokeLinecap="round"
-                />
-                {/* Stop Nodes */}
-                {[
-                  { x: 84, y: 62, label: '1. Port Gellhorn', color: '#0077b6' },
-                  { x: 286, y: 68, label: '2. Grassrivers', color: '#00a896' },
-                  { x: 488, y: 68, label: '3. Vice Beach', color: '#ff5964' },
-                  { x: 392, y: 140, label: '4. Leonida Keys', color: '#e89b00' },
-                ].map((pt) => (
-                  <g key={pt.label}>
-                    <circle cx={pt.x} cy={pt.y} r="9" fill={pt.color} stroke="#ffffff" strokeWidth="2.5" />
-                    <rect
-                      x={pt.x - 48}
-                      y={pt.y - 29}
-                      width="96"
-                      height="17"
-                      rx="8.5"
-                      fill="rgba(255,255,255,0.92)"
+                  <pattern id="unpauseGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+                    <path
+                      d="M 24 0 L 0 0 0 24"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.04)"
+                      strokeWidth="1"
                     />
-                    <text
-                      x={pt.x}
-                      y={pt.y - 17}
-                      textAnchor="middle"
-                      fontSize="9.5"
-                      fontWeight="800"
-                      fill="#0b2545"
-                      fontFamily="Inter, sans-serif"
+                  </pattern>
+                </defs>
+                <rect width="420" height="205" fill="url(#unpauseGrid)" />
+
+                {/* Coastline & wetlands subtle terrain polygon */}
+                <path
+                  d="M 28 148 L 64 78 L 134 52 L 245 48 L 352 60 L 382 96 L 348 136 L 306 176 L 266 184 L 222 150 L 142 142 Z"
+                  fill="rgba(255,255,255,0.025)"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth="1.5"
+                />
+
+                {/* Circuit polyline */}
+                {waypoints.length > 1 && (
+                  <polyline
+                    points={waypoints.map((w) => `${w.x},${w.y}`).join(' ')}
+                    fill="none"
+                    stroke="rgba(56,189,248,0.45)"
+                    strokeWidth="2"
+                    strokeDasharray="5 4"
+                  />
+                )}
+
+                {waypoints.map((wp) => {
+                  const active = activeWaypointId === wp.id;
+                  const matchingDone = activeRouteStops
+                    .filter((s) => s.waypointId === wp.id)
+                    .some((s) => checkedRouteIds.includes(s.id));
+                  return (
+                    <g
+                      key={wp.id}
+                      className="map-node-btn"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Focus waypoint ${wp.num} ${wp.name}`}
+                      aria-pressed={active}
+                      onClick={() => handleSelectWaypoint(wp.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelectWaypoint(wp.id);
+                        }
+                      }}
                     >
-                      {pt.label}
-                    </text>
-                  </g>
-                ))}
+                      {active && (
+                        <circle
+                          cx={wp.x}
+                          cy={wp.y}
+                          r={20}
+                          fill="none"
+                          stroke={wp.color}
+                          strokeWidth="1.5"
+                          opacity="0.7"
+                        />
+                      )}
+                      <circle
+                        cx={wp.x}
+                        cy={wp.y}
+                        r={13}
+                        fill={active ? wp.color : '#121722'}
+                        stroke={wp.color}
+                        strokeWidth="2"
+                      />
+                      <text
+                        x={wp.x}
+                        y={wp.y + 4}
+                        textAnchor="middle"
+                        fontSize="10"
+                        fontWeight="700"
+                        fontFamily="JetBrains Mono, monospace"
+                        fill={active ? '#0B0E14' : '#F3F6FA'}
+                      >
+                        {wp.num}
+                      </text>
+                      <text
+                        x={wp.x}
+                        y={wp.y - 19}
+                        textAnchor="middle"
+                        fontSize="10.5"
+                        fontWeight="600"
+                        fontFamily="Inter, sans-serif"
+                        fill={matchingDone ? '#2CE5B5' : '#A2AEC2'}
+                      >
+                        {wp.name}
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
             </div>
 
-            <div className="filter-row" role="group" aria-label="Session length">
-              {[
-                { mins: 45, label: '45m Express (Free)' },
-                { mins: 90, label: '90m Weeknight' },
-                { mins: 120, label: '2h Weekend Run' },
-              ].map((opt) => (
-                <button
-                  key={opt.mins}
-                  type="button"
-                  aria-pressed={sessionMinutes === opt.mins}
-                  className={`filter-pill ${sessionMinutes === opt.mins ? 'active' : ''}`}
-                  onClick={() => {
-                    playSwitchTick(soundEnabled, 700);
-                    setSessionMinutes(opt.mins);
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="meter-labels" style={{ marginBottom: '10px' }}>
+              <span className="section-label">
+                {sessionMins}-Minute Route ({completedStopsCount}/{activeRouteStops.length} Done)
+              </span>
+              <span className="district-pill">
+                <MapPin size={12} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                {isPro ? 'Synced to Cloud' : 'Stops Track Locally'}
+              </span>
             </div>
 
-            <div>
-              {freeStops.map((stop, idx) => renderStopCard(stop, idx))}
-
-              {lockedStops.length > 0 && (
-                <div className="route-blurred-stack">
-                  <div className="route-blurred-items" aria-hidden="true">
-                    {lockedStops.map((stop, idx) => (
-                      <div key={stop.id} className="safe-card">
-                        <div>
-                          <span className="district-pill" style={{ marginRight: 8 }}>
-                            Stop {idx + 3} ({stop.mins}m)
-                          </span>
-                          <strong>{stop.title}</strong>
-                          <div style={{ fontSize: '0.82rem', marginTop: 3 }}>{stop.detail}</div>
-                        </div>
+            {routeLocked ? (
+              <div className="route-blurred-stack">
+                <div className="route-blurred-items" aria-hidden="true">
+                  {activeRouteStops.map((stop) => (
+                    <div key={stop.id} className="safe-card">
+                      <div>
+                        <span className="district-pill">{stop.district} · {stop.mins}m</span>
+                        <div style={{ fontWeight: 700, marginTop: '4px' }}>{stop.title}</div>
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="route-unlock-overlay">
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 800,
-                        fontSize: '1.08rem',
-                        color: 'var(--ink-primary)',
-                        marginBottom: 4,
-                      }}
-                    >
-                      Unlock Stops 3 to {stops.length} + Full Missables Shield
                     </div>
-                    <div style={{ fontSize: '0.83rem', color: 'var(--ink-secondary)', marginBottom: 12, maxWidth: '42ch' }}>
-                      {isPreLaunch
-                        ? `One-time $${passPrice} Founders Pass unlocks all 9 live game suites & cloud sync today, plus verified GTA VI stops & checkpoints live Nov 18.`
-                        : `One-time $${passPrice} USD purchase. Syncs across phone and PC with zero login or subscription.`}
-                    </div>
-                    <button type="button" className="primary-coral-btn" onClick={onOpenProModal}>
-                      <Lock size={15} />
-                      <span>Unlock Full Pass for ${passPrice}</span>
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* RIGHT COLUMN: High-Trust Full Pass Value Card + Spoiler-Free Missables Shield */}
-          <div>
-            {!isPro && (
-              <div className="pass-value-bento">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 800, fontSize: '0.98rem', color: 'var(--ink-primary)' }}>
-                    Everything in the ${passPrice} Full Pass
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.74rem',
-                      fontWeight: 800,
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      background: 'var(--teal-soft)',
-                      color: 'var(--teal-dark)',
-                    }}
-                  >
-                    One-time payment, no subscription
-                  </span>
-                </div>
-                <div className="pass-feature-grid">
-                  <div className="pass-feature-item">
-                    <MapPin size={15} color="var(--coral)" />
-                    <span>90m &amp; 2h Chained Routes</span>
+                <div className="route-unlock-overlay">
+                  <Lock size={22} color="var(--game-accent)" style={{ marginBottom: '8px' }} />
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.04rem', marginBottom: '6px' }}>
+                    {sessionMins}m Extended Chains &amp; Cross-Device Sync
                   </div>
-                  <div className="pass-feature-item">
-                    <ShieldCheck size={15} color="var(--teal)" />
-                    <span>Acts I–III Missables Shield</span>
-                  </div>
-                  <div className="pass-feature-item">
-                    <Smartphone size={15} color="var(--ocean)" />
-                    <span>Instant Phone + PC Link Sync</span>
-                  </div>
-                  <div className="pass-feature-item">
-                    <Sparkles size={15} color="var(--gold)" />
-                    <span>Zero Ads or Subscriptions</span>
-                  </div>
+                  <p style={{ margin: '0 0 14px', fontSize: '0.82rem', color: 'var(--ink-secondary)', maxWidth: '34ch' }}>
+                    The 45m express route stays 100% free. Grab the one-time Sync Pass (${passPrice}) for
+                    extended 90m/120m routes and Phone ↔ Desktop checklist sync.
+                  </p>
+                  <button type="button" className="primary-coral-btn" onClick={onOpenProModal}>
+                    Unlock Extended Routes · ${passPrice}
+                  </button>
                 </div>
               </div>
-            )}
-
-            <div style={{ display: 'grid', gap: 10 }}>
-              {gamePack.missablesShield.map((item) => {
-                const canRead = isPro || item.freePreview;
-                return (
-                  <div
-                    key={item.id}
-                    style={{
-                      background: canRead ? 'var(--gold-soft)' : 'var(--surface-white)',
-                      border: `1.5px solid ${canRead ? 'var(--gold-border)' : 'var(--border-subtle)'}`,
-                      borderRadius: 15,
-                      padding: '14px 16px',
-                      boxShadow: 'var(--shadow-sm)',
-                    }}
-                  >
+            ) : (
+              <div>
+                {activeRouteStops.map((stop, idx) => {
+                  const isDone = checkedRouteIds.includes(stop.id);
+                  const isFocused = activeWaypointId && stop.waypointId === activeWaypointId;
+                  return (
                     <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: 8,
-                        flexWrap: 'wrap',
-                        marginBottom: 6,
-                      }}
+                      key={stop.id}
+                      className={`safe-card ${isDone ? 'selected' : ''}`}
+                      style={
+                        isFocused
+                          ? { borderColor: 'var(--ocean)', boxShadow: '0 0 0 2px var(--ocean-soft)' }
+                          : undefined
+                      }
                     >
-                      <span
-                        style={{
-                          fontWeight: 800,
-                          fontSize: '0.94rem',
-                          color: 'var(--ink-primary)',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                          <span className="district-pill">STOP #{idx + 1}</span>
+                          <span className="district-pill">{stop.district}</span>
+                          <span className="district-pill mono">{stop.mins} mins</span>
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            textDecoration: isDone ? 'line-through' : 'none',
+                            color: isDone ? 'var(--ink-muted)' : 'var(--ink-primary)',
+                            marginBottom: '3px',
+                          }}
+                        >
+                          {stop.title}
+                        </div>
+                        <div style={{ fontSize: '0.79rem', color: 'var(--ink-secondary)', lineHeight: 1.45 }}>
+                          {stop.detail}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={`subtle-pill-btn ${isDone ? 'active' : ''}`}
+                        aria-pressed={isDone}
+                        aria-label={isDone ? `Uncheck ${stop.title}` : `Complete ${stop.title}`}
+                        onClick={() => onToggleRouteStop(stop.id)}
                       >
-                        <ShieldAlert size={16} color={canRead ? 'var(--gold)' : 'var(--coral)'} />
-                        {item.chapter}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.71rem',
-                          padding: '3px 9px',
-                          borderRadius: 999,
-                          background: 'var(--coral-soft)',
-                          color: 'var(--coral)',
-                          fontWeight: 800,
-                        }}
-                      >
-                        {item.itemsAtRisk} missables at risk
+                        {isDone ? <CheckCircle2 size={16} color="var(--teal-dark)" /> : <Circle size={16} />}
+                        <span>{isDone ? 'Done' : 'Check'}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: MISSABLES SHIELD & SYNC PASS CARD */}
+          <div>
+            <div className="meter-labels" style={{ marginBottom: '10px' }}>
+              <span className="section-label">
+                <ShieldAlert size={14} style={{ marginRight: '5px', verticalAlign: '-2px', color: 'var(--gold)' }} />
+                Spoiler-Free Missables Shield
+              </span>
+              <span className="district-pill">Act I Free · II–III w/ Pass</span>
+            </div>
+
+            {missables.map((item) => {
+              const unlocked = isPro || item.freePreview;
+              if (!unlocked) {
+                return (
+                  <div key={item.id} className="mg-subcard" style={{ marginBottom: '10px' }}>
+                    <div className="mg-subcard-head" style={{ marginBottom: '6px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{item.chapter}</span>
+                      <span className="district-pill" style={{ color: 'var(--coral)' }}>
+                        {isPreLaunch ? `Est. ${item.itemsAtRisk} Slots (Preview)` : `${item.itemsAtRisk} Missables Protected`}
                       </span>
                     </div>
-
-                    {canRead ? (
-                      <>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--ink-primary)', marginBottom: 4 }}>
-                          Pause before: {item.triggerWarning}
-                        </div>
-                        <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--ink-secondary)', lineHeight: 1.5 }}>
-                          {item.spoilerFreeRule}
-                        </p>
-                      </>
-                    ) : (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 10,
-                          flexWrap: 'wrap',
-                          marginTop: 6,
-                        }}
-                      >
-                        <span style={{ fontSize: '0.82rem', color: 'var(--ink-secondary)', flex: '1 1 180px' }}>
-                          Spoiler-free pause checkpoint and 7-figure contract hold rule included in Full Pass.
-                        </span>
-                        <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-                          <Lock size={13} color="var(--coral)" />
-                          <span>Unlock (${passPrice})</span>
-                        </button>
-                      </div>
-                    )}
+                    <p style={{ margin: '0 0 10px', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                      {isPreLaunch
+                        ? 'Pre-launch preview template — updates with verified trigger alerts at release with Unpause Sync Pass.'
+                        : 'Trigger alert & pre-mission checklist rule included with Unpause Sync Pass.'}
+                    </p>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', fontWeight: 600, color: 'var(--ink-secondary)' }}>
+                      <Lock size={12} color="var(--game-accent)" />
+                      <span>Included with Sync Pass below</span>
+                    </div>
                   </div>
                 );
-              })}
+              }
+              return (
+                <div key={item.id} className="mg-subcard" style={{ marginBottom: '10px' }}>
+                  <div className="mg-subcard-head" style={{ marginBottom: '6px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.92rem' }}>{item.chapter}</span>
+                    <span className="district-pill" style={{ color: 'var(--teal-dark)' }}>
+                      {isPreLaunch ? `Est. ${item.itemsAtRisk} Slots (Preview)` : `${item.itemsAtRisk} Items Shielded`}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--gold)', marginBottom: '5px' }}>
+                    Pause Trigger: {item.triggerWarning}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.81rem', color: 'var(--ink-secondary)', lineHeight: 1.5 }}>
+                    {item.spoilerFreeRule}
+                  </p>
+                </div>
+              );
+            })}
+
+            <div className="pass-value-bento" style={{ marginTop: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 700, fontSize: '0.92rem' }}>
+                  <Sparkles size={15} color="var(--game-accent)" />
+                  <span>{isPro ? 'Unpause Sync Pass Active' : `Unpause Sync Pass · $${passPrice} Once`}</span>
+                </div>
+                {isPro && deckCode && (
+                  <button type="button" className="subtle-pill-btn" onClick={handleCopyDeckCode}>
+                    {copiedCode ? <Check size={13} /> : <Copy size={13} />}
+                    <span className="mono">{deckCode}</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="pass-feature-grid">
+                <div className="pass-feature-item">
+                  <QrCode size={14} color="var(--ocean)" />
+                  <span>Phone ↔ PC QR Sync</span>
+                </div>
+                <div className="pass-feature-item">
+                  <Clock size={14} color="var(--teal-dark)" />
+                  <span>90m &amp; 120m Chains</span>
+                </div>
+                <div className="pass-feature-item">
+                  <ShieldAlert size={14} color="var(--gold)" />
+                  <span>{isPreLaunch ? 'Act I–III Shield (Live Nov 18)' : 'Full Act I–III Shield'}</span>
+                </div>
+                <div className="pass-feature-item">
+                  <CheckCircle2 size={14} color="var(--game-accent)" />
+                  <span>Unlimited Cross-Game Pins</span>
+                </div>
+              </div>
+
+              {!isPro && (
+                <div style={{ marginTop: '12px' }}>
+                  <button
+                    type="button"
+                    className="primary-coral-btn"
+                    style={{ width: '100%' }}
+                    onClick={onOpenProModal}
+                  >
+                    Unlock Sync Pass · ${passPrice} (One-Time)
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

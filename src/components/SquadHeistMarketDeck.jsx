@@ -1,736 +1,603 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Share2, Copy, TrendingUp, Users, Plus, Trash2, Lock, Unlock } from 'lucide-react';
-import { playSwitchTick, playUnlockChime } from '../utils/soundHaptics.js';
+import React, { useMemo, useState } from 'react';
 import {
+  Users,
+  TrendingUp,
+  Lock,
+  Unlock,
+  Share2,
+  Copy,
+  Check,
+  Plus,
+  Minus,
+} from 'lucide-react';
+import {
+  computeHostGreedLabel,
   renderSquadSplitCanvas,
   copyCanvasToClipboard,
   shareOrDownloadCanvas,
-  computeHostGreedLabel,
 } from '../utils/canvasCards.js';
+import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 
-const MAX_DOLLARS = 10_000_000_000;
-const MIN_CREW_PCT = 5;
-const CREW_BAR_COLORS = ['#ff5964', '#00a896', '#0077b6', '#f59e0b'];
+const PLAYER_COLORS = ['#FF5964', '#2CE5B5', '#38BDF8', '#F59E0B'];
+const NPC_FEE_COLOR = '#64748B';
 
 const DEFAULT_CREW = [
-  { id: 'c1', name: 'Host (Leader)', role: 'Point / Vault', pct: 40, locked: false },
-  { id: 'c2', name: 'Player 2', role: 'Wheelman', pct: 20, locked: false },
-  { id: 'c3', name: 'Player 3', role: 'Crowd Control', pct: 20, locked: false },
-  { id: 'c4', name: 'Player 4', role: 'Lookout', pct: 20, locked: false },
+  { id: 'p1', name: 'Host / Lead', role: 'HOST', pct: 40, locked: false },
+  { id: 'p2', name: 'Co-Lead', role: 'CREW #2', pct: 30, locked: false },
+  { id: 'p3', name: 'Wheelman', role: 'DRIVER', pct: 15, locked: false },
+  { id: 'p4', name: 'Tech', role: 'HACKER', pct: 15, locked: false },
 ];
 
-function sanitizeMoneyInput(raw) {
-  if (raw === '' || raw === null || raw === undefined) return '';
-  const cleaned = String(raw).replace(/[^0-9]/g, '');
-  if (!cleaned) return '';
-  const num = Number(cleaned);
-  if (!Number.isFinite(num)) return MAX_DOLLARS;
-  return Math.min(MAX_DOLLARS, Math.max(0, Math.round(num)));
-}
+export function rebalanceCrewShares(crewList, changedId, requestedVal) {
+  const lockedTotal = crewList
+    .filter((m) => m.id !== changedId && m.locked)
+    .reduce((sum, m) => sum + m.pct, 0);
 
-function toFiniteDollars(val) {
-  const num = Number(val);
-  if (!Number.isFinite(num) || num <= 0) return 0;
-  return Math.min(MAX_DOLLARS, Math.max(0, Math.round(num)));
-}
+  const unlockedOthers = crewList.filter((m) => m.id !== changedId && !m.locked);
+  const maxAllowed = Math.max(0, 100 - lockedTotal);
+  const clampedNewVal = Math.max(0, Math.min(maxAllowed, Math.round(requestedVal)));
+  const remainingForOthers = 100 - lockedTotal - clampedNewVal;
 
-function formatCommaDollars(rawVal) {
-  if (rawVal === '' || rawVal === null || rawVal === undefined) return '';
-  const n = toFiniteDollars(rawVal);
-  return `$${n.toLocaleString('en-US')}`;
-}
-
-export function rebalanceCrewShares(crewList, changedId = null, requestedVal = null) {
-  const n = crewList.length;
-  if (n === 0) return [];
-  if (n === 1) return [{ ...crewList[0], pct: 100 }];
-
-  if (changedId !== null) {
-    const fixedOthers = crewList.filter((m) => m.id !== changedId && m.locked);
-    const flexOthers = crewList.filter((m) => m.id !== changedId && !m.locked);
-
-    if (flexOthers.length === 0) {
-      const fixedSum = fixedOthers.reduce((s, m) => s + m.pct, 0);
-      return crewList.map((m) =>
-        m.id === changedId ? { ...m, pct: Math.max(MIN_CREW_PCT, 100 - fixedSum) } : m
-      );
-    }
-
-    const fixedSum = fixedOthers.reduce((s, m) => s + m.pct, 0);
-    const maxAllowed = Math.max(MIN_CREW_PCT, 100 - fixedSum - MIN_CREW_PCT * flexOthers.length);
-    const target = Math.min(
-      maxAllowed,
-      Math.max(MIN_CREW_PCT, Math.round(Number(requestedVal) || MIN_CREW_PCT))
+  if (unlockedOthers.length === 0) {
+    return crewList.map((m) =>
+      m.id === changedId ? { ...m, pct: 100 - lockedTotal } : m
     );
-
-    const distributable = Math.max(0, 100 - fixedSum - target - MIN_CREW_PCT * flexOthers.length);
-    const weights = flexOthers.map((m) => Math.max(0, m.pct - MIN_CREW_PCT));
-    const weightSum = weights.reduce((a, b) => a + b, 0);
-
-    const rawExtras = flexOthers.map((_, idx) =>
-      weightSum > 0 ? (distributable * weights[idx]) / weightSum : distributable / flexOthers.length
-    );
-    const floored = rawExtras.map((v) => Math.floor(v));
-    let rem = distributable - floored.reduce((a, b) => a + b, 0);
-
-    rawExtras
-      .map((v, idx) => ({ idx, frac: v - floored[idx] }))
-      .sort((a, b) => b.frac - a.frac)
-      .forEach(({ idx }) => {
-        if (rem > 0) {
-          floored[idx] += 1;
-          rem -= 1;
-        }
-      });
-
-    const flexMap = new Map(flexOthers.map((m, idx) => [m.id, MIN_CREW_PCT + floored[idx]]));
-    return crewList.map((m) => {
-      if (m.id === changedId) return { ...m, pct: target };
-      if (flexMap.has(m.id)) return { ...m, pct: flexMap.get(m.id) };
-      return m;
-    });
   }
 
-  const distributable = Math.max(0, 100 - MIN_CREW_PCT * n);
-  const weights = crewList.map((m) => Math.max(1, m.pct));
-  const weightSum = weights.reduce((a, b) => a + b, 0);
-  const rawExtras = weights.map((w) => (distributable * w) / weightSum);
-  const floored = rawExtras.map((v) => Math.floor(v));
-  let rem = distributable - floored.reduce((a, b) => a + b, 0);
+  const prevUnlockedSum = unlockedOthers.reduce((s, m) => s + m.pct, 0);
+  const allocated = [];
+  let running = 0;
 
-  rawExtras
-    .map((v, idx) => ({ idx, frac: v - floored[idx] }))
-    .sort((a, b) => b.frac - a.frac)
-    .forEach(({ idx }) => {
-      if (rem > 0) {
-        floored[idx] += 1;
-        rem -= 1;
-      }
-    });
+  unlockedOthers.forEach((m, idx) => {
+    if (idx === unlockedOthers.length - 1) {
+      allocated.push({ id: m.id, pct: Math.max(0, remainingForOthers - running) });
+    } else {
+      const share =
+        prevUnlockedSum > 0
+          ? Math.floor((m.pct / prevUnlockedSum) * remainingForOthers)
+          : Math.floor(remainingForOthers / unlockedOthers.length);
+      allocated.push({ id: m.id, pct: share });
+      running += share;
+    }
+  });
 
-  return crewList.map((m, idx) => ({ ...m, pct: MIN_CREW_PCT + floored[idx], locked: false }));
+  const allocMap = Object.fromEntries(allocated.map((a) => [a.id, a.pct]));
+  return crewList.map((m) => {
+    if (m.id === changedId) return { ...m, pct: clampedNewVal };
+    if (!m.locked && allocMap[m.id] !== undefined) return { ...m, pct: allocMap[m.id] };
+    return m;
+  });
 }
 
-export default function SquadHeistMarketDeck({ gamePack, soundEnabled }) {
-  const [subMode, setSubMode] = useState('heist');
-  const [selectedPresetId, setSelectedPresetId] = useState(gamePack.heistPresets[0].id);
-  const [grossTakeInput, setGrossTakeInput] = useState(String(gamePack.heistPresets[0].grossDollars));
-  const [supportFeePct, setSupportFeePct] = useState(gamePack.heistPresets[0].supportFeePct);
+export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaunch = false }) {
+  const presets = gamePack.heistPresets || [];
+  const marketFlips = gamePack.marketFlips || [];
+
+  const [subTab, setSubTab] = useState('heist');
+  const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id || 'ocean-vault');
+  const [grossDollars, setGrossDollars] = useState(presets[0]?.grossDollars || 2_450_000);
+  const [supportFeePct, setSupportFeePct] = useState(presets[0]?.supportFeePct || 12);
   const [crew, setCrew] = useState(DEFAULT_CREW);
-  const [copyFeedback, setCopyFeedback] = useState('');
-  const copyTimerRef = useRef(null);
-
-  const [capitalInput, setCapitalInput] = useState('250000');
-  const [selectedFlipId, setSelectedFlipId] = useState(gamePack.marketFlips[0].id);
-
-  useEffect(() => {
-    return () => {
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    };
-  }, []);
+  const [seedCash, setSeedCash] = useState(1_600_000);
+  const [slipToast, setSlipToast] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const selectedPreset = useMemo(
-    () => gamePack.heistPresets.find((p) => p.id === selectedPresetId) || gamePack.heistPresets[0],
-    [gamePack.heistPresets, selectedPresetId]
+    () => presets.find((p) => p.id === selectedPresetId) || presets[0],
+    [presets, selectedPresetId]
   );
 
-  const splitBreakdown = useMemo(() => {
-    const cleanGross = toFiniteDollars(grossTakeInput);
-    const parsedFee = Number(supportFeePct);
-    const cleanFeePct = Number.isFinite(parsedFee) ? Math.min(50, Math.max(0, parsedFee)) : 0;
-    const supportFeeDollars = Math.round((cleanGross * cleanFeePct) / 100);
-    const netPoolDollars = Math.max(0, cleanGross - supportFeeDollars);
+  const supportFeeDollars = Math.round((grossDollars * supportFeePct) / 100);
+  const netPoolDollars = Math.max(0, grossDollars - supportFeeDollars);
 
+  const crewWithPayouts = useMemo(() => {
     let allocated = 0;
-    const rows = crew.map((member, idx) => {
-      if (idx === crew.length - 1) {
-        return {
-          ...member,
-          payout: Math.max(0, netPoolDollars - allocated),
-        };
-      }
-      const amt = Math.floor((netPoolDollars * member.pct) / 100);
-      allocated += amt;
+    return crew.map((member, idx) => {
+      const payout =
+        idx === crew.length - 1
+          ? Math.max(0, netPoolDollars - allocated)
+          : Math.round((netPoolDollars * member.pct) / 100);
+      allocated += payout;
       return {
         ...member,
-        payout: amt,
+        color: PLAYER_COLORS[idx % PLAYER_COLORS.length],
+        payout,
+        grossSharePct: Math.round((member.pct * (100 - supportFeePct)) / 100),
       };
     });
+  }, [crew, netPoolDollars, supportFeePct]);
 
-    return {
-      grossDollars: cleanGross,
-      supportFeeDollars,
-      netPoolDollars,
-      rows,
-    };
-  }, [grossTakeInput, supportFeePct, crew]);
+  const greedDiagnosis = useMemo(() => computeHostGreedLabel(crewWithPayouts), [crewWithPayouts]);
 
-  const greedLabel = useMemo(() => computeHostGreedLabel(splitBreakdown.rows), [splitBreakdown.rows]);
+  const compoundTimeline = useMemo(() => {
+    let runningBalance = Math.max(0, Number(seedCash) || 0);
+    return marketFlips.map((flip) => {
+      const startBalance = runningBalance;
+      const afterDrop = Math.round(startBalance * (1 + flip.estPeakPct / 100));
+      const afterRebound = Math.round(afterDrop * (1 + flip.reboundPct / 100));
+      runningBalance = afterRebound;
+      return {
+        ...flip,
+        startBalance,
+        afterDrop,
+        afterRebound,
+      };
+    });
+  }, [seedCash, marketFlips]);
 
   const handleSelectPreset = (preset) => {
-    playSwitchTick(soundEnabled, 700);
+    playSwitchTick(soundEnabled, 660);
     setSelectedPresetId(preset.id);
-    setGrossTakeInput(String(preset.grossDollars));
+    setGrossDollars(preset.grossDollars);
     setSupportFeePct(preset.supportFeePct);
   };
 
-  const nudgeGross = (delta) => {
-    playSwitchTick(soundEnabled, delta > 0 ? 740 : 620);
-    const next = Math.min(MAX_DOLLARS, Math.max(50_000, toFiniteDollars(grossTakeInput) + delta));
-    setGrossTakeInput(String(next));
-  };
-
-  const updateCrewShare = (id, nextPct) => {
-    setCrew((prev) => rebalanceCrewShares(prev, id, nextPct));
-  };
-
-  const toggleCrewLock = (id) => {
-    playSwitchTick(soundEnabled, 660);
-    setCrew((prev) => prev.map((m) => (m.id === id ? { ...m, locked: !m.locked } : m)));
-  };
-
-  const buildSplitCanvas = async () => {
-    try {
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-    } catch {
-      // Safe fallback
-    }
-    return renderSquadSplitCanvas({
-      jobTitle: selectedPreset.title,
-      grossDollars: splitBreakdown.grossDollars,
-      supportFeePct,
-      supportFeeDollars: splitBreakdown.supportFeeDollars,
-      netPoolDollars: splitBreakdown.netPoolDollars,
-      crewRows: splitBreakdown.rows,
-    });
-  };
-
-  const handleCopyWireImage = async () => {
-    playUnlockChime(soundEnabled);
-    const canvas = await buildSplitCanvas();
-    const ok = await copyCanvasToClipboard(canvas);
-    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    if (ok) {
-      setCopyFeedback('Copied! Paste in Discord');
-    } else {
-      await shareOrDownloadCanvas(
-        canvas,
-        'unpause-squad-split.png',
-        `${selectedPreset.title} Squad Payout Split`
+  const handlePlayerCount = (delta) => {
+    playSwitchTick(soundEnabled, delta > 0 ? 740 : 580);
+    if (delta > 0 && crew.length < 4) {
+      const nextNum = crew.length + 1;
+      const expanded = [
+        ...crew.map((c) => ({ ...c, locked: false })),
+        {
+          id: `p${nextNum}`,
+          name: nextNum === 3 ? 'Wheelman' : 'Tech',
+          role: `CREW #${nextNum}`,
+          pct: 0,
+          locked: false,
+        },
+      ];
+      const even = Math.floor(100 / expanded.length);
+      const rem = 100 - even * expanded.length;
+      setCrew(
+        expanded.map((m, i) => ({
+          ...m,
+          pct: even + (i === 0 ? rem : 0),
+        }))
       );
-      setCopyFeedback('Saved PNG');
+    } else if (delta < 0 && crew.length > 2) {
+      const trimmed = crew.slice(0, crew.length - 1).map((c) => ({ ...c, locked: false }));
+      const even = Math.floor(100 / trimmed.length);
+      const rem = 100 - even * trimmed.length;
+      setCrew(
+        trimmed.map((m, i) => ({
+          ...m,
+          pct: even + (i === 0 ? rem : 0),
+        }))
+      );
     }
-    copyTimerRef.current = setTimeout(() => setCopyFeedback(''), 2400);
   };
 
-  const handleExportSplitCard = async () => {
-    playUnlockChime(soundEnabled);
-    const canvas = await buildSplitCanvas();
-    await shareOrDownloadCanvas(
-      canvas,
-      'unpause-squad-split.png',
-      `${selectedPreset.title} Squad Payout Split`
+  const handleEvenSplit = () => {
+    playSwitchTick(soundEnabled, 760);
+    const unlockedCount = crew.length;
+    const base = Math.floor(100 / unlockedCount);
+    const rem = 100 - base * unlockedCount;
+    setCrew(
+      crew.map((m, i) => ({
+        ...m,
+        locked: false,
+        pct: base + (i === 0 ? rem : 0),
+      }))
     );
   };
 
-  const selectedFlip = useMemo(
-    () => gamePack.marketFlips.find((f) => f.id === selectedFlipId) || gamePack.marketFlips[0],
-    [gamePack.marketFlips, selectedFlipId]
-  );
+  const flashToast = (msg) => {
+    setSlipToast(msg);
+    setTimeout(() => setSlipToast(''), 2600);
+  };
 
-  const flipMath = useMemo(() => {
-    const cleanPerProtagonist = toFiniteDollars(capitalInput);
-    const baseTotal = cleanPerProtagonist * 2;
-    const afterLeg1 = Math.round(baseTotal * (1 + selectedFlip.estPeakPct / 100));
-    const afterLeg2 = Math.round(afterLeg1 * (1 + selectedFlip.reboundPct / 100));
-    return {
-      baseTotal,
-      afterLeg1,
-      afterLeg2,
-      netGain: Math.max(0, afterLeg2 - baseTotal),
-    };
-  }, [capitalInput, selectedFlip]);
+  const buildSlipCanvas = () =>
+    renderSquadSplitCanvas({
+      jobTitle: selectedPreset?.title || 'Custom Squad Heist',
+      grossDollars,
+      supportFeePct,
+      supportFeeDollars,
+      netPoolDollars,
+      crewRows: crewWithPayouts,
+    });
 
-  const fmt = (n) => `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
+  const handleSaveSlip = async () => {
+    setIsExporting(true);
+    playSwitchTick(soundEnabled, 880);
+    triggerHaptic(12);
+    const res = await shareOrDownloadCanvas(
+      buildSlipCanvas(),
+      'unpause-squad-payout.png',
+      'Squad Heist Payout Ledger'
+    );
+    setIsExporting(false);
+    flashToast(res.method === 'shared' ? 'Payout slip shared.' : 'Squad Payout PNG saved.');
+  };
+
+  const handleCopySlip = async () => {
+    setIsExporting(true);
+    playSwitchTick(soundEnabled, 920);
+    triggerHaptic(12);
+    const ok = await copyCanvasToClipboard(buildSlipCanvas());
+    setIsExporting(false);
+    flashToast(ok ? 'Payout image copied!' : 'Clipboard PNG unsupported — saved instead via Save PNG.');
+  };
 
   return (
-    <section className="deck-panel">
-      <div className="coastal-hero-band" data-tone="gold">
+    <section className="deck-panel" aria-label="Squad Heist Cut & Two-Character Stock Planner">
+      <div className="studio-hero-band">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h1 className="panel-title">
-              {subMode === 'heist' ? 'Split the heist payout' : 'Two-character stock compounder'}
-            </h1>
-            <div className="subtab-bar" role="group" aria-label="Squad finance mode">
-              <button
-                type="button"
-                aria-pressed={subMode === 'heist'}
-                className={`subtab-btn ${subMode === 'heist' ? 'active' : ''}`}
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 700);
-                  setSubMode('heist');
-                }}
-              >
-                Heist Cut
-              </button>
-              <button
-                type="button"
-                aria-pressed={subMode === 'stocks'}
-                className={`subtab-btn ${subMode === 'stocks' ? 'active' : ''}`}
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 730);
-                  setSubMode('stocks');
-                }}
-              >
-                Stock Planner
-              </button>
-            </div>
+          <div className="panel-eyebrow">
+            <Users size={13} />
+            <span>
+              {isPreLaunch
+                ? 'INTEGER-EXACT 100% LOCK SPLITTER · UI ESTIMATE / PREVIEW SAMPLES'
+                : 'INTEGER-EXACT 100% LOCK SPLITTER · NPC FEE DEDUCTION'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h1 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h1>
+            <span className="district-pill">Gameplay Math Only</span>
           </div>
           <p className="panel-subtitle">
-            {subMode === 'heist'
-              ? 'Deduct NPC hacker fees automatically, lock agreed shares, and send the payout slip to party chat (presets use simulated pre-launch examples; enter any custom payout live).'
-              : 'Model two-leg market swings across both playable characters before starting major contracts (simulated pre-launch example tickers).'}
+            Lock individual player cuts without rounding drift, settle lobby arguments cleanly with
+            a shareable Payout PNG, or plan post-heist dual-character stock rebounds.
           </p>
         </div>
 
-        <div className="hud-readout">
-          {subMode === 'heist' ? (
-            <>
-              <Users size={16} color="var(--coral)" />
-              <span>Net Pool: {fmt(splitBreakdown.netPoolDollars)}</span>
-            </>
-          ) : (
-            <>
-              <TrendingUp size={16} color="var(--teal)" />
-              <span>Est. Gain: +{fmt(flipMath.netGain)}</span>
-            </>
-          )}
+        <div className="subtab-bar" role="tablist" aria-label="Squad planner sub-modes">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={subTab === 'heist'}
+            className={`subtab-btn ${subTab === 'heist' ? 'active' : ''}`}
+            onClick={() => {
+              playSwitchTick(soundEnabled, 660);
+              setSubTab('heist');
+            }}
+          >
+            Heist Cut Splitter
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={subTab === 'market'}
+            className={`subtab-btn ${subTab === 'market' ? 'active' : ''}`}
+            onClick={() => {
+              playSwitchTick(soundEnabled, 660);
+              setSubTab('market');
+            }}
+          >
+            2-Lead Stock Flip
+          </button>
         </div>
       </div>
 
       <div className="deck-body-pad">
-        {subMode === 'heist' ? (
+        {subTab === 'heist' ? (
           <div className="squad-stage-grid">
-            {/* LEFT COLUMN: Job Presets + Gross Take + Crew Sliders */}
+            {/* LEFT CONTROLS */}
             <div>
+              <div className="meter-labels" style={{ marginBottom: '8px' }}>
+                <span className="section-label">1. Select Vault Preset or Custom Take</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() => handlePlayerCount(-1)}
+                    disabled={crew.length <= 2}
+                  >
+                    <Minus size={13} /> Crew
+                  </button>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() => handlePlayerCount(1)}
+                    disabled={crew.length >= 4}
+                  >
+                    <Plus size={13} /> Crew
+                  </button>
+                  <button type="button" className="subtle-pill-btn" onClick={handleEvenSplit}>
+                    Even Split
+                  </button>
+                </div>
+              </div>
+
               <div className="filter-row">
-                {gamePack.heistPresets.map((p) => (
+                {presets.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     className={`filter-pill ${selectedPresetId === p.id ? 'active' : ''}`}
                     onClick={() => handleSelectPreset(p)}
                   >
-                    {p.title} ({fmt(p.grossDollars)})
+                    {p.title}
                   </button>
                 ))}
               </div>
 
-              <div className="slider-pair-grid" style={{ marginBottom: 14, marginTop: 0 }}>
-                <label style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--ink-secondary)' }}>
-                  Gross vault take (USD)
+              <div className="slider-pair-grid" style={{ marginBottom: '16px' }}>
+                <div>
+                  <label htmlFor="gross-vault-input" className="section-label">
+                    Gross Take ($)
+                  </label>
                   <div className="money-input-group">
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      className="deck-input no-icon"
-                      style={{ fontFamily: 'var(--font-mono)', fontWeight: 800 }}
-                      placeholder="$2,450,000"
-                      value={grossTakeInput === '' ? '' : formatCommaDollars(grossTakeInput)}
-                      onChange={(e) => {
-                        const next = sanitizeMoneyInput(e.target.value);
-                        setGrossTakeInput(next === '' ? '' : String(next));
-                      }}
+                      id="gross-vault-input"
+                      type="number"
+                      min={10000}
+                      max={15000000}
+                      step={50000}
+                      className="deck-input no-icon mono"
+                      value={grossDollars}
+                      onChange={(e) => setGrossDollars(Math.max(0, Number(e.target.value) || 0))}
                     />
-                    <button
-                      type="button"
-                      className="tactile-icon-btn"
-                      onClick={() => nudgeGross(-100_000)}
-                      title="Subtract $100,000"
-                    >
-                      -100k
-                    </button>
-                    <button
-                      type="button"
-                      className="tactile-icon-btn"
-                      onClick={() => nudgeGross(100_000)}
-                      title="Add $100,000"
-                    >
-                      +100k
-                    </button>
                   </div>
-                </label>
+                </div>
 
-                <label style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--ink-secondary)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span>NPC fence &amp; hacker fee</span>
-                    <strong style={{ color: 'var(--gold)', fontFamily: 'var(--font-mono)' }}>
-                      {supportFeePct}% (-{fmt(splitBreakdown.supportFeeDollars)})
-                    </strong>
+                <div>
+                  <div className="meter-labels" style={{ fontSize: '0.82rem', marginBottom: '8px' }}>
+                    <label htmlFor="npc-fee-slider" className="section-label">
+                      NPC Crew / Lester-Style Cut
+                    </label>
+                    <strong className="mono">{supportFeePct}% (-${supportFeeDollars.toLocaleString('en-US')})</strong>
                   </div>
                   <input
+                    id="npc-fee-slider"
                     type="range"
                     min={0}
                     max={30}
                     step={1}
                     value={supportFeePct}
+                    style={{ width: '100%', '--pct': `${Math.round((supportFeePct / 30) * 100)}%` }}
                     onChange={(e) => setSupportFeePct(Number(e.target.value))}
                   />
-                </label>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gap: 9 }}>
-                {splitBreakdown.rows.map((member, index) => {
-                  const maxSlider = Math.max(MIN_CREW_PCT, 100 - MIN_CREW_PCT * (crew.length - 1));
-                  return (
-                    <div key={member.id} className={`crew-row ${member.locked ? 'locked' : ''}`}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {crewWithPayouts.map((member) => (
+                  <div
+                    key={member.id}
+                    className={`crew-row ${member.locked ? 'locked' : ''}`}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                        <span
+                          className="ssd-dot"
+                          style={{ background: member.color }}
+                        />
+                        <span className="district-pill">{member.role}</span>
+                      </div>
                       <input
                         type="text"
+                        aria-label={`${member.role} player name`}
+                        className="crew-name-input"
                         maxLength={24}
                         value={member.name}
-                        placeholder={`Player ${index + 1}`}
-                        aria-label={`Crew member ${index + 1} name`}
-                        className="crew-name-input"
-                        onChange={(e) => {
-                          const val = e.target.value.slice(0, 24);
+                        onChange={(e) =>
                           setCrew((prev) =>
-                            prev.map((m) => (m.id === member.id ? { ...m, name: val } : m))
+                            prev.map((m) => (m.id === member.id ? { ...m, name: e.target.value } : m))
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="crew-row-slider">
+                      <input
+                        type="range"
+                        aria-label={`${member.name} cut percentage`}
+                        min={0}
+                        max={100}
+                        step={5}
+                        disabled={member.locked}
+                        value={member.pct}
+                        style={{ flex: 1, '--pct': `${member.pct}%` }}
+                        onChange={(e) => {
+                          playSwitchTick(soundEnabled, 640);
+                          setCrew((prev) =>
+                            rebalanceCrewShares(prev, member.id, Number(e.target.value))
                           );
                         }}
                       />
-
-                      <div className="crew-row-slider">
-                        <input
-                          type="range"
-                          min={MIN_CREW_PCT}
-                          max={maxSlider}
-                          step={1}
-                          disabled={member.locked}
-                          value={member.pct}
-                          aria-label={`${member.name || `Player ${index + 1}`} share percentage`}
-                          onChange={(e) => updateCrewShare(member.id, e.target.value)}
-                        />
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontWeight: 800,
-                            fontSize: '0.9rem',
-                            minWidth: 44,
-                            textAlign: 'right',
-                            color: 'var(--ink-primary)',
-                          }}
-                        >
-                          {member.pct}%
-                        </span>
-                      </div>
-
-                      <div className="crew-row-payout">
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontWeight: 800,
-                            fontSize: '0.95rem',
-                            color: 'var(--teal-dark)',
-                            minWidth: 90,
-                            textAlign: 'right',
-                          }}
-                        >
-                          {fmt(member.payout)}
-                        </span>
-
-                        <button
-                          type="button"
-                          className="tactile-icon-btn"
-                          title={member.locked ? 'Unlock share' : 'Lock share'}
-                          aria-label={member.locked ? `Unlock ${member.name} share` : `Lock ${member.name} share`}
-                          aria-pressed={member.locked}
-                          onClick={() => toggleCrewLock(member.id)}
-                          style={{
-                            padding: '0 9px',
-                            borderColor: member.locked ? 'var(--gold)' : undefined,
-                            color: member.locked ? 'var(--gold)' : undefined,
-                          }}
-                        >
-                          {member.locked ? <Lock size={14} /> : <Unlock size={14} />}
-                        </button>
-
-                        {crew.length > 2 && (
-                          <button
-                            type="button"
-                            className="tactile-icon-btn"
-                            aria-label={`Remove ${member.name || `Player ${index + 1}`}`}
-                            onClick={() => {
-                              playSwitchTick(soundEnabled, 480);
-                              setCrew((prev) =>
-                                rebalanceCrewShares(prev.filter((m) => m.id !== member.id))
-                              );
-                            }}
-                            style={{ padding: '0 9px' }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() => {
-                    playSwitchTick(soundEnabled, 640);
-                    const even = Math.floor(100 / crew.length);
-                    setCrew((prev) =>
-                      prev.map((m, i) => ({
-                        ...m,
-                        locked: false,
-                        pct: i === prev.length - 1 ? 100 - even * (prev.length - 1) : even,
-                      }))
-                    );
-                  }}
-                >
-                  Equal split ({Math.round(100 / crew.length)}% each)
-                </button>
-
-                {crew.length < 4 && (
-                  <button
-                    type="button"
-                    className="subtle-pill-btn"
-                    onClick={() => {
-                      playSwitchTick(soundEnabled, 700);
-                      setCrew((prev) =>
-                        rebalanceCrewShares([
-                          ...prev,
-                          {
-                            id: `c-${Date.now()}`,
-                            name: `Player ${prev.length + 1}`,
-                            role: 'Support',
-                            pct: 20,
-                            locked: false,
-                          },
-                        ])
-                      );
-                    }}
-                  >
-                    <Plus size={14} /> Add crew member
-                  </button>
-                )}
+                    <div className="crew-row-payout">
+                      <div style={{ textAlign: 'right', minWidth: '88px' }}>
+                        <div className="mono" style={{ fontWeight: 700, fontSize: '0.94rem', color: member.color }}>
+                          {member.pct}%
+                        </div>
+                        <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-secondary)' }}>
+                          ${member.payout.toLocaleString('en-US')}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`subtle-pill-btn ${member.locked ? 'active' : ''}`}
+                        aria-pressed={member.locked}
+                        aria-label={member.locked ? `Unlock ${member.name}` : `Lock ${member.name} share`}
+                        onClick={() => {
+                          playSwitchTick(soundEnabled, member.locked ? 560 : 760);
+                          setCrew((prev) =>
+                            prev.map((m) => (m.id === member.id ? { ...m, locked: !m.locked } : m))
+                          );
+                        }}
+                      >
+                        {member.locked ? <Lock size={14} /> : <Unlock size={14} />}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* RIGHT COLUMN: BRIGHT COASTAL PAYOUT VOUCHER */}
-            <aside className="wire-ledger-card" aria-label="Live Squad Payout Slip">
+            {/* RIGHT WIRE LEDGER + PNG EXPORT */}
+            <div className="wire-ledger-card mobile-answer-first">
               <div className="wire-header-band">
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.73rem',
-                    fontWeight: 700,
-                    opacity: 0.92,
-                  }}
-                >
-                  <span>Crew Payout Voucher</span>
-                  <span>playunpause.com</span>
+                <div className="mono" style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-muted)' }}>
+                  UNPAUSE // SQUAD WIRE LEDGER
                 </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 800,
-                    fontSize: '1.14rem',
-                    marginTop: 3,
-                  }}
-                >
-                  {selectedPreset.title}
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.12rem', fontWeight: 700, marginTop: '2px' }}>
+                  {selectedPreset?.title || 'Vault Payout'}
                 </div>
               </div>
 
               <div className="wire-body">
-                <div className="cut-stack-bar" title="Proportional vault distribution">
+                <div className="cut-stack-bar" aria-label="Vault split breakdown">
                   {supportFeePct > 0 && (
                     <div
-                      style={{
-                        width: `${supportFeePct}%`,
-                        background: '#f59e0b',
-                        transition: 'width 180ms var(--ease-out)',
-                      }}
-                      title={`NPC Fee: ${supportFeePct}%`}
+                      style={{ width: `${supportFeePct}%`, background: NPC_FEE_COLOR }}
+                      title={`NPC Cut: ${supportFeePct}%`}
                     />
                   )}
-                  {splitBreakdown.rows.map((m, idx) => {
-                    const netShareOfGross = ((100 - supportFeePct) * m.pct) / 100;
-                    return (
-                      <div
-                        key={`${m.id}-seg`}
-                        style={{
-                          width: `${netShareOfGross}%`,
-                          background: CREW_BAR_COLORS[idx % CREW_BAR_COLORS.length],
-                          borderLeft: '2px solid #ffffff',
-                          transition: 'width 180ms var(--ease-out)',
-                        }}
-                        title={`${m.name}: ${m.pct}% of net`}
-                      />
-                    );
-                  })}
+                  {crewWithPayouts.map((m) => (
+                    <div
+                      key={m.id}
+                      style={{
+                        width: `${Math.max(0, (m.pct * (100 - supportFeePct)) / 100)}%`,
+                        background: m.color,
+                      }}
+                      title={`${m.name}: ${m.pct}%`}
+                    />
+                  ))}
+                </div>
+
+                <div className="ssd-legend-row" style={{ marginBottom: '12px', fontSize: '0.72rem' }}>
+                  <span>
+                    <span className="ssd-dot" style={{ background: NPC_FEE_COLOR }} />
+                    NPC ({supportFeePct}%)
+                  </span>
+                  {crewWithPayouts.map((m) => (
+                    <span key={m.id}>
+                      <span className="ssd-dot" style={{ background: m.color }} />
+                      {m.name} ({m.pct}%)
+                    </span>
+                  ))}
                 </div>
 
                 <div className="wire-summary-grid">
                   <div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--ink-muted)', fontWeight: 700 }}>Gross</div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--ink-primary)' }}>
-                      {fmt(splitBreakdown.grossDollars)}
+                    <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>GROSS VAULT</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
+                      ${grossDollars.toLocaleString('en-US')}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--ink-muted)', fontWeight: 700 }}>
-                      NPC ({supportFeePct}%)
-                    </div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--gold)' }}>
-                      -{fmt(splitBreakdown.supportFeeDollars)}
+                    <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>NPC FEE ({supportFeePct}%)</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--gold)' }}>
+                      -${supportFeeDollars.toLocaleString('en-US')}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--ink-muted)', fontWeight: 700 }}>Net Pool</div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--teal-dark)' }}>
-                      {fmt(splitBreakdown.netPoolDollars)}
+                    <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>NET POOL</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--teal-dark)' }}>
+                      ${netPoolDollars.toLocaleString('en-US')}
                     </div>
                   </div>
                 </div>
 
-                {splitBreakdown.rows.map((member, idx) => (
-                  <div key={`${member.id}-wire`} className="wire-row">
+                {crewWithPayouts.map((m) => (
+                  <div key={m.id} className="wire-row">
                     <div
                       className="wire-row-fill"
                       style={{
-                        width: `${member.pct}%`,
-                        background:
-                          idx === 0 ? 'rgba(255, 89, 100, 0.12)' : 'rgba(0, 168, 150, 0.11)',
+                        width: `${m.pct}%`,
+                        background: `${m.color}22`,
                       }}
                     />
-                    <span
-                      style={{
-                        position: 'relative',
-                        fontWeight: 700,
-                        fontSize: '0.86rem',
-                        color: 'var(--ink-primary)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {member.name || `Player ${idx + 1}`}
-                    </span>
-                    <span
-                      style={{
-                        position: 'relative',
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 800,
-                        fontSize: '0.86rem',
-                        color: 'var(--teal-dark)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {member.pct}% ({fmt(member.payout)})
-                    </span>
+                    <div style={{ position: 'relative', fontWeight: 600, fontSize: '0.85rem' }}>
+                      {m.name}{' '}
+                      <span style={{ color: 'var(--ink-muted)', fontSize: '0.73rem' }}>({m.role})</span>
+                    </div>
+                    <div className="mono" style={{ position: 'relative', fontWeight: 700, fontSize: '0.88rem', color: m.color }}>
+                      {m.pct}% · ${m.payout.toLocaleString('en-US')}
+                    </div>
                   </div>
                 ))}
 
-                <div
-                  style={{
-                    textAlign: 'center',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.74rem',
-                    fontWeight: 800,
-                    color: 'var(--ocean)',
-                    background: 'var(--ocean-soft)',
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    marginTop: 10,
-                  }}
-                >
-                  {greedLabel}
+                <div className="receipt-diagnosis" style={{ marginTop: '12px' }}>
+                  {greedDiagnosis}
                 </div>
 
                 <div className="stage-action-row">
-                  <button type="button" className="primary-coral-btn" onClick={handleCopyWireImage}>
-                    <Copy size={15} />
-                    <span>{copyFeedback || 'Copy for Discord'}</span>
-                  </button>
-                  <button type="button" className="secondary-key-btn" onClick={handleExportSplitCard}>
+                  <button
+                    type="button"
+                    className="primary-coral-btn"
+                    onClick={handleSaveSlip}
+                    disabled={isExporting}
+                  >
                     <Share2 size={15} />
-                    <span>Save PNG</span>
+                    <span>{isExporting ? 'Rendering…' : 'Save Slip PNG'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="stage-dark-btn"
+                    onClick={handleCopySlip}
+                    disabled={isExporting}
+                  >
+                    {slipToast.includes('copied') ? <Check size={15} /> : <Copy size={15} />}
+                    <span>Copy Slip</span>
                   </button>
                 </div>
+
+                {slipToast && (
+                  <div className="mono" style={{ marginTop: '8px', fontSize: '0.76rem', color: 'var(--teal-dark)', textAlign: 'center' }}>
+                    {slipToast}
+                  </div>
+                )}
               </div>
-            </aside>
+            </div>
           </div>
         ) : (
-          /* Sub-Tab 2: Two-Character Market Flip Compounder */
           <div>
-            <div className="filter-row">
-              {gamePack.marketFlips.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  className={`filter-pill ${selectedFlip.id === f.id ? 'active' : ''}`}
-                  onClick={() => {
-                    playSwitchTick(soundEnabled, 690);
-                    setSelectedFlipId(f.id);
-                  }}
-                >
-                  {f.step}
-                </button>
-              ))}
+            <div className="meter-box" style={{ maxWidth: '520px' }}>
+              <div className="meter-labels">
+                <label htmlFor="seed-cash-input" className="section-label">
+                  Dual-Protagonist Combined Seed Capital ($)
+                </label>
+                <strong className="mono" style={{ color: 'var(--teal-dark)' }}>
+                  ${(compoundTimeline[compoundTimeline.length - 1]?.afterRebound || seedCash).toLocaleString('en-US')} Projected
+                </strong>
+              </div>
+              <input
+                id="seed-cash-input"
+                type="number"
+                min={50000}
+                max={50000000}
+                step={100000}
+                className="deck-input no-icon mono"
+                style={{ marginTop: '10px' }}
+                value={seedCash}
+                onChange={(e) => setSeedCash(Math.max(0, Number(e.target.value) || 0))}
+              />
             </div>
 
-            <div className="slider-pair-grid" style={{ alignItems: 'center' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--ink-secondary)' }}>
-                Starting cash per protagonist (2x combined pool)
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  className="deck-input no-icon"
-                  style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontWeight: 800 }}
-                  placeholder="$250,000"
-                  value={capitalInput === '' ? '' : formatCommaDollars(capitalInput)}
-                  onChange={(e) => {
-                    const next = sanitizeMoneyInput(e.target.value);
-                    setCapitalInput(next === '' ? '' : String(next));
-                  }}
-                />
-              </label>
-
-              <div className="meter-box" style={{ marginBottom: 0 }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--ink-primary)', fontWeight: 700 }}>
-                  Execution note: {selectedFlip.timingRule}
+            <div className="mg-stack-cards">
+              {compoundTimeline.map((step) => (
+                <div key={step.id} className="mg-subcard">
+                  <div className="mg-subcard-head">
+                    <h3 className="mg-subcard-title">
+                      <TrendingUp size={16} color="var(--teal-dark)" />
+                      <span>{step.step} — {step.buyTicker}</span>
+                    </h3>
+                    <span className="district-pill" style={{ color: 'var(--teal-dark)' }}>
+                      +{step.estPeakPct}% Initial · +{step.reboundPct}% Rebound
+                    </span>
+                  </div>
+                  <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: 'var(--ink-secondary)' }}>
+                    {step.timingRule}
+                  </p>
+                  <div className="wire-summary-grid" style={{ marginBottom: 0 }}>
+                    <div>
+                      <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>ENTRY</div>
+                      <div style={{ fontWeight: 700 }}>${step.startBalance.toLocaleString('en-US')}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>PEAK FLIP</div>
+                      <div style={{ fontWeight: 700, color: 'var(--ocean)' }}>${step.afterDrop.toLocaleString('en-US')}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>REBOUND ({step.reboundTicker})</div>
+                      <div style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>${step.afterRebound.toLocaleString('en-US')}</div>
+                    </div>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 10,
-                    flexWrap: 'wrap',
-                    marginTop: 12,
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.86rem',
-                  }}
-                >
-                  <span>
-                    Combined: <strong>{fmt(flipMath.baseTotal)}</strong>
-                  </span>
-                  <span>
-                    Leg 1 (+{selectedFlip.estPeakPct}%): <strong>{fmt(flipMath.afterLeg1)}</strong>
-                  </span>
-                  <span style={{ color: 'var(--teal-dark)' }}>
-                    Rebound (+{selectedFlip.reboundPct}%): <strong>{fmt(flipMath.afterLeg2)}</strong>
-                  </span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}

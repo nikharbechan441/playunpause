@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { createApp, sanitizeSyncState } from '../server/index.js';
 import { computeHeistSplit, normalizePercentages } from '../server/splitMath.js';
+import {
+  isSafePublicHttpsUrl,
+  checkAndSweepRateLimit,
+  parseWebhookAmountCents,
+} from '../server/securityHelpers.js';
 
 function signStandardWebhook(secretBase64, id, timestamp, bodyString) {
   const key = Buffer.from(secretBase64, 'base64');
@@ -173,27 +178,35 @@ test('Whop Webhook enforces amount/currency/plan guards, deduplicates membership
     const secondEventJson = await secondEventRes.json();
     assert.equal(secondEventJson.deckCode, passJson.deckCode);
 
-    // 5. Buyer can claim immediately within 30m window via email OR anytime via mem_ receipt ID
-    const claimRes = await fetch(`${baseUrl}/api/pass/activate`, {
+    // 5. Bare email is always blocked (403, zero enumeration oracle); email + receiptRef OR mem_ succeeds!
+    const bareEmailRes = await fetch(`${baseUrl}/api/pass/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ codeOrEmail: 'daveelectrician@example.com' }),
     });
-    assert.equal(claimRes.status, 200);
-    const claimJson = await claimRes.json();
-    assert.equal(claimJson.deckCode, passJson.deckCode);
+    assert.equal(bareEmailRes.status, 403);
+    const bareEmailJson = await bareEmailRes.json();
 
-    // Simulate older order (>30m ago): bare email must be blocked with 403, while mem_abc123 succeeds!
-    db.prepare('UPDATE sync_decks SET created_at = ? WHERE deck_code = ?').run(
-      Date.now() - 45 * 60 * 1000,
-      passJson.deckCode
-    );
-    const staleEmailRes = await fetch(`${baseUrl}/api/pass/activate`, {
+    const unknownEmailRes = await fetch(`${baseUrl}/api/pass/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codeOrEmail: 'daveelectrician@example.com' }),
+      body: JSON.stringify({ codeOrEmail: 'nobody-never-bought@example.com' }),
     });
-    assert.equal(staleEmailRes.status, 403);
+    assert.equal(unknownEmailRes.status, 403);
+    const unknownEmailJson = await unknownEmailRes.json();
+    assert.equal(bareEmailJson.error, unknownEmailJson.error);
+
+    const emailWithProofRes = await fetch(`${baseUrl}/api/pass/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        codeOrEmail: 'daveelectrician@example.com',
+        receiptRef: 'mem_abc123',
+      }),
+    });
+    assert.equal(emailWithProofRes.status, 200);
+    const emailWithProofJson = await emailWithProofRes.json();
+    assert.equal(emailWithProofJson.deckCode, passJson.deckCode);
 
     const refClaimRes = await fetch(`${baseUrl}/api/pass/activate`, {
       method: 'POST',
@@ -201,6 +214,13 @@ test('Whop Webhook enforces amount/currency/plan guards, deduplicates membership
       body: JSON.stringify({ codeOrEmail: 'mem_abc123' }),
     });
     assert.equal(refClaimRes.status, 200);
+
+    // Reject 100 cents ($1.00) pass underpayment (never scale integer 100 -> $100!)
+    const hundredCentsRes = await postSignedWebhook('msg_100c', {
+      type: 'payment.succeeded',
+      data: { id: 'pay_100c', final_amount: 100, currency: 'usd', plan_id: 'plan_pass_699' },
+    });
+    assert.equal(hundredCentsRes.status, 400);
 
     // 5b. Buyer can ALSO claim anytime via Whop pay_ transaction ID (orders.transaction_id fallback)
     const payIdClaimRes = await fetch(`${baseUrl}/api/pass/activate`, {
@@ -265,6 +285,16 @@ test('Whop Webhook enforces amount/currency/plan guards, deduplicates membership
 
     const revokedSyncRes = await fetch(`${baseUrl}/api/sync/${passJson.deckCode}`);
     assert.equal(revokedSyncRes.status, 403);
+
+    const scrubbedAfterRefund = db
+      .prepare('SELECT active, email_hash, state_json FROM sync_decks WHERE deck_code = ?')
+      .get(passJson.deckCode);
+    assert.equal(scrubbedAfterRefund.active, 0);
+    assert.equal(scrubbedAfterRefund.email_hash, null);
+    assert.equal(
+      scrubbedAfterRefund.state_json,
+      '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[]}'
+    );
 
     const revokedActivateRes = await fetch(`${baseUrl}/api/pass/activate`, {
       method: 'POST',
@@ -342,6 +372,199 @@ test('Production kill-switch blocks ALLOW_DEMO_UNLOCK and admin sponsor rejects 
       }),
     });
     assert.equal(goodAdminUrl.status, 200);
+  } finally {
+    server.close();
+    db.close();
+  }
+});
+
+test('Express mirror enforces security headers, webhook replay guard, SSRF blocking, sponsor refund, LRU limiter & DSAR DELETE', async () => {
+  const whopSecret = 'ws_express_security_test_secret_64_hex_0123456789abcdef01234567';
+  const { app, db } = createApp({
+    dbPath: ':memory:',
+    env: {
+      NODE_ENV: 'production',
+      ALLOW_DEMO_UNLOCK: 'false',
+      ADMIN_API_KEY: 'admin_express_secret_test',
+      WHOP_PASS_PLAN_ID: 'plan_pass_699',
+      WHOP_SPONSOR_PLAN_ID: 'plan_spon_149',
+      WHOP_WEBHOOK_SECRET: whopSecret,
+      EMAIL_HASH_PEPPER: 'pepper-express-regression-test',
+    },
+  });
+
+  const server = app.listen(0);
+  const { port } = server.address();
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  function signLegacyWhop(bodyStr, ts) {
+    return crypto
+      .createHmac('sha256', whopSecret)
+      .update(`${ts}.${bodyStr}`, 'utf8')
+      .digest('hex');
+  }
+
+  try {
+    // 1. Security & Caching Headers
+    const cfgRes = await fetch(`${baseUrl}/api/config`);
+    assert.equal(cfgRes.status, 200);
+    assert.equal(cfgRes.headers.get('cache-control'), 'no-store');
+    assert.equal(cfgRes.headers.get('x-robots-tag'), 'noindex, nofollow');
+    assert.ok(cfgRes.headers.get('strict-transport-security').includes('preload'));
+    assert.ok(cfgRes.headers.get('permissions-policy').includes('payment=()'));
+    assert.ok(!(cfgRes.headers.get('content-security-policy') || '').includes("'unsafe-inline'"));
+
+    // 2. Reject text/plain CSRF content-type
+    const csrfRes = await fetch(`${baseUrl}/api/pass/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ codeOrEmail: 'UP-ABCDEFGH' }),
+    });
+    assert.equal(csrfRes.status, 415);
+
+    // 3. Reject 100c pass underpayment & block SSRF / Punycode URLs
+    const ts1 = String(Math.floor(Date.now() / 1000));
+    const underpaidBody = JSON.stringify({
+      type: 'payment.succeeded',
+      data: { id: 'pay_exp_100c', final_amount: 100, currency: 'usd', plan_id: 'plan_pass_699' },
+    });
+    const underpaidRes = await fetch(`${baseUrl}/api/webhooks/whop`, {
+      method: 'POST',
+      headers: { 'x-whop-signature': signLegacyWhop(underpaidBody, ts1), 'webhook-timestamp': ts1 },
+      body: underpaidBody,
+    });
+    assert.equal(underpaidRes.status, 400);
+
+    for (const ssrfTarget of [
+      'https://127.0.0.1/hit',
+      'https://169.254.169.254/latest/meta-data/',
+      'https://[::1]/local',
+      'https://localhost/test',
+      'https://2130706433/int-ip',
+      'https://xn--pple-43d.com/',
+    ]) {
+      const ssrfCheck = isSafePublicHttpsUrl(ssrfTarget);
+      assert.equal(ssrfCheck.ok, false, `Helper failed to block ${ssrfTarget}`);
+
+      const adminRes = await fetch(`${baseUrl}/api/admin/sponsor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': 'admin_express_secret_test',
+        },
+        body: JSON.stringify({ badgeText: 'SSRF Test', targetUrl: ssrfTarget }),
+      });
+      assert.equal(adminRes.status, 400);
+    }
+
+    // 4. Sponsor publish + webhook refund deactivation
+    const sponAddRes = await fetch(`${baseUrl}/api/admin/sponsor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': 'admin_express_secret_test',
+      },
+      body: JSON.stringify({
+        badgeText: 'Corsair 2TB Gen5 NVMe',
+        targetUrl: 'https://hardware.example/ssd',
+        whopRef: 'mem_exp_spon_1',
+      }),
+    });
+    assert.equal(sponAddRes.status, 200);
+    assert.equal((await (await fetch(`${baseUrl}/api/config`)).json()).activeSponsor?.badgeText, 'Corsair 2TB Gen5 NVMe');
+
+    const sponRefundBody = JSON.stringify({
+      type: 'refund.created',
+      data: { id: 'rfnd_exp_spon_1', membership_id: 'mem_exp_spon_1' },
+    });
+    const sponRefundRes = await fetch(`${baseUrl}/api/webhooks/whop`, {
+      method: 'POST',
+      headers: { 'x-whop-signature': signLegacyWhop(sponRefundBody, ts1), 'webhook-timestamp': ts1 },
+      body: sponRefundBody,
+    });
+    assert.equal(sponRefundRes.status, 200);
+    assert.equal((await sponRefundRes.json()).sponsorRevoked, true);
+    assert.equal((await (await fetch(`${baseUrl}/api/config`)).json()).activeSponsor, null);
+
+    // 5. Legacy webhook replay protection + DSAR DELETE /api/sync/:code + no resurrection after refund
+    const buyBody = JSON.stringify({
+      type: 'payment.succeeded',
+      data: {
+        id: 'pay_exp_buyer_1',
+        final_amount: 6.99,
+        currency: 'usd',
+        plan_id: 'plan_pass_699',
+        membership_id: 'mem_exp_buyer_1',
+        user: { email: 'buyer-dsar@example.com' },
+      },
+    });
+    const buyRes = await fetch(`${baseUrl}/api/webhooks/whop`, {
+      method: 'POST',
+      headers: { 'x-whop-signature': signLegacyWhop(buyBody, ts1), 'webhook-timestamp': ts1 },
+      body: buyBody,
+    });
+    const { deckCode } = await buyRes.json();
+    assert.match(deckCode, /^UP-/);
+
+    const ts2 = String(Math.floor(Date.now() / 1000) + 1);
+    const replayRes = await fetch(`${baseUrl}/api/webhooks/whop`, {
+      method: 'POST',
+      headers: { 'x-whop-signature': signLegacyWhop(buyBody, ts2), 'webhook-timestamp': ts2 },
+      body: buyBody,
+    });
+    assert.equal((await replayRes.json()).duplicate, true);
+
+    const badDel = await fetch(`${baseUrl}/api/sync/${deckCode}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receiptRef: 'mem_wrong_id' }),
+    });
+    assert.equal(badDel.status, 403);
+
+    const goodDel = await fetch(`${baseUrl}/api/sync/${deckCode}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receiptRef: 'mem_exp_buyer_1' }),
+    });
+    assert.equal(goodDel.status, 200);
+    assert.equal((await goodDel.json()).deleted, true);
+
+    const dbDeck = db
+      .prepare('SELECT active, email_hash, whop_ref FROM sync_decks WHERE deck_code = ?')
+      .get(deckCode);
+    assert.equal(dbDeck.active, 0);
+    assert.equal(dbDeck.email_hash, null);
+    assert.equal(dbDeck.whop_ref, null);
+
+    const dbOrder = db
+      .prepare('SELECT buyer_email_hash FROM orders WHERE deck_code = ? LIMIT 1')
+      .get(deckCode);
+    assert.equal(dbOrder.buyer_email_hash, null);
+
+    // 6. Rate limiter evicts LRU buckets cleanly above 5,000 keys without global DoS
+    const lruMap = new Map();
+    const now = Date.now();
+    for (let i = 0; i < 5_005; i += 1) {
+      const check = checkAndSweepRateLimit(lruMap, `ip-${i}`, {
+        limit: 10,
+        windowMs: 60_000,
+        nowMs: now,
+        maxBuckets: 5_000,
+      });
+      assert.equal(check.allowed, true);
+    }
+    assert.ok(lruMap.size <= 5_000);
+    const freshCaller = checkAndSweepRateLimit(lruMap, 'legit-new-caller', {
+      limit: 10,
+      windowMs: 60_000,
+      nowMs: now,
+      maxBuckets: 5_000,
+    });
+    assert.equal(freshCaller.allowed, true);
+
+    // 7. Amount parser edge case verification
+    assert.equal(parseWebhookAmountCents(149, 'final_amount', { isSponsorPlan: true }), 14900);
+    assert.equal(parseWebhookAmountCents(100, 'final_amount', { isSponsorPlan: false }), 100);
   } finally {
     server.close();
     db.close();

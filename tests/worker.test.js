@@ -69,6 +69,12 @@ function createMockAssets() {
           headers: { 'Content-Type': 'text/plain' },
         });
       }
+      if (u.pathname === '/og-cover.png') {
+        return new Response(new Uint8Array([137, 80, 78, 71]), {
+          status: 200,
+          headers: { 'Content-Type': 'image/png' },
+        });
+      }
       return new Response('Not Found', { status: 404 });
     },
   };
@@ -195,4 +201,309 @@ test('Cloudflare Worker handles SEO prerender, /api/config, Whop ws_ webhook, sy
     env
   );
   assert.equal(blockedSync.status, 403);
+});
+
+test('Cloudflare Worker enforces replay protection, SSRF blocking, sponsor refund, DSAR DELETE, and CORP/CSP headers', async () => {
+  const secret = 'ws_a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+  const env = {
+    DB: createMockD1(),
+    ASSETS: createMockAssets(),
+    NODE_ENV: 'production',
+    ALLOW_DEMO_UNLOCK: 'false',
+    WHOP_PASS_PLAN_ID: 'prod_oMcH19N9BCoDO',
+    WHOP_SPONSOR_PLAN_ID: 'prod_QrrVpAuy4GAUm',
+    WHOP_WEBHOOK_SECRET: secret,
+    WHOP_API_KEY: 'whop_live_test_key',
+    EMAIL_HASH_PEPPER: 'pepper-worker-security-regression',
+    ADMIN_API_KEY: 'admin-worker-secret',
+  };
+
+  function makeLegacyHexSig(bodyStr, ts) {
+    return crypto
+      .createHmac('sha256', secret)
+      .update(`${ts}.${bodyStr}`, 'utf8')
+      .digest('hex');
+  }
+
+  // 1. Asset CORP isolation vs public OG image + Minecraft SSR non-affiliation
+  const ogRes = await worker.fetch(new Request('https://playunpause.com/og-cover.png'), env);
+  assert.equal(ogRes.status, 200);
+  assert.equal(ogRes.headers.get('cross-origin-resource-policy'), 'cross-origin');
+
+  const mcRes = await worker.fetch(new Request('https://playunpause.com/?game=minecraft'), env);
+  assert.equal(mcRes.headers.get('cross-origin-resource-policy'), 'same-origin');
+  const csp = mcRes.headers.get('content-security-policy') || '';
+  assert.ok(!csp.includes("'unsafe-inline'"));
+  assert.ok(mcRes.headers.get('strict-transport-security').includes('preload'));
+  assert.ok((await mcRes.text()).includes('NOT AN OFFICIAL MINECRAFT PRODUCT'));
+
+  // 2. /api/config cache + search indexing protection
+  const cfgRes = await worker.fetch(new Request('https://playunpause.com/api/config'), env);
+  assert.equal(cfgRes.headers.get('cache-control'), 'no-store');
+  assert.equal(cfgRes.headers.get('x-robots-tag'), 'noindex, nofollow');
+
+  // 3. Reject $1.00 (100 cents) underpayment & accept valid pass webhook
+  const ts1 = String(Math.floor(Date.now() / 1000));
+  const body100 = JSON.stringify({
+    type: 'payment.succeeded',
+    data: { id: 'pay_100c', final_amount: 100, currency: 'usd', product: { id: 'prod_oMcH19N9BCoDO' } },
+  });
+  const res100 = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'x-whop-signature': makeLegacyHexSig(body100, ts1),
+        'webhook-timestamp': ts1,
+      },
+      body: body100,
+    }),
+    env
+  );
+  assert.equal(res100.status, 400);
+
+  const passBody = JSON.stringify({
+    type: 'payment.succeeded',
+    data: {
+      id: 'pay_cf_replay_001',
+      final_amount: 6.99,
+      currency: 'usd',
+      product: { id: 'prod_oMcH19N9BCoDO' },
+      membership_id: 'mem_cf_replay_001',
+      user: { email: 'player@example.com' },
+    },
+  });
+  const hookOk = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'x-whop-signature': makeLegacyHexSig(passBody, ts1),
+        'webhook-timestamp': ts1,
+      },
+      body: passBody,
+    }),
+    env
+  );
+  assert.equal(hookOk.status, 200);
+  const { deckCode } = await hookOk.json();
+  assert.match(deckCode, /^UP-/);
+
+  // 4. Replaying identical legacy signed payload with fresh timestamp must return duplicate:true
+  const ts2 = String(Math.floor(Date.now() / 1000) + 1);
+  const replayRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'x-whop-signature': makeLegacyHexSig(passBody, ts2),
+        'webhook-timestamp': ts2,
+      },
+      body: passBody,
+    }),
+    env
+  );
+  assert.equal(replayRes.status, 200);
+  assert.equal((await replayRes.json()).duplicate, true);
+
+  // 5. Bare email rejected with 403; email + receiptRef works
+  const bareRes = await worker.fetch(
+    new Request('https://playunpause.com/api/pass/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ codeOrEmail: 'player@example.com' }),
+    }),
+    env
+  );
+  assert.equal(bareRes.status, 403);
+
+  const proofRes = await worker.fetch(
+    new Request('https://playunpause.com/api/pass/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ codeOrEmail: 'player@example.com', receiptRef: 'mem_cf_replay_001' }),
+    }),
+    env
+  );
+  assert.equal(proofRes.status, 200);
+
+  // 6. Content-Type enforcement rejects non-JSON text/plain CSRF attempts
+  const csrfRes = await worker.fetch(
+    new Request('https://playunpause.com/api/pass/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ codeOrEmail: deckCode }),
+    }),
+    env
+  );
+  assert.equal(csrfRes.status, 415);
+
+  // 7. SSRF protection + Sponsor refund deactivation
+  for (const badUrl of [
+    'https://127.0.0.1/ssrf',
+    'https://169.254.169.254/latest',
+    'https://[::1]/local',
+    'https://localhost/admin',
+    'https://xn--pple-43d.com/',
+  ]) {
+    const ssrfRes = await worker.fetch(
+      new Request('https://playunpause.com/api/admin/sponsor', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-admin-key': env.ADMIN_API_KEY,
+        },
+        body: JSON.stringify({ badgeText: 'BadHost', targetUrl: badUrl }),
+      }),
+      env
+    );
+    assert.equal(ssrfRes.status, 400, `Expected 400 for SSRF URL ${badUrl}`);
+  }
+
+  const goodSponRes = await worker.fetch(
+    new Request('https://playunpause.com/api/admin/sponsor', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-admin-key': env.ADMIN_API_KEY,
+      },
+      body: JSON.stringify({
+        badgeText: 'Legit SSD Partner',
+        targetUrl: 'https://ssdpartner.example/deal',
+        whopRef: 'mem_spon_cf_1',
+      }),
+    }),
+    env
+  );
+  assert.equal(goodSponRes.status, 200);
+  const cfgWithSpon = await (await worker.fetch(new Request('https://playunpause.com/api/config'), env)).json();
+  assert.equal(cfgWithSpon.activeSponsor?.badgeText, 'Legit SSD Partner');
+
+  const sponRefundBody = JSON.stringify({
+    type: 'refund.created',
+    data: { id: 'rfnd_spon_1', membership_id: 'mem_spon_cf_1' },
+  });
+  const sponRefundRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'x-whop-signature': makeLegacyHexSig(sponRefundBody, ts2),
+        'webhook-timestamp': ts2,
+      },
+      body: sponRefundBody,
+    }),
+    env
+  );
+  assert.equal(sponRefundRes.status, 200);
+  assert.equal((await sponRefundRes.json()).sponsorRevoked, true);
+  const cfgAfterSponRefund = await (await worker.fetch(new Request('https://playunpause.com/api/config'), env)).json();
+  assert.equal(cfgAfterSponRefund.activeSponsor, null);
+
+  // 8. Authenticated DSAR DELETE /api/sync/:code scrubs PII and unlinks orders
+  const badDel = await worker.fetch(
+    new Request(`https://playunpause.com/api/sync/${deckCode}`, {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ receiptRef: 'mem_wrong_999' }),
+    }),
+    env
+  );
+  assert.equal(badDel.status, 403);
+
+  const okDel = await worker.fetch(
+    new Request(`https://playunpause.com/api/sync/${deckCode}`, {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ receiptRef: 'mem_cf_replay_001' }),
+    }),
+    env
+  );
+  assert.equal(okDel.status, 200);
+  assert.equal((await okDel.json()).deleted, true);
+
+  const afterDel = await worker.fetch(
+    new Request(`https://playunpause.com/api/sync/${deckCode}`),
+    env
+  );
+  assert.equal(afterDel.status, 403);
+
+  // 9. Refunded deck never resurrects via fresh webhook or Case D Whop API lookup
+  const bodyPass2 = JSON.stringify({
+    type: 'payment.succeeded',
+    data: {
+      id: 'pay_cf_revive_001',
+      final_amount: 6.99,
+      currency: 'usd',
+      product: { id: 'prod_oMcH19N9BCoDO' },
+      membership_id: 'mem_cf_revive_001',
+    },
+  });
+  const initRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: { 'x-whop-signature': makeLegacyHexSig(bodyPass2, ts1), 'webhook-timestamp': ts1 },
+      body: bodyPass2,
+    }),
+    env
+  );
+  const { deckCode: reviveDeck } = await initRes.json();
+
+  const revBody = JSON.stringify({
+    type: 'payment.refunded',
+    data: { id: 'pay_cf_revive_001', membership_id: 'mem_cf_revive_001' },
+  });
+  await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: { 'x-whop-signature': makeLegacyHexSig(revBody, ts1), 'webhook-timestamp': ts1 },
+      body: revBody,
+    }),
+    env
+  );
+
+  const scrubbedWorkerDeck = await env.DB.prepare(
+    'SELECT active, email_hash, state_json FROM sync_decks WHERE deck_code = ?'
+  )
+    .bind(reviveDeck)
+    .first();
+  assert.equal(scrubbedWorkerDeck.active, 0);
+  assert.equal(scrubbedWorkerDeck.email_hash, null);
+  assert.equal(
+    scrubbedWorkerDeck.state_json,
+    '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[]}'
+  );
+
+  // Attempt resurrection with a brand-new webhook payment event referencing the refunded membership_id
+  const resurrectWebhookBody = JSON.stringify({
+    type: 'membership.went_valid',
+    data: {
+      id: 'evt_revive_attempt_2',
+      final_amount: 6.99,
+      currency: 'usd',
+      product: { id: 'prod_oMcH19N9BCoDO' },
+      membership_id: 'mem_cf_revive_001',
+    },
+  });
+  const resurrectHookRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: { 'x-whop-signature': makeLegacyHexSig(resurrectWebhookBody, ts2), 'webhook-timestamp': ts2 },
+      body: resurrectWebhookBody,
+    }),
+    env
+  );
+  assert.equal(resurrectHookRes.status, 200);
+  assert.equal((await resurrectHookRes.json()).revoked, true);
+  assert.equal(
+    (await worker.fetch(new Request(`https://playunpause.com/api/sync/${reviveDeck}`), env)).status,
+    403
+  );
+
+  // Case D lookup on revoked mem_cf_revive_001 also returns 403 even if Whop API responds 200
+  const caseDRes = await worker.fetch(
+    new Request('https://playunpause.com/api/pass/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ codeOrEmail: 'mem_cf_revive_001' }),
+    }),
+    env
+  );
+  assert.equal(caseDRes.status, 403);
 });

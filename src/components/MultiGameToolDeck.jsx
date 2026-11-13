@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Copy,
   Check,
@@ -9,12 +9,82 @@ import {
   DollarSign,
   Compass,
   Sparkles,
-  RotateCcw,
   Bookmark,
   Trash2,
-  Lock,
+  Box,
+  Trophy,
+  Target,
+  Flame,
+  AlertTriangle,
+  Share2,
 } from 'lucide-react';
+import { COD_MW4_WEAPONS } from '../data/games/allGames.js';
+import {
+  downloadStudioSpecPng,
+  formatDiscordSummary,
+} from '../utils/shareCardEngine.js';
+import {
+  parseSafeNum,
+  calcNetherCoords,
+  checkPortalCollision,
+  triangulateStronghold,
+  calcCodTtk,
+  CS2_LOSS_LADDER,
+  calcCs2Economy,
+  VAL_WEAPONS,
+  VAL_ARMOR,
+  calcValorantEconomy,
+  calcValorantRrClimb,
+  calcFc27Tax,
+  calcSbcSquadRating,
+  ROBLOX_RATES,
+  calcRobloxDevEx,
+  calcFortniteXp,
+  getFreeApexLevelPacks,
+  APEX_RANK_TIERS,
+  calcApexRankedLadder,
+  calcGtaOnlineHeist,
+} from '../utils/gameMath.js';
 import { playSwitchTick } from '../utils/soundHaptics.js';
+
+const ICON_MAP = {
+  Crosshair,
+  Zap,
+  Box,
+  Trophy,
+  Sparkles,
+  Shield,
+  Target,
+  Flame,
+  DollarSign,
+};
+
+const EMPTY_PIN_HINTS = {
+  'cod-warzone': 'No saved builds yet — pin Weapon A vs B TTK results above.',
+  fortnite: 'No saved XP schedules yet — pin your daily match plan above.',
+  minecraft: 'No saved coordinates yet — pin Overworld ↔ Nether links or Stronghold coords above.',
+  'ea-fc-27': 'No saved snipes yet — pin card flips or SBC targets above.',
+  roblox: 'No saved DevEx targets yet — pin a Gamepass price goal above.',
+  cs2: 'No saved buy plans yet — pin a round eco or squad threshold above.',
+  valorant: 'No saved buys yet — pin your round buy plan or RR target above.',
+  'apex-legends': 'No saved pity snapshots yet — pin your Heirloom progress above.',
+  'gta-v': 'No saved Cayo splits yet — pin a payout loadout above.',
+};
+
+const CAYO_TARGETS = [
+  { id: 'tequila', name: 'Sinsimito Tequila ($630K)', val: 630000 },
+  { id: 'ruby', name: 'Ruby Necklace ($700K–$1M)', val: 1000000 },
+  { id: 'bonds', name: 'Bearer Bonds ($1.1M)', val: 1100000 },
+  { id: 'diamond', name: 'Pink Diamond ($1.3M)', val: 1300000 },
+  { id: 'panther', name: 'Panther Statue ($1.9M Event)', val: 1900000 },
+];
+
+const CAYO_BAGS = [
+  { id: 'gold', name: 'Full Gold Stacks (2+ Players, ~$495K)', val: 495000 },
+  { id: 'coke', name: 'Full Cocaine (Best Solo Bag, ~$400K)', val: 400000 },
+  { id: 'paint', name: '2x Office Paintings (~$360K)', val: 360000 },
+  { id: 'weed', name: 'Mixed Weed / Cash (~$315K)', val: 315000 },
+];
 
 export default function MultiGameToolDeck({
   game,
@@ -28,19 +98,18 @@ export default function MultiGameToolDeck({
   const [copiedKey, setCopiedKey] = useState(null);
   const [pinNotice, setPinNotice] = useState('');
 
+  const gamePins = useMemo(
+    () => savedPins.filter((p) => p.gameId === game.id),
+    [savedPins, game.id]
+  );
+
   const flashCopied = (key) => {
     playSwitchTick(soundEnabled, 840);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
-  const handleCardSpotlight = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-  };
-
-  const copyToClipboard = (text, key) => {
+  const copyText = (text, key) => {
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(text).catch(() => {});
     }
@@ -49,9 +118,9 @@ export default function MultiGameToolDeck({
 
   const handlePinSnapshot = (label, value) => {
     if (!onSavePin) return;
-    if (!isPro && savedPins.length >= 1) {
+    if (!isPro && gamePins.length >= 5) {
       playSwitchTick(soundEnabled, 660);
-      setPinNotice('Free tier holds 1 quick pin. Unlock All-Access ($6.99) for unlimited cloud-synced pins across Phone + PC.');
+      setPinNotice('Free tier saves up to 5 pins per game. Unlock Sync Pass for unlimited cloud pins across Phone + PC.');
       onOpenProModal();
       return;
     }
@@ -62,1289 +131,1772 @@ export default function MultiGameToolDeck({
       label,
       value,
     });
-    setPinNotice('Pinned to your companion deck.');
-    setTimeout(() => setPinNotice(''), 2200);
+    setPinNotice('Pinned locally.');
+    setTimeout(() => setPinNotice(''), 2000);
   };
 
-  // --- 1. Minecraft Tool States ---
-  const [owX, setOwX] = useState(1280);
-  const [owY, setOwY] = useState(64);
-  const [owZ, setOwZ] = useState(-840);
+  // ==================== 1. COD: MW4 & WARZONE ====================
+  const [weaponAId, setWeaponAId] = useState('cronen-osprey');
+  const [weaponBId, setWeaponBId] = useState('axion');
+  const [customDmg, setCustomDmg] = useState(36);
+  const [customRpm, setCustomRpm] = useState(882);
+  const [useCustomStats, setUseCustomStats] = useState(false);
+  const [codOpenBolt, setCodOpenBolt] = useState(true);
+  const [codHp, setCodHp] = useState(300);
+  const [codHeadshots, setCodHeadshots] = useState(1);
+  const [camoClassCount, setCamoClassCount] = useState(21);
+  const [camoMatchesPerGun, setCamoMatchesPerGun] = useState(6);
 
-  const netherCoords = useMemo(() => {
-    const x = Math.round((Number(owX) || 0) / 8);
-    const y = Number.isFinite(Number(owY)) ? Number(owY) : 64;
-    const z = Math.round((Number(owZ) || 0) / 8);
-    return { x, y, z };
-  }, [owX, owY, owZ]);
+  const weaponAObj = useMemo(
+    () => COD_MW4_WEAPONS.find((w) => w.id === weaponAId) || COD_MW4_WEAPONS[0],
+    [weaponAId]
+  );
+  const weaponBObj = useMemo(
+    () => COD_MW4_WEAPONS.find((w) => w.id === weaponBId) || COD_MW4_WEAPONS[1],
+    [weaponBId]
+  );
 
-  // --- 2. Fortnite Tool States ---
-  const [currentLevel, setCurrentLevel] = useState(45);
-  const [targetLevel, setTargetLevel] = useState(100);
-  const [daysRemaining, setDaysRemaining] = useState(32);
+  const ttkA = useMemo(
+    () =>
+      calcCodTtk({
+        hp: codHp,
+        damage: useCustomStats ? customDmg : weaponAObj.damage,
+        rpm: useCustomStats ? customRpm : weaponAObj.rpm,
+        headshots: codHeadshots,
+        headMult: weaponAObj.headMult,
+        openBoltMs: codOpenBolt ? weaponAObj.openBoltMs : 0,
+      }),
+    [codHp, useCustomStats, customDmg, customRpm, weaponAObj, codHeadshots, codOpenBolt]
+  );
 
-  const fortnitePace = useMemo(() => {
-    const levelsNeeded = Math.max(0, targetLevel - currentLevel);
-    const totalXpNeeded = levelsNeeded * 80000;
-    const dailyXp = daysRemaining > 0 ? Math.round(totalXpNeeded / daysRemaining) : totalXpNeeded;
-    const brMatchesDaily = Math.ceil(dailyXp / 16000);
-    return { levelsNeeded, totalXpNeeded, dailyXp, brMatchesDaily };
-  }, [currentLevel, targetLevel, daysRemaining]);
+  const ttkB = useMemo(
+    () =>
+      calcCodTtk({
+        hp: codHp,
+        damage: weaponBObj.damage,
+        rpm: weaponBObj.rpm,
+        headshots: codHeadshots,
+        headMult: weaponBObj.headMult,
+        openBoltMs: codOpenBolt ? weaponBObj.openBoltMs : 0,
+      }),
+    [codHp, weaponBObj, codHeadshots, codOpenBolt]
+  );
 
-  // --- 3. Call of Duty Tool States ---
-  const [camosFinished, setCamosFinished] = useState(12);
-  const [headshotsPerMatch, setHeadshotsPerMatch] = useState(7);
-  const [weaponRpm, setWeaponRpm] = useState(750);
-  const [bulletDamage, setBulletDamage] = useState(38);
+  const camoRemainingGuns = Math.max(0, 33 - camoClassCount);
+  const camoMatchesLeft = camoRemainingGuns * camoMatchesPerGun;
 
-  const codMath = useMemo(() => {
-    const totalWeapons = 33;
-    const weaponsRemaining = Math.max(0, totalWeapons - camosFinished);
-    const headshotsRemaining = weaponsRemaining * 100;
-    const matchesNeeded = Math.ceil(headshotsRemaining / Math.max(1, headshotsPerMatch));
-    const hoursNeeded = Math.round((matchesNeeded * 10) / 60);
+  // ==================== 2. FORTNITE ====================
+  const [fnCurLvl, setFnCurLvl] = useState(44);
+  const [fnTargetLvl, setFnTargetLvl] = useState(200);
+  const [fnDaysLeft, setFnDaysLeft] = useState(28);
+  const [fnIncludeDailies, setFnIncludeDailies] = useState(true);
+  const [fnIncludeCreative, setFnIncludeCreative] = useState(true);
+  const [fnIncludeLego, setFnIncludeLego] = useState(false);
 
-    const shotsToKill = Math.ceil(300 / Math.max(1, bulletDamage));
-    const timeBetweenShotsMs = (60 / Math.max(100, weaponRpm)) * 1000;
-    const ttkMs = Math.round((shotsToKill - 1) * timeBetweenShotsMs);
+  const fortniteResult = useMemo(() => {
+    const base = calcFortniteXp({
+      currentLevel: fnCurLvl,
+      targetLevel: fnTargetLvl,
+      daysRemaining: fnDaysLeft,
+      includeDailies: fnIncludeDailies,
+      includeCreative: fnIncludeCreative,
+    });
+    const legoDailyXp = fnIncludeLego ? 120000 : 0;
+    const totalPassive = base.passiveXpPerDay + legoDailyXp;
+    const activeBrNeeded = base.alreadyDone ? 0 : Math.max(0, base.xpPerDay - totalPassive);
+    const estMatches = base.alreadyDone
+      ? 0
+      : Math.ceil(activeBrNeeded / 30000) + (fnIncludeDailies ? 1 : 0);
+    return {
+      ...base,
+      passiveXpPerDay: totalPassive,
+      activeBrXpNeededPerDay: activeBrNeeded,
+      estMatchesPerDay: estMatches,
+    };
+  }, [fnCurLvl, fnTargetLvl, fnDaysLeft, fnIncludeDailies, fnIncludeCreative, fnIncludeLego]);
 
-    return { weaponsRemaining, headshotsRemaining, matchesNeeded, hoursNeeded, shotsToKill, ttkMs };
-  }, [camosFinished, headshotsPerMatch, weaponRpm, bulletDamage]);
+  // ==================== 3. MINECRAFT ====================
+  const [mcDir, setMcDir] = useState('toNether');
+  const [mcX, setMcX] = useState('-20');
+  const [mcY, setMcY] = useState('64');
+  const [mcZ, setMcZ] = useState('1023');
+  const [portalBX, setPortalBX] = useState('45');
+  const [portalBY, setPortalBY] = useState('64');
+  const [portalBZ, setPortalBZ] = useState('980');
+  const [throw1X, setThrow1X] = useState('0');
+  const [throw1Z, setThrow1Z] = useState('0');
+  const [throw1Deg, setThrow1Deg] = useState('-45');
+  const [throw2X, setThrow2X] = useState('200');
+  const [throw2Z, setThrow2Z] = useState('0');
+  const [throw2Deg, setThrow2Deg] = useState('45');
 
-  // --- 4. EA Sports FC 25 Tool States ---
-  const [fcBuyPrice, setFcBuyPrice] = useState(105000);
-  const [fcPlayerPrice, setFcPlayerPrice] = useState(120000);
+  const mcResult = useMemo(() => calcNetherCoords(mcX, mcY, mcZ, mcDir), [mcX, mcY, mcZ, mcDir]);
+  const mcCollision = useMemo(() => {
+    const baseOwX = mcDir === 'toNether' ? parseSafeNum(mcX, 0) : parseSafeNum(mcX, 0) * 8;
+    const baseOwZ = mcDir === 'toNether' ? parseSafeNum(mcZ, 0) : parseSafeNum(mcZ, 0) * 8;
+    return checkPortalCollision(
+      { x: baseOwX, y: parseSafeNum(mcY, 64), z: baseOwZ },
+      { x: parseSafeNum(portalBX, 45), y: parseSafeNum(portalBY, 64), z: parseSafeNum(portalBZ, 980) }
+    );
+  }, [mcDir, mcX, mcY, mcZ, portalBX, portalBY, portalBZ]);
 
-  const fcTaxMath = useMemo(() => {
-    const buy = Math.max(0, Number(fcBuyPrice) || 0);
-    const price = Math.max(0, Number(fcPlayerPrice) || 0);
-    const tax = Math.round(price * 0.05);
-    const net = price - tax;
-    const profit = net - buy;
-    const breakEven = Math.round(price * 0.95);
-    return { buy, price, tax, net, profit, breakEven };
-  }, [fcBuyPrice, fcPlayerPrice]);
+  const strongholdResult = useMemo(
+    () => triangulateStronghold(throw1X, throw1Z, throw1Deg, throw2X, throw2Z, throw2Deg),
+    [throw1X, throw1Z, throw1Deg, throw2X, throw2Z, throw2Deg]
+  );
 
-  // --- 5. Roblox Tool States ---
-  const [robuxAmount, setRobuxAmount] = useState(100000);
-  const robloxMath = useMemo(() => {
-    const robux = Math.max(0, Number(robuxAmount) || 0);
-    const after30PctTax = Math.round(robux * 0.7);
-    const devexUsd = (robux * 0.0038).toFixed(2);
-    const gamepassNetDevexUsd = (after30PctTax * 0.0038).toFixed(2);
-    return { robux, after30PctTax, devexUsd, gamepassNetDevexUsd };
-  }, [robuxAmount]);
+  // ==================== 4. EA SPORTS FC 27 ====================
+  const [eaBuyCoins, setEaBuyCoins] = useState(185000);
+  const [eaSellCoins, setEaSellCoins] = useState(215000);
+  const [eaQty, setEaQty] = useState(1);
+  const [sbcRatings, setSbcRatings] = useState([86, 86, 85, 85, 85, 84, 84, 84, 84, 84, 84]);
 
-  // --- 6. Counter-Strike 2 Tool States ---
-  const [csLossStreak, setCsLossStreak] = useState(3);
-  const [csCurrentBank, setCsCurrentBank] = useState(1650);
-  const csEconomyMath = useMemo(() => {
-    const bonuses = [1400, 1900, 2400, 2900, 3400];
-    const lossStreakClamped = Math.min(4, Math.max(0, csLossStreak));
-    const nextRoundCash = bonuses[lossStreakClamped];
-    const bank = Math.max(0, Math.min(16000, Number(csCurrentBank) || 0));
-    const projectedTotal = Math.min(16000, bank + nextRoundCash);
-    let callout = 'Call Full Eco (Save to $2,000+)';
-    if (bank >= 4500) {
-      callout = 'Full Buy Now (Rifle + Head Armor + Utility)';
-    } else if (projectedTotal >= 4500) {
-      callout = 'Full Eco Now → Guaranteed Full Buy Next Round';
-    } else if (bank >= 2700) {
-      callout = 'Half-Buy / Pistols (Keep $2,000 Floor)';
+  const eaTaxResult = useMemo(
+    () => calcFc27Tax({ buyCoins: eaBuyCoins, sellCoins: eaSellCoins, quantity: eaQty }),
+    [eaBuyCoins, eaSellCoins, eaQty]
+  );
+  const eaSbcResult = useMemo(() => calcSbcSquadRating(sbcRatings), [sbcRatings]);
+
+  // ==================== 5. ROBLOX ====================
+  const [rbxGross, setRbxGross] = useState(50000);
+  const [rbxRateId, setRbxRateId] = useState('std-2025');
+  const [rbxGroupSplit, setRbxGroupSplit] = useState(100);
+  const [rbxDesiredNet, setRbxDesiredNet] = useState(30000);
+
+  const rbxResult = useMemo(
+    () => calcRobloxDevEx({ grossRobux: rbxGross, rateId: rbxRateId, groupSplitPct: rbxGroupSplit, targetUsd: 114 }),
+    [rbxGross, rbxRateId, rbxGroupSplit]
+  );
+  const reverseGamepassPrice = Math.ceil(
+    Math.max(1, parseSafeNum(rbxDesiredNet, 30000)) / (0.7 * (Math.max(1, rbxGroupSplit) / 100))
+  );
+
+  // ==================== 6. COUNTER-STRIKE 2 ====================
+  const [csCash, setCsCash] = useState(3200);
+  const [csLossLevel, setCsLossLevel] = useState(1);
+  const [csSide, setCsSide] = useState('CT');
+  const [csBombPlanted, setCsBombPlanted] = useState(false);
+  const [csTeamCash, setCsTeamCash] = useState([4900, 3200, 2100, 5600, 3800]);
+
+  const csResult = useMemo(
+    () => calcCs2Economy({ cash: csCash, lossLevel: csLossLevel, side: csSide, bombPlanted: csBombPlanted }),
+    [csCash, csLossLevel, csSide, csBombPlanted]
+  );
+  const csSquadStats = useMemo(() => {
+    const need = csSide === 'CT' ? 4300 : 3700;
+    const dropCost = csSide === 'CT' ? 3100 : 2700;
+    const total = csTeamCash.reduce((s, c) => s + Number(c || 0), 0);
+    const canBuyCount = csTeamCash.filter((c) => c >= need).length;
+    const dropsAvailable = csTeamCash.reduce((d, c) => d + Math.max(0, Math.floor((c - need) / dropCost)), 0);
+    return { need, avg: Math.round(total / 5), canBuyCount, dropsAvailable };
+  }, [csTeamCash, csSide]);
+
+  // ==================== 7. VALORANT ====================
+  const [valCreds, setValCreds] = useState(3900);
+  const [valWeaponCost, setValWeaponCost] = useState(2900);
+  const [valArmorCost, setValArmorCost] = useState(650);
+  const [valUtilCost, setValUtilCost] = useState(350);
+  const [valLossStreak, setValLossStreak] = useState(1);
+  const [valCurRr, setValCurRr] = useState(44);
+  const [valWr, setValWr] = useState(55);
+  const [valWinRr, setValWinRr] = useState(21);
+  const [valLossRr, setValLossRr] = useState(16);
+
+  const valResult = useMemo(
+    () =>
+      calcValorantEconomy({
+        credits: valCreds,
+        weaponCost: valWeaponCost,
+        armorCost: valArmorCost,
+        utilCost: valUtilCost,
+        lossStreak: valLossStreak,
+      }),
+    [valCreds, valWeaponCost, valArmorCost, valUtilCost, valLossStreak]
+  );
+  const valRrResult = useMemo(
+    () => calcValorantRrClimb({ currentRr: valCurRr, winRatePct: valWr, avgWinRr: valWinRr, avgLossRr: valLossRr }),
+    [valCurRr, valWr, valWinRr, valLossRr]
+  );
+
+  // ==================== 8. APEX LEGENDS ====================
+  const [apexLevel, setApexLevel] = useState(420);
+  const [apexPrestige, setApexPrestige] = useState(0);
+  const [apexBpPacks, setApexBpPacks] = useState(28);
+  const [apexPurchasedPacks, setApexPurchasedPacks] = useState(20);
+  const [apexCurRp, setApexCurRp] = useState(8400);
+  const [apexTargetTier, setApexTargetTier] = useState('diamond');
+  const [apexAvgRp, setApexAvgRp] = useState(95);
+
+  const apexLevelPacks = useMemo(
+    () => getFreeApexLevelPacks(apexLevel, apexPrestige),
+    [apexLevel, apexPrestige]
+  );
+  const apexTotalOpened = Math.min(500, apexLevelPacks + Number(apexBpPacks || 0) + Number(apexPurchasedPacks || 0));
+  const apexRemaining = Math.max(0, 500 - apexTotalOpened);
+  const apexRpResult = useMemo(
+    () => calcApexRankedLadder({ currentRp: apexCurRp, targetTierId: apexTargetTier, avgNetRpPerMatch: apexAvgRp }),
+    [apexCurRp, apexTargetTier, apexAvgRp]
+  );
+
+  // ==================== 9. GTA ONLINE (CAYO PERICO) ====================
+  const [cayoPrimaryVal, setCayoPrimaryVal] = useState(1300000);
+  const [cayoSecondaryVal, setCayoSecondaryVal] = useState(495000);
+  const [cayoPlayers, setCayoPlayers] = useState(2);
+  const [cayoHostPct, setCayoHostPct] = useState(85);
+  const [cayoHardMode, setCayoHardMode] = useState(true);
+  const [cayoEliteBonus, setCayoEliteBonus] = useState(true);
+
+  const cayoResult = useMemo(
+    () =>
+      calcGtaOnlineHeist({
+        primaryValue: cayoPrimaryVal,
+        secondaryValue: cayoSecondaryVal,
+        players: cayoPlayers,
+        hostPct: cayoHostPct,
+        hardMode: cayoHardMode,
+        setupFee: 100000,
+      }),
+    [cayoPrimaryVal, cayoSecondaryVal, cayoPlayers, cayoHostPct, cayoHardMode]
+  );
+  const cayoEliteDollars = cayoEliteBonus ? (cayoHardMode ? 100000 : 50000) : 0;
+
+  const currentShareSpec = useMemo(() => {
+    switch (game.id) {
+      case 'cod-warzone':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'MW4 / WZ TTK Spec',
+          heroLabel: `${weaponAObj.name} vs ${weaponBObj.name}`,
+          heroValue: `${ttkA.ttkMs} vs ${ttkB.ttkMs} ms`,
+          heroSub: `${codHp} HP · ${codHeadshots} HS`,
+          accentColor: game.accentColor,
+          fileSlug: `unpause-mw4-${weaponAObj.id}`,
+          rows: [
+            { label: 'Shots to Kill (A/B)', value: `${ttkA.shotsToKill} / ${ttkB.shotsToKill}` },
+            { label: 'Open-Bolt Delay', value: codOpenBolt ? 'ON (+trigger delay)' : 'OFF' },
+            { label: 'Camo Remaining', value: `${camoRemainingGuns} guns` },
+            { label: 'DPS (A / B)', value: `${ttkA.dps} / ${ttkB.dps}` },
+          ],
+        };
+      case 'fortnite':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'XP Level Schedule',
+          heroLabel: 'DAILY XP PACE',
+          heroValue: `${fortniteResult.xpPerDay.toLocaleString('en-US')} XP`,
+          heroSub: `Lvl ${fnCurLvl} -> ${fnTargetLvl} (${fnDaysLeft}d)`,
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-fortnite-xp',
+          rows: [
+            { label: 'Est. BR Matches/Day', value: `${fortniteResult.estMatchesPerDay}` },
+            { label: 'Passive XP/Day', value: `${fortniteResult.passiveXpPerDay.toLocaleString('en-US')}` },
+          ],
+        };
+      case 'minecraft':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: '8:1 Portal Link',
+          heroLabel: mcDir === 'toNether' ? 'NETHER BUILD COORDS' : 'OVERWORLD BUILD COORDS',
+          heroValue: `${mcResult.output.x} / ${mcResult.output.y} / ${mcResult.output.z}`,
+          heroSub: `Chunk ${mcResult.chunk.cx}, ${mcResult.chunk.cz}`,
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-minecraft-portal',
+          rows: [
+            { label: 'Region File', value: `r.${mcResult.chunk.rx}.${mcResult.chunk.rz}.mca` },
+            { label: '2nd Portal Check', value: mcCollision.conflictRisk ? 'LINK RISK' : 'ISOLATED' },
+          ],
+        };
+      case 'ea-fc-27':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'FUT Tax & SBC Spec',
+          heroLabel: 'NET PROFIT PER CARD',
+          heroValue: `${eaTaxResult.profitPerCard >= 0 ? '+' : ''}${eaTaxResult.profitPerCard.toLocaleString('en-US')}`,
+          heroSub: `Min Sell ${eaTaxResult.minBreakEvenSnapped.toLocaleString('en-US')}`,
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-fc27-tax',
+          rows: [
+            { label: '5% EA Tax', value: `-${eaTaxResult.taxPerCard.toLocaleString('en-US')}` },
+            { label: '11-Player SBC', value: `${eaSbcResult.rating} OVR` },
+          ],
+        };
+      case 'roblox':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'DevEx Cashout Spec',
+          heroLabel: 'DEVEX USD PAYOUT',
+          heroValue: `$${rbxResult.usdPayout.toFixed(2)}`,
+          heroSub: rbxResult.eligible ? 'DevEx Eligible (30K+)' : 'Below 30K Threshold',
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-roblox-devex',
+          rows: [
+            { label: 'After 30% Cut', value: `${rbxResult.afterMarketFee.toLocaleString('en-US')} R$` },
+            { label: `Pass for ${rbxDesiredNet} Net`, value: `${reverseGamepassPrice.toLocaleString('en-US')} R$` },
+          ],
+        };
+      case 'cs2': {
+        const csNextOnLoss = Math.min(16000, csResult.curCash + csResult.nextBonusOnLoss);
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'MR12 Eco Spec',
+          heroLabel: 'NEXT ROUND FLOOR',
+          heroValue: `$${csNextOnLoss.toLocaleString('en-US')}`,
+          heroSub: csNextOnLoss >= csResult.fullBuyNeed ? 'Full Buy Ready' : csResult.callout,
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-cs2-mr12',
+          rows: [
+            { label: 'Side / Rifle Need', value: `${csSide} ($${csSquadStats.need})` },
+            { label: 'Loss Tier', value: `Tier ${csLossLevel} ($${CS2_LOSS_LADDER[csLossLevel]})` },
+          ],
+        };
+      }
+      case 'valorant':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'Buy Matrix Spec',
+          heroLabel: 'NEXT ROUND IF LOST',
+          heroValue: `${valResult.nextRoundMinOnLoss.toLocaleString('en-US')} Creds`,
+          heroSub: valResult.nextRoundReady ? '3,900+ Locked' : 'Short on Full Buy',
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-valorant-eco',
+          rows: [
+            { label: 'Spend (Gun+Armor)', value: `${valWeaponCost + valArmorCost} Creds` },
+            { label: 'RR Promotion Est.', value: valRrResult.positiveClimb ? `~${valRrResult.matchesToPromote} games` : 'Flat EV' },
+          ],
+        };
+      case 'apex-legends':
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'Heirloom Pity Spec',
+          heroLabel: 'PACKS TOWARD 500 PITY',
+          heroValue: `${apexTotalOpened} / 500`,
+          heroSub: `${apexRemaining} packs remaining`,
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-apex-pity',
+          rows: [
+            { label: 'Free Level Packs', value: `${apexLevelPacks}` },
+            { label: 'Ranked Matches', value: apexRpResult.matchesNeeded === null ? 'N/A' : `${apexRpResult.matchesNeeded} avg` },
+          ],
+        };
+      default:
+        return {
+          gameTitle: game.shortTitle,
+          toolTitle: 'Cayo Perico Split',
+          heroLabel: 'HOST NET PROFIT',
+          heroValue: `$${(cayoResult.hostProfitAfterSetup + cayoEliteDollars).toLocaleString('en-US')}`,
+          heroSub: `${cayoResult.hostPct}% Cut · ${cayoPlayers}P`,
+          accentColor: game.accentColor,
+          fileSlug: 'unpause-cayo-split',
+          rows: [
+            { label: 'Hard Mode', value: cayoHardMode ? 'ON (+10%)' : 'OFF' },
+            { label: 'Net Squad Pool', value: `$${cayoResult.netPool.toLocaleString('en-US')}` },
+          ],
+        };
     }
-    return { nextRoundCash, bank, projectedTotal, callout };
-  }, [csLossStreak, csCurrentBank]);
+  }, [
+    game, weaponAObj, weaponBObj, ttkA, ttkB, codHp, codHeadshots, codOpenBolt, camoRemainingGuns,
+    fortniteResult, fnCurLvl, fnTargetLvl, fnDaysLeft, mcDir, mcResult, mcCollision,
+    eaTaxResult, eaSbcResult, rbxResult, rbxDesiredNet, reverseGamepassPrice,
+    csResult, csSide, csSquadStats, csLossLevel, valResult, valWeaponCost, valArmorCost, valRrResult,
+    apexTotalOpened, apexRemaining, apexLevelPacks, apexRpResult, cayoResult, cayoEliteDollars, cayoPlayers, cayoHardMode,
+  ]);
 
-  // --- 7. Valorant Tool States ---
-  const [valCurrentRr, setValCurrentRr] = useState(62);
-  const [valAvgGain, setValAvgGain] = useState(19);
-  const valRankMath = useMemo(() => {
-    const rr = Math.max(0, Math.min(99, Number(valCurrentRr) || 0));
-    const gain = Math.max(10, Math.min(35, Number(valAvgGain) || 19));
-    const rrToRankUp = 100 - rr;
-    const netWins = Math.ceil(rrToRankUp / gain);
-    return { rr, gain, rrToRankUp, netWins };
-  }, [valCurrentRr, valAvgGain]);
+  const IconComp = ICON_MAP[game.icon] || Sparkles;
 
-  // --- 8. Apex Legends Tool States ---
-  const [apexPacksOpened, setApexPacksOpened] = useState(185);
-  const apexPityMath = useMemo(() => {
-    const opened = Math.max(0, Math.min(500, Number(apexPacksOpened) || 0));
-    const remaining = 500 - opened;
-    const pct = Math.round((opened / 500) * 100);
-    const coinsCost = remaining * 100;
-    const approxUsd = ((coinsCost / 1000) * 10).toFixed(0);
-    return { opened, remaining, pct, coinsCost, approxUsd };
-  }, [apexPacksOpened]);
-
-  // --- 9. GTA Online Tool States ---
-  const [cayoPrimaryTarget, setCayoPrimaryTarget] = useState(1300000);
-  const [cayoSecondaryLoot, setCayoSecondaryLoot] = useState(450000);
-  const [cayoCrewMembers, setCayoCrewMembers] = useState(2);
-  const [cayoHostPct, setCayoHostPct] = useState(70);
-
-  const cayoMath = useMemo(() => {
-    const gross = Math.max(0, Number(cayoPrimaryTarget) || 0) + Math.max(0, Number(cayoSecondaryLoot) || 0);
-    const pavelCut = Math.round(gross * 0.02);
-    const fencingFee = Math.round(gross * 0.1);
-    const netPool = gross - pavelCut - fencingFee;
-    const effectiveHostPct = cayoCrewMembers === 1 ? 100 : cayoHostPct;
-    const hostPayout = Math.round((netPool * effectiveHostPct) / 100);
-    const crewPayoutEach =
-      cayoCrewMembers > 1
-        ? Math.round((netPool * (100 - effectiveHostPct)) / (cayoCrewMembers - 1) / 100)
-        : 0;
-
-    return { gross, pavelCut, fencingFee, netPool, effectiveHostPct, hostPayout, crewPayoutEach };
-  }, [cayoPrimaryTarget, cayoSecondaryLoot, cayoCrewMembers, cayoHostPct]);
-
-  const gamePins = savedPins.filter((p) => p.gameId === game.id);
-  const metaRows = Array.isArray(game.proMetaRows) ? game.proMetaRows : [];
-
-  const renderSideMetaDeck = () => (
-    <aside className="meta-side-stack" aria-label="Pro Meta benchmarks and saved targets">
-      <div className="pro-meta-card">
-        <div className="pro-meta-header">
-          <h3>{game.proMetaTitle || `${game.shortTitle} Pro Meta Reference`}</h3>
-          <span className="game-audience-pill">{isPro ? 'Pro Unlocked' : 'Live Meta'}</span>
+  return (
+    <div className="mg-workspace" style={{ '--game-accent': game.accentColor, '--game-accent-soft': game.accentSoft }}>
+      {/* HEADER LEAD BANNER */}
+      <div className="mg-lead-banner">
+        <div className="mg-lead-title-group">
+          <div className="mg-game-avatar" style={{ background: game.accentSoft }}>
+            <IconComp size={20} color={game.accentColor} />
+          </div>
+          <div>
+            <h1 className="mg-title">{game.fullTitle}</h1>
+            <p className="mg-tagline">{game.tagline}</p>
+          </div>
         </div>
 
-        {metaRows.length > 0 && (
-          <div className="pro-meta-row">
-            <div className="pro-meta-row-label">{metaRows[0].label}</div>
-            <div className="pro-meta-row-val">{metaRows[0].val}</div>
-          </div>
-        )}
+        <div className="mg-badge-row">
+          <span className="mg-genre-pill">Unofficial Companion</span>
+          <span className="mg-genre-pill">{game.genre}</span>
+          <span className="mg-genre-pill" style={{ color: game.accentColor }}>
+            {game.audienceBadge}
+          </span>
+        </div>
+      </div>
 
-        {metaRows.length > 1 && (
-          isPro ? (
-            metaRows.slice(1).map((row) => (
-              <div key={row.label} className="pro-meta-row">
-                <div className="pro-meta-row-label">{row.label}</div>
-                <div className="pro-meta-row-val">{row.val}</div>
+      {/* MAIN CALCULATOR + UNBLURRED SIDE META STACK */}
+      <div className="mg-split-grid">
+        <div className="mg-stack-cards">
+          {/* ==================== COD MW4 ==================== */}
+          {game.id === 'cod-warzone' && (
+            <>
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">
+                    <Crosshair size={16} color={game.accentColor} />
+                    <span>Warzone / MW4 Weapon A vs B TTK Comparator</span>
+                  </h2>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className={`filter-pill ${codOpenBolt ? 'active' : ''}`}
+                      onClick={() => setCodOpenBolt((v) => !v)}
+                    >
+                      Open-Bolt Delay: {codOpenBolt ? 'ON' : 'OFF'}
+                    </button>
+                    <button
+                      type="button"
+                      className="subtle-pill-btn"
+                      onClick={() =>
+                        handlePinSnapshot(
+                          `${weaponAObj.name} @ ${codHp}HP`,
+                          `${ttkA.ttkMs} ms (${ttkA.shotsToKill} shots)`
+                        )
+                      }
+                    >
+                      <Bookmark size={13} /> Pin TTK
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mg-hero-answer mobile-answer-first">
+                  <div>
+                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                      {useCustomStats ? 'CUSTOM WEAPON A' : weaponAObj.name.toUpperCase()} VS {weaponBObj.name.toUpperCase()} ({codHp} HP)
+                    </div>
+                    <div className="mg-hero-value">
+                      {ttkA.ttkMs} ms vs {ttkB.ttkMs} ms
+                    </div>
+                  </div>
+                  <div className="mono" style={{ fontWeight: 700, fontSize: '0.9rem', color: ttkA.ttkMs <= ttkB.ttkMs ? 'var(--teal-dark)' : 'var(--coral)' }}>
+                    {ttkA.ttkMs <= ttkB.ttkMs
+                      ? `${weaponAObj.name} wins by ${ttkB.ttkMs - ttkA.ttkMs} ms`
+                      : `${weaponBObj.name} faster by ${ttkA.ttkMs - ttkB.ttkMs} ms`}
+                  </div>
+                </div>
+
+                <div className="mg-field-grid two-col">
+                  <div className="mg-field">
+                    <label htmlFor="cod-weap-a">Weapon A (Season 1)</label>
+                    <select
+                      id="cod-weap-a"
+                      className="deck-input no-icon"
+                      value={weaponAId}
+                      onChange={(e) => {
+                        const w = COD_MW4_WEAPONS.find((x) => x.id === e.target.value);
+                        setWeaponAId(e.target.value);
+                        if (w) {
+                          setCustomDmg(w.damage);
+                          setCustomRpm(w.rpm);
+                          setUseCustomStats(false);
+                        }
+                      }}
+                    >
+                      {COD_MW4_WEAPONS.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} · {w.rpm} RPM / {w.damage} DMG
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mg-field">
+                    <label htmlFor="cod-weap-b">Compare vs Weapon B</label>
+                    <select
+                      id="cod-weap-b"
+                      className="deck-input no-icon"
+                      value={weaponBId}
+                      onChange={(e) => setWeaponBId(e.target.value)}
+                    >
+                      {COD_MW4_WEAPONS.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} · {w.rpm} RPM / {w.damage} DMG
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mg-field">
+                    <label htmlFor="cod-hp-select">Target Armor / HP</label>
+                    <select
+                      id="cod-hp-select"
+                      className="deck-input no-icon"
+                      value={codHp}
+                      onChange={(e) => setCodHp(Number(e.target.value))}
+                    >
+                      <option value={300}>300 HP · 3 Plates</option>
+                      <option value={250}>250 HP · 2 Plates</option>
+                      <option value={200}>200 HP · 1 Plate</option>
+                      <option value={100}>100 HP · MW4 Core</option>
+                    </select>
+                  </div>
+
+                  <div className="mg-field">
+                    <label htmlFor="cod-hs-select">Mixed Headshots</label>
+                    <select
+                      id="cod-hs-select"
+                      className="deck-input no-icon"
+                      value={codHeadshots}
+                      onChange={(e) => setCodHeadshots(Number(e.target.value))}
+                    >
+                      <option value={0}>0 Headshots · Body</option>
+                      <option value={1}>1 Headshot + Body</option>
+                      <option value={2}>2 Headshots + Body</option>
+                      <option value={3}>3 Headshots</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="slider-pair-grid" style={{ marginTop: '14px' }}>
+                  <div>
+                    <div className="meter-labels" style={{ fontSize: '0.78rem', marginBottom: '6px' }}>
+                      <span>Custom Weapon A RPM</span>
+                      <strong className="mono">{useCustomStats ? customRpm : weaponAObj.rpm} RPM</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min={300}
+                      max={1200}
+                      step={1}
+                      value={useCustomStats ? customRpm : weaponAObj.rpm}
+                      style={{ '--pct': `${Math.round((((useCustomStats ? customRpm : weaponAObj.rpm) - 300) / 900) * 100)}%`, width: '100%' }}
+                      onChange={(e) => {
+                        setUseCustomStats(true);
+                        setCustomRpm(Number(e.target.value));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div className="meter-labels" style={{ fontSize: '0.78rem', marginBottom: '6px' }}>
+                      <span>Custom Damage / Bullet</span>
+                      <strong className="mono">{useCustomStats ? customDmg : weaponAObj.damage} DMG</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min={20}
+                      max={90}
+                      step={1}
+                      value={useCustomStats ? customDmg : weaponAObj.damage}
+                      style={{ '--pct': `${Math.round((((useCustomStats ? customDmg : weaponAObj.damage) - 20) / 70) * 100)}%`, width: '100%' }}
+                      onChange={(e) => {
+                        setUseCustomStats(true);
+                        setCustomDmg(Number(e.target.value));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mg-stat-mini-grid">
+                  <div className="mg-stat-mini">
+                    <span>Shots to Kill (A / B)</span>
+                    <strong>{ttkA.shotsToKill} / {ttkB.shotsToKill}</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Raw DPS (A / B)</span>
+                    <strong>{ttkA.dps} / {ttkB.dps}</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Shot Interval</span>
+                    <strong>{ttkA.fireIntervalMs} ms</strong>
+                  </div>
+                </div>
               </div>
-            ))
-          ) : (
-            <div className="pro-meta-locked-wrap">
-              <div className="pro-meta-locked-blur" aria-hidden="true">
-                {metaRows.slice(1).map((row) => (
-                  <div key={row.label} className="pro-meta-row">
-                    <div className="pro-meta-row-label">{row.label}</div>
-                    <div className="pro-meta-row-val">{row.val}</div>
+
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">Mastery Camo 33-Weapon Grind Estimator</h2>
+                  <span className="district-pill">{camoRemainingGuns} Weapons Remaining</span>
+                </div>
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="camo-done">Weapons Finished (0–33)</label>
+                    <input
+                      id="camo-done"
+                      type="number"
+                      min={0}
+                      max={33}
+                      className="deck-input no-icon mono"
+                      value={camoClassCount}
+                      onChange={(e) => setCamoClassCount(Math.max(0, Math.min(33, Number(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="camo-pace">Avg Matches / Weapon</label>
+                    <input
+                      id="camo-pace"
+                      type="number"
+                      min={1}
+                      max={30}
+                      className="deck-input no-icon mono"
+                      value={camoMatchesPerGun}
+                      onChange={(e) => setCamoMatchesPerGun(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label>Remaining Matches</label>
+                    <div className="hud-readout" style={{ width: '100%', justifyContent: 'center' }}>
+                      {camoMatchesLeft} Matches Left
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==================== FORTNITE ==================== */}
+          {game.id === 'fortnite' && (
+            <div className="mg-subcard">
+              <div className="mg-subcard-head">
+                <h2 className="mg-subcard-title">
+                  <Zap size={16} color={game.accentColor} />
+                  <span>Multi-Mode Battle Pass XP Pace (80,000 XP / Level)</span>
+                </h2>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={() =>
+                    handlePinSnapshot(
+                      `Level ${fnCurLvl} -> ${fnTargetLvl}`,
+                      fortniteResult.alreadyDone
+                        ? 'Target Reached'
+                        : `${fortniteResult.xpPerDay.toLocaleString('en-US')} XP/day (~${fortniteResult.estMatchesPerDay} BR matches)`
+                    )
+                  }
+                >
+                  <Bookmark size={13} /> Pin XP Plan
+                </button>
+              </div>
+
+              <div className="mg-hero-answer mobile-answer-first">
+                <div>
+                  <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    {fortniteResult.alreadyDone ? 'TARGET ALREADY REACHED' : `DAILY XP NEEDED OVER ${fnDaysLeft} DAYS`}
+                  </div>
+                  <div className="mg-hero-value">
+                    {fortniteResult.alreadyDone
+                      ? 'Goal Complete (0 XP Needed)'
+                      : `${fortniteResult.xpPerDay.toLocaleString('en-US')} XP / day`}
+                  </div>
+                </div>
+                <div className="mono" style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>
+                  {fortniteResult.alreadyDone
+                    ? `Lv ${fnCurLvl} >= ${fnTargetLvl}`
+                    : `${fortniteResult.levelsPerDay} lvls/day · ~${fortniteResult.estMatchesPerDay} BR matches`}
+                </div>
+              </div>
+
+              <div className="filter-row">
+                {[100, 140, 200].map((lvl) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    className={`filter-pill ${fnTargetLvl === lvl ? 'active' : ''}`}
+                    onClick={() => setFnTargetLvl(lvl)}
+                  >
+                    Target Lv {lvl} {lvl === 140 ? '(+500 V-Bucks)' : lvl === 200 ? '(Super Styles)' : '(Main Pass)'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mg-field-grid">
+                <div className="mg-field">
+                  <label htmlFor="fn-cur">Current Level</label>
+                  <input
+                    id="fn-cur"
+                    type="number"
+                    min={1}
+                    max={200}
+                    className="deck-input no-icon mono"
+                    value={fnCurLvl}
+                    onChange={(e) => setFnCurLvl(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+                  />
+                </div>
+                <div className="mg-field">
+                  <label htmlFor="fn-days">Days Left in Season</label>
+                  <input
+                    id="fn-days"
+                    type="number"
+                    min={1}
+                    max={120}
+                    className="deck-input no-icon mono"
+                    value={fnDaysLeft}
+                    onChange={(e) => setFnDaysLeft(Math.max(1, Math.min(120, Number(e.target.value) || 1)))}
+                  />
+                </div>
+              </div>
+
+              <div className="filter-row" style={{ marginTop: '14px', marginBottom: 0 }}>
+                <button
+                  type="button"
+                  className={`filter-pill ${fnIncludeDailies ? 'active' : ''}`}
+                  onClick={() => setFnIncludeDailies((v) => !v)}
+                >
+                  BR 3x Daily Bonus (+60K/day)
+                </button>
+                <button
+                  type="button"
+                  className={`filter-pill ${fnIncludeCreative ? 'active' : ''}`}
+                  onClick={() => setFnIncludeCreative((v) => !v)}
+                >
+                  UEFN Creative (+300K/day)
+                </button>
+                <button
+                  type="button"
+                  className={`filter-pill ${fnIncludeLego ? 'active' : ''}`}
+                  onClick={() => setFnIncludeLego((v) => !v)}
+                >
+                  LEGO / Festival (+120K/day)
+                </button>
+              </div>
+
+              <div className="mg-stat-mini-grid">
+                <div className="mg-stat-mini">
+                  <span>Levels Remaining</span>
+                  <strong>{fortniteResult.levelsLeft}</strong>
+                </div>
+                <div className="mg-stat-mini">
+                  <span>Daily Quests + Passive</span>
+                  <strong>{fortniteResult.passiveXpPerDay.toLocaleString('en-US')} XP</strong>
+                </div>
+                <div className="mg-stat-mini">
+                  <span>Active BR Grind Left</span>
+                  <strong>{fortniteResult.activeBrXpNeededPerDay.toLocaleString('en-US')} XP/day</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== MINECRAFT ==================== */}
+          {game.id === 'minecraft' && (
+            <>
+              <div
+                className="hardware-slim-bar"
+                role="note"
+                style={{ marginTop: 0, marginBottom: '12px', fontSize: '0.76rem', color: 'var(--ink-secondary)' }}
+              >
+                <span>
+                  <strong>Unofficial Fan Utility:</strong> NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG AB OR MICROSOFT.
+                </span>
+              </div>
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">
+                    <Box size={16} color={game.accentColor} />
+                    <span>8:1 Nether Portal Linker (Exact Math.floor + Chunk / .mca)</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() =>
+                      handlePinSnapshot(
+                        `${mcDir === 'toNether' ? 'OW->Nether' : 'Nether->OW'}`,
+                        `X:${mcResult.output.x} Y:${mcResult.output.y} Z:${mcResult.output.z}`
+                      )
+                    }
+                  >
+                    <Bookmark size={13} /> Pin Portal
+                  </button>
+                </div>
+
+                <div className="mg-hero-answer mobile-answer-first">
+                  <div>
+                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                      {mcDir === 'toNether' ? 'BUILD PAIRED NETHER PORTAL AT' : 'OVERWORLD EXIT TARGET'}
+                    </div>
+                    <div className="mg-hero-value">
+                      X: {mcResult.output.x} · Y: {mcResult.output.y} · Z: {mcResult.output.z}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-key-btn"
+                    onClick={() =>
+                      copyText(
+                        `${mcResult.output.x} ${mcResult.output.y} ${mcResult.output.z}`,
+                        'mc-coords'
+                      )
+                    }
+                  >
+                    {copiedKey === 'mc-coords' ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copiedKey === 'mc-coords' ? 'Copied' : 'Copy XYZ'}</span>
+                  </button>
+                </div>
+
+                <div className="filter-row">
+                  <button
+                    type="button"
+                    className={`filter-pill ${mcDir === 'toNether' ? 'active' : ''}`}
+                    onClick={() => setMcDir('toNether')}
+                  >
+                    Overworld → Nether (÷ 8 floor)
+                  </button>
+                  <button
+                    type="button"
+                    className={`filter-pill ${mcDir === 'toOverworld' ? 'active' : ''}`}
+                    onClick={() => setMcDir('toOverworld')}
+                  >
+                    Nether → Overworld (× 8)
+                  </button>
+                </div>
+
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="mc-x">X Coordinate</label>
+                    <input
+                      id="mc-x"
+                      type="number"
+                      className="deck-input no-icon mono"
+                      value={mcX}
+                      onChange={(e) => setMcX(e.target.value)}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="mc-y">Y Altitude (-64..320)</label>
+                    <input
+                      id="mc-y"
+                      type="number"
+                      className="deck-input no-icon mono"
+                      value={mcY}
+                      onChange={(e) => setMcY(e.target.value)}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="mc-z">Z Coordinate</label>
+                    <input
+                      id="mc-z"
+                      type="number"
+                      className="deck-input no-icon mono"
+                      value={mcZ}
+                      onChange={(e) => setMcZ(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="mg-stat-mini-grid">
+                  <div className="mg-stat-mini">
+                    <span>Chunk Index</span>
+                    <strong>{mcResult.chunk.cx}, {mcResult.chunk.cz}</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Region File</span>
+                    <strong>r.{mcResult.chunk.rx}.{mcResult.chunk.rz}.mca</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Y-Altitude Advisory</span>
+                    <strong style={{ fontSize: '0.82rem' }}>{mcResult.netherYWarning}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">2nd-Portal 3D Collision &amp; 2-Throw Stronghold Locator</h2>
+                  <span
+                    className="district-pill"
+                    style={{ color: mcCollision.conflictRisk ? 'var(--coral)' : 'var(--teal-dark)' }}
+                  >
+                    {mcCollision.conflictRisk ? 'Link Conflict Risk' : 'Clear Separation'}
+                  </span>
+                </div>
+
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="mc-b-x">2nd Portal Overworld X</label>
+                    <input id="mc-b-x" type="number" className="deck-input no-icon mono" value={portalBX} onChange={(e) => setPortalBX(e.target.value)} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="mc-b-y">2nd Portal Y</label>
+                    <input id="mc-b-y" type="number" className="deck-input no-icon mono" value={portalBY} onChange={(e) => setPortalBY(e.target.value)} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="mc-b-z">2nd Portal Overworld Z</label>
+                    <input id="mc-b-z" type="number" className="deck-input no-icon mono" value={portalBZ} onChange={(e) => setPortalBZ(e.target.value)} />
+                  </div>
+                </div>
+                <p style={{ margin: '10px 0 14px', fontSize: '0.8rem', color: 'var(--ink-secondary)' }}>
+                  Nether 3D dist: <strong className="mono">{mcCollision.nether3dDist}</strong> blocks · {mcCollision.verdict}
+                </p>
+
+                <hr className="receipt-dash" />
+
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="sh-x1">Throw #1 X / Z / Yaw</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '5px' }}>
+                      <input id="sh-x1" type="number" aria-label="Throw 1 X" className="deck-input no-icon mono" value={throw1X} onChange={(e) => setThrow1X(e.target.value)} />
+                      <input type="number" aria-label="Throw 1 Z" className="deck-input no-icon mono" value={throw1Z} onChange={(e) => setThrow1Z(e.target.value)} />
+                      <input type="number" aria-label="Throw 1 Deg" className="deck-input no-icon mono" value={throw1Deg} onChange={(e) => setThrow1Deg(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="sh-x2">Throw #2 X / Z / Yaw</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '5px' }}>
+                      <input id="sh-x2" type="number" aria-label="Throw 2 X" className="deck-input no-icon mono" value={throw2X} onChange={(e) => setThrow2X(e.target.value)} />
+                      <input type="number" aria-label="Throw 2 Z" className="deck-input no-icon mono" value={throw2Z} onChange={(e) => setThrow2Z(e.target.value)} />
+                      <input type="number" aria-label="Throw 2 Deg" className="deck-input no-icon mono" value={throw2Deg} onChange={(e) => setThrow2Deg(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+                <div className="hud-readout" style={{ marginTop: '10px', width: '100%', justifyContent: 'space-between' }}>
+                  <span>Stronghold Triangulation</span>
+                  <strong>
+                    {strongholdResult.valid
+                      ? `OW X:${strongholdResult.x} Z:${strongholdResult.z} (Nether ${strongholdResult.netherX}, ${strongholdResult.netherZ})`
+                      : strongholdResult.reason}
+                  </strong>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==================== EA SPORTS FC 27 ==================== */}
+          {(game.id === 'ea-fc-27' || game.id === 'ea-fc-25') && (
+            <>
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">
+                    <Trophy size={16} color={game.accentColor} />
+                    <span>5% EA Tax Flipper &amp; Legal Price-Step Sniping Target</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() =>
+                      handlePinSnapshot(
+                        `Buy ${Number(eaBuyCoins).toLocaleString('en-US')}`,
+                        `Min Sell ${eaTaxResult.minBreakEvenSnapped.toLocaleString('en-US')} | Batch Profit ${eaTaxResult.totalProfit.toLocaleString('en-US')}`
+                      )
+                    }
+                  >
+                    <Bookmark size={13} /> Pin Flip
+                  </button>
+                </div>
+
+                <div className="mg-hero-answer mobile-answer-first">
+                  <div>
+                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                      NET PROFIT ({eaQty}x CARDS AFTER 5% TAX)
+                    </div>
+                    <div
+                      className="mg-hero-value"
+                      style={{ color: eaTaxResult.totalProfit >= 0 ? 'var(--teal-dark)' : 'var(--coral)' }}
+                    >
+                      {eaTaxResult.totalProfit >= 0 ? '+' : ''}
+                      {eaTaxResult.totalProfit.toLocaleString('en-US')} Coins ({eaTaxResult.roiPct}%)
+                    </div>
+                  </div>
+                  <div className="mono" style={{ fontWeight: 700, color: 'var(--ocean)' }}>
+                    Min Legal Sell: {eaTaxResult.minBreakEvenSnapped.toLocaleString('en-US')}
+                  </div>
+                </div>
+
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="ea-buy">Buy Price (Coins)</label>
+                    <input
+                      id="ea-buy"
+                      type="number"
+                      min={200}
+                      step={500}
+                      className="deck-input no-icon mono"
+                      value={eaBuyCoins}
+                      onChange={(e) => setEaBuyCoins(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="ea-sell">Planned List Price</label>
+                    <input
+                      id="ea-sell"
+                      type="number"
+                      min={200}
+                      step={500}
+                      className="deck-input no-icon mono"
+                      value={eaSellCoins}
+                      onChange={(e) => setEaSellCoins(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="ea-qty">Batch Qty</label>
+                    <div className="stepper-input-row">
+                      <button type="button" className="calc-stepper-btn" onClick={() => setEaQty((q) => Math.max(1, q - 1))}>−</button>
+                      <input
+                        id="ea-qty"
+                        type="number"
+                        min={1}
+                        max={100}
+                        className="deck-input no-icon mono"
+                        value={eaQty}
+                        onChange={(e) => setEaQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                      />
+                      <button type="button" className="calc-stepper-btn" onClick={() => setEaQty((q) => Math.min(100, q + 1))}>+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mg-stat-mini-grid">
+                  <div className="mg-stat-mini">
+                    <span>EA 5% Tax / Card</span>
+                    <strong>-{eaTaxResult.taxPerCard.toLocaleString('en-US')}</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Profit Per Card</span>
+                    <strong>{eaTaxResult.profitPerCard.toLocaleString('en-US')}</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Max Safe Snipe Bid</span>
+                    <strong>{eaTaxResult.maxSafeBuyGivenSell.toLocaleString('en-US')}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">Exact 11-Player SBC Rating Solver (Excess Rule)</h2>
+                  <span className="district-pill" style={{ color: 'var(--teal-dark)' }}>
+                    Squad OVR: {eaSbcResult.rating} ({eaSbcResult.exactFloat})
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '6px' }}>
+                  {sbcRatings.map((val, idx) => (
+                    <div key={idx} className="mg-field">
+                      <label htmlFor={`sbc-slot-${idx}`}>#{idx + 1}</label>
+                      <input
+                        id={`sbc-slot-${idx}`}
+                        type="number"
+                        min={45}
+                        max={99}
+                        className="deck-input no-icon mono"
+                        style={{ padding: '6px 8px', textAlign: 'center' }}
+                        value={val}
+                        onChange={(e) => {
+                          const v = Math.max(45, Math.min(99, Number(e.target.value) || 45));
+                          setSbcRatings((prev) => prev.map((r, i) => (i === idx ? v : r)));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==================== ROBLOX ==================== */}
+          {game.id === 'roblox' && (
+            <div className="mg-subcard">
+              <div className="mg-subcard-head">
+                <h2 className="mg-subcard-title">
+                  <Sparkles size={16} color={game.accentColor} />
+                  <span>DevEx Cashout (30,000 R$ Floor) &amp; Reverse Gamepass Price</span>
+                </h2>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={() =>
+                    handlePinSnapshot(
+                      `${Number(rbxGross).toLocaleString('en-US')} R$ Gross`,
+                      rbxResult.eligible
+                        ? `$${rbxResult.usdPayout.toFixed(2)} USD (${rbxResult.creatorNetRobux.toLocaleString('en-US')} Net R$)`
+                        : `Locked (${rbxResult.shortfallForMin.toLocaleString('en-US')} R$ short of 30K)`
+                    )
+                  }
+                >
+                  <Bookmark size={13} /> Pin Target
+                </button>
+              </div>
+
+              <div className="mg-hero-answer mobile-answer-first">
+                <div>
+                  <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    {rbxResult.eligible ? 'ELIGIBLE DEVEX USD CASHOUT' : 'DEVEX MINIMUM 30,000 EARNED R$ BLOCKER'}
+                  </div>
+                  <div
+                    className="mg-hero-value"
+                    style={{ color: rbxResult.eligible ? 'var(--teal-dark)' : 'var(--gold)' }}
+                  >
+                    {rbxResult.eligible
+                      ? `$${rbxResult.usdPayout.toFixed(2)} USD`
+                      : `Need +${rbxResult.shortfallForMin.toLocaleString('en-US')} Net R$`}
+                  </div>
+                </div>
+                <div className="mono" style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--ink-secondary)' }}>
+                  Net Earned: {rbxResult.creatorNetRobux.toLocaleString('en-US')} R$
+                </div>
+              </div>
+
+              {!rbxResult.eligible && (
+                <div className="hardware-slim-bar" style={{ marginTop: 0, marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertTriangle size={15} color="var(--gold)" />
+                    <span>
+                      Roblox DevEx requires at least <strong>30,000 net earned R$</strong> (currently at{' '}
+                      <strong>{Math.min(100, Math.round((rbxResult.creatorNetRobux / 30000) * 100))}%</strong> —
+                      projected value ~${rbxResult.usdPayout.toFixed(2)} once eligible).
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="mg-field-grid">
+                <div className="mg-field">
+                  <label htmlFor="rbx-gross">Gross Gamepass / Item Sales (R$)</label>
+                  <input
+                    id="rbx-gross"
+                    type="number"
+                    min={0}
+                    step={5000}
+                    className="deck-input no-icon mono"
+                    value={rbxGross}
+                    onChange={(e) => setRbxGross(Math.max(0, Number(e.target.value) || 0))}
+                  />
+                </div>
+                <div className="mg-field">
+                  <label htmlFor="rbx-rate">DevEx Tier Rate</label>
+                  <select
+                    id="rbx-rate"
+                    className="deck-input no-icon"
+                    value={rbxRateId}
+                    onChange={(e) => setRbxRateId(e.target.value)}
+                  >
+                    {ROBLOX_RATES.map((r) => (
+                      <option key={r.id} value={r.id}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mg-field">
+                  <label htmlFor="rbx-split">Your Group Share (%)</label>
+                  <input
+                    id="rbx-split"
+                    type="number"
+                    min={1}
+                    max={100}
+                    className="deck-input no-icon mono"
+                    value={rbxGroupSplit}
+                    onChange={(e) => setRbxGroupSplit(Math.max(1, Math.min(100, Number(e.target.value) || 100)))}
+                  />
+                </div>
+                <div className="mg-field">
+                  <label htmlFor="rbx-target">Reverse Goal (Net R$ Wanted)</label>
+                  <input
+                    id="rbx-target"
+                    type="number"
+                    min={1}
+                    step={1000}
+                    className="deck-input no-icon mono"
+                    value={rbxDesiredNet}
+                    onChange={(e) => setRbxDesiredNet(Math.max(1, Number(e.target.value) || 1))}
+                  />
+                </div>
+              </div>
+
+              <div className="mg-stat-mini-grid">
+                <div className="mg-stat-mini">
+                  <span>After 30% Market Fee</span>
+                  <strong>{rbxResult.afterMarketFee.toLocaleString('en-US')} R$</strong>
+                </div>
+                <div className="mg-stat-mini">
+                  <span>List Gamepass At</span>
+                  <strong>{reverseGamepassPrice.toLocaleString('en-US')} R$</strong>
+                </div>
+                <div className="mg-stat-mini">
+                  <span>Min Sales for 30K Net</span>
+                  <strong>42,858 R$</strong>
+                </div>
+              </div>
+              <p style={{ margin: '10px 0 0', fontSize: '0.76rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+                Informational estimate only — not financial advice or a payout guarantee. Actual DevEx rates, tax withholding, and 13+ eligibility are governed solely by Roblox Corp. Zero data is collected on minors.
+              </p>
+            </div>
+          )}
+
+          {/* ==================== COUNTER-STRIKE 2 ==================== */}
+          {game.id === 'cs2' && (
+            <>
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">
+                    <Shield size={16} color={game.accentColor} />
+                    <span>CS2 MR12 Loss-Bonus Ladder (-1 Step on Round Win)</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() =>
+                      handlePinSnapshot(
+                        `${csSide} $${csCash} (Loss Lv ${csLossLevel})`,
+                        `${csResult.callout} | Next Loss $${csResult.nextBonusOnLoss}`
+                      )
+                    }
+                  >
+                    <Bookmark size={13} /> Pin Round
+                  </button>
+                </div>
+
+                <div className="mg-hero-answer mobile-answer-first">
+                  <div>
+                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                      {csSide}-SIDE CALLOUT (FULL NEED: ${csResult.fullBuyNeed.toLocaleString('en-US')})
+                    </div>
+                    <div className="mg-hero-value">{csResult.callout}</div>
+                  </div>
+                  <div className="mono" style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>
+                    Max Safe Eco Spend: ${csResult.maxSafeSpendForNextFullBuy.toLocaleString('en-US')}
+                  </div>
+                </div>
+
+                <div className="filter-row">
+                  <button
+                    type="button"
+                    className={`filter-pill ${csSide === 'CT' ? 'active' : ''}`}
+                    onClick={() => setCsSide('CT')}
+                  >
+                    CT Side ($5,100 Full / $4,300 Core)
+                  </button>
+                  <button
+                    type="button"
+                    className={`filter-pill ${csSide === 'T' ? 'active' : ''}`}
+                    onClick={() => setCsSide('T')}
+                  >
+                    T Side ($4,700 Full / $3,700 Core)
+                  </button>
+                  {csSide === 'T' && (
+                    <button
+                      type="button"
+                      className={`filter-pill ${csBombPlanted ? 'active' : ''}`}
+                      onClick={() => setCsBombPlanted((v) => !v)}
+                    >
+                      Bomb Plant (+$800)
+                    </button>
+                  )}
+                </div>
+
+                <div className="filter-row">
+                  {CS2_LOSS_LADDER.map((bonus, lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      className={`filter-pill ${csLossLevel === lvl ? 'active' : ''}`}
+                      onClick={() => setCsLossLevel(lvl)}
+                    >
+                      Lv {lvl}: ${bonus.toLocaleString('en-US')}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() => setCsLossLevel((l) => Math.max(0, l - 1))}
+                  >
+                    Round Won (-1 Step)
+                  </button>
+                </div>
+
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="cs-cash">Your Current Bank ($0–$16,000)</label>
+                    <input
+                      id="cs-cash"
+                      type="number"
+                      min={0}
+                      max={16000}
+                      step={100}
+                      className="deck-input no-icon mono"
+                      value={csCash}
+                      onChange={(e) => setCsCash(Math.max(0, Math.min(16000, Number(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Next Loss Bonus Guarantee</span>
+                    <strong>+${csResult.nextBonusOnLoss.toLocaleString('en-US')}</strong>
+                  </div>
+                  <div className="mg-stat-mini">
+                    <span>Bank If Full Save</span>
+                    <strong>${csResult.cashIfSaveAll.toLocaleString('en-US')}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">5-Player Squad Bank Drop Matrix</h2>
+                  <span className="district-pill">
+                    {csSquadStats.canBuyCount}/5 Can Core Buy · {csSquadStats.dropsAvailable} Rifle Drops
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '8px' }}>
+                  {csTeamCash.map((val, i) => (
+                    <div key={i} className="mg-field">
+                      <label htmlFor={`cs-p-${i}`}>P{i + 1} $</label>
+                      <input
+                        id={`cs-p-${i}`}
+                        type="number"
+                        step={100}
+                        min={0}
+                        max={16000}
+                        className="deck-input no-icon mono"
+                        style={{ padding: '7px 8px', textAlign: 'center' }}
+                        value={val}
+                        onChange={(e) => {
+                          const num = Math.max(0, Math.min(16000, Number(e.target.value) || 0));
+                          setCsTeamCash((prev) => prev.map((c, idx) => (idx === i ? num : c)));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==================== VALORANT ==================== */}
+          {game.id === 'valorant' && (
+            <>
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">
+                    <Target size={16} color={game.accentColor} />
+                    <span>Valorant Round Buy Matrix (3,900 Next-Round Guarantee)</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() =>
+                      handlePinSnapshot(
+                        `${valCreds} Credits Buy`,
+                        `Spend ${valResult.totalBuy} | Left ${valResult.leftover} | Next Min ${valResult.nextRoundMinOnLoss}`
+                      )
+                    }
+                  >
+                    <Bookmark size={13} /> Pin Buy
+                  </button>
+                </div>
+
+                <div className="mg-hero-answer mobile-answer-first">
+                  <div>
+                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                      NEXT ROUND FLOOR IF LOST
+                    </div>
+                    <div
+                      className="mg-hero-value"
+                      style={{ color: valResult.nextRoundReady ? 'var(--teal-dark)' : 'var(--gold)' }}
+                    >
+                      {valResult.nextRoundMinOnLoss.toLocaleString('en-US')} Creds
+                    </div>
+                  </div>
+                  <div className="mono" style={{ fontWeight: 700, color: valResult.nextRoundReady ? 'var(--teal-dark)' : 'var(--coral)' }}>
+                    {valResult.nextRoundReady ? '3,900+ Full Buy Locked' : 'Short for Rifle + Heavy Next'}
+                  </div>
+                </div>
+
+                <div className="mg-field-grid two-col">
+                  <div className="mg-field">
+                    <label htmlFor="val-creds">Current Credits</label>
+                    <input
+                      id="val-creds"
+                      type="number"
+                      min={0}
+                      max={9000}
+                      step={50}
+                      className="deck-input no-icon mono"
+                      value={valCreds}
+                      onChange={(e) => setValCreds(Math.max(0, Math.min(9000, Number(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="val-weap">Primary Weapon</label>
+                    <select id="val-weap" className="deck-input no-icon" value={valWeaponCost} onChange={(e) => setValWeaponCost(Number(e.target.value))}>
+                      {VAL_WEAPONS.map((w) => (
+                        <option key={w.id} value={w.cost}>{w.name} ({w.cost})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="val-armor">Armor Tier</label>
+                    <select id="val-armor" className="deck-input no-icon" value={valArmorCost} onChange={(e) => setValArmorCost(Number(e.target.value))}>
+                      {VAL_ARMOR.map((a) => (
+                        <option key={a.id} value={a.cost}>{a.name} ({a.cost})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="val-util">Ability / Util Spend</label>
+                    <input id="val-util" type="number" min={0} max={1200} step={50} className="deck-input no-icon mono" value={valUtilCost} onChange={(e) => setValUtilCost(Math.max(0, Number(e.target.value) || 0))} />
+                  </div>
+                </div>
+
+                <div className="filter-row" style={{ marginTop: '12px', marginBottom: 0 }}>
+                  {[
+                    { streak: 0, label: '0 Losses (1,900 next)' },
+                    { streak: 1, label: '1 Loss (2,400 next)' },
+                    { streak: 2, label: '2+ Losses (2,900 max)' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.streak}
+                      type="button"
+                      className={`filter-pill ${valLossStreak === opt.streak ? 'active' : ''}`}
+                      onClick={() => setValLossStreak(opt.streak)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">Ranked RR Climb EV Simulator</h2>
+                  <span className="district-pill">
+                    {valRrResult.positiveClimb
+                      ? `~${valRrResult.matchesToPromote} Matches to Rank Up`
+                      : 'Negative / Flat RR EV'}
+                  </span>
+                </div>
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="val-cur-rr">Current RR (0–99)</label>
+                    <input id="val-cur-rr" type="number" min={0} max={99} className="deck-input no-icon mono" value={valCurRr} onChange={(e) => setValCurRr(Number(e.target.value) || 0)} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="val-wr">Win Rate %</label>
+                    <input id="val-wr" type="number" min={1} max={99} className="deck-input no-icon mono" value={valWr} onChange={(e) => setValWr(Number(e.target.value) || 50)} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="val-wrr">Avg +RR Win / -RR Loss</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                      <input type="number" aria-label="Avg win RR" className="deck-input no-icon mono" value={valWinRr} onChange={(e) => setValWinRr(Number(e.target.value) || 18)} />
+                      <input type="number" aria-label="Avg loss RR" className="deck-input no-icon mono" value={valLossRr} onChange={(e) => setValLossRr(Number(e.target.value) || 16)} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==================== APEX LEGENDS ==================== */}
+          {game.id === 'apex-legends' && (
+            <>
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">
+                    <Flame size={16} color={game.accentColor} />
+                    <span>500-Pack Heirloom Pity Breakdown (Prestige Tiers 0–3)</span>
+                  </h2>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={() =>
+                      handlePinSnapshot(
+                        `Prestige ${apexPrestige} · Lv ${apexLevel}`,
+                        `${apexTotalOpened}/500 Opened (${apexRemaining} to Shards)`
+                      )
+                    }
+                  >
+                    <Bookmark size={13} /> Pin Pity
+                  </button>
+                </div>
+
+                <div className="mg-hero-answer mobile-answer-first">
+                  <div>
+                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                      GUARANTEED 150 SHARDS PROGRESS
+                    </div>
+                    <div className="mg-hero-value">
+                      {apexTotalOpened} / 500 Packs ({Math.round((apexTotalOpened / 500) * 100)}%)
+                    </div>
+                  </div>
+                  <div className="mono" style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>
+                    {apexRemaining === 0 ? 'HEIRLOOM GUARANTEED!' : `${apexRemaining} Packs Remaining`}
+                  </div>
+                </div>
+
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="apx-pres">Prestige Tier (0–3)</label>
+                    <select id="apx-pres" className="deck-input no-icon" value={apexPrestige} onChange={(e) => setApexPrestige(Number(e.target.value))}>
+                      <option value={0}>Tier 0 (Lv 1–500 · max 199 free)</option>
+                      <option value={1}>Prestige 1 (Lv 501–1000)</option>
+                      <option value={2}>Prestige 2 (Lv 1001–1500)</option>
+                      <option value={3}>Prestige 3 (Lv 1501–2000)</option>
+                    </select>
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="apx-lvl">Level Within Tier (1–500)</label>
+                    <input id="apx-lvl" type="number" min={1} max={500} className="deck-input no-icon mono" value={apexLevel} onChange={(e) => setApexLevel(Math.max(1, Math.min(500, Number(e.target.value) || 1)))} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="apx-bp">Battle Pass + Quest Packs</label>
+                    <input id="apx-bp" type="number" min={0} max={300} className="deck-input no-icon mono" value={apexBpPacks} onChange={(e) => setApexBpPacks(Math.max(0, Number(e.target.value) || 0))} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="apx-buy">Purchased Packs</label>
+                    <input id="apx-buy" type="number" min={0} max={500} className="deck-input no-icon mono" value={apexPurchasedPacks} onChange={(e) => setApexPurchasedPacks(Math.max(0, Number(e.target.value) || 0))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mg-subcard">
+                <div className="mg-subcard-head">
+                  <h2 className="mg-subcard-title">Ranked RP Match Estimator</h2>
+                  <span className="district-pill">
+                    {apexRpResult.alreadyReached
+                      ? 'Tier Already Reached'
+                      : apexRpResult.matchesNeeded !== null
+                        ? `~${apexRpResult.matchesNeeded} Matches (${apexRpResult.rpGap.toLocaleString('en-US')} RP Gap)`
+                        : 'Positive Net RP Needed'}
+                  </span>
+                </div>
+                <div className="mg-field-grid">
+                  <div className="mg-field">
+                    <label htmlFor="apx-rp">Current Ranked RP</label>
+                    <input id="apx-rp" type="number" min={0} step={200} className="deck-input no-icon mono" value={apexCurRp} onChange={(e) => setApexCurRp(Number(e.target.value) || 0)} />
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="apx-tier">Target Rank</label>
+                    <select id="apx-tier" className="deck-input no-icon" value={apexTargetTier} onChange={(e) => setApexTargetTier(e.target.value)}>
+                      {APEX_RANK_TIERS.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name} ({t.thresholdRp.toLocaleString('en-US')} RP · -{t.entryCost} Entry)</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mg-field">
+                    <label htmlFor="apx-avg">Avg Net RP / Match</label>
+                    <input id="apx-avg" type="number" min={-100} max={350} step={5} className="deck-input no-icon mono" value={apexAvgRp} onChange={(e) => setApexAvgRp(Number(e.target.value) || 0)} />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==================== GTA ONLINE ==================== */}
+          {game.id === 'gta-v' && (
+            <div className="mg-subcard">
+              <div className="mg-subcard-head">
+                <h2 className="mg-subcard-title">
+                  <DollarSign size={16} color={game.accentColor} />
+                  <span>Cayo Perico Payout Splitter (15% Crew Floor + Bag Optimizer)</span>
+                </h2>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={() =>
+                    handlePinSnapshot(
+                      `${cayoPlayers}P Cayo (${cayoResult.hostPct}% Host)`,
+                      `Host Net: $${(cayoResult.hostProfitAfterSetup + cayoEliteDollars).toLocaleString('en-US')}`
+                    )
+                  }
+                >
+                  <Bookmark size={13} /> Pin Payout
+                </button>
+              </div>
+
+              <div className="mg-hero-answer mobile-answer-first">
+                <div>
+                  <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    HOST NET PROFIT (AFTER $100K SETUP + PAVEL 2% + FENCE 10%)
+                  </div>
+                  <div className="mg-hero-value" style={{ color: 'var(--teal-dark)' }}>
+                    ${(cayoResult.hostProfitAfterSetup + cayoEliteDollars).toLocaleString('en-US')}
+                  </div>
+                </div>
+                <div className="mono" style={{ fontWeight: 700, color: 'var(--ink-secondary)' }}>
+                  Host Share: {cayoResult.hostPct}% (Cap {cayoResult.maxHostPct}%)
+                </div>
+              </div>
+
+              <div className="filter-row">
+                <button type="button" className={`filter-pill ${cayoHardMode ? 'active' : ''}`} onClick={() => setCayoHardMode((v) => !v)}>
+                  Hard Mode (+10% Primary)
+                </button>
+                <button type="button" className={`filter-pill ${cayoEliteBonus ? 'active' : ''}`} onClick={() => setCayoEliteBonus((v) => !v)}>
+                  Elite Challenge (+${(cayoHardMode ? 100000 : 50000).toLocaleString('en-US')})
+                </button>
+              </div>
+
+              <div className="mg-field-grid">
+                <div className="mg-field">
+                  <label htmlFor="cayo-primary">Primary Target</label>
+                  <select id="cayo-primary" className="deck-input no-icon" value={cayoPrimaryVal} onChange={(e) => setCayoPrimaryVal(Number(e.target.value))}>
+                    {CAYO_TARGETS.map((t) => (
+                      <option key={t.id} value={t.val}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mg-field">
+                  <label htmlFor="cayo-bag">Secondary Bag Fill</label>
+                  <select id="cayo-bag" className="deck-input no-icon" value={cayoSecondaryVal} onChange={(e) => setCayoSecondaryVal(Number(e.target.value))}>
+                    {CAYO_BAGS.map((b) => (
+                      <option key={b.id} value={b.val}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mg-field">
+                  <label htmlFor="cayo-players">Squad Size</label>
+                  <select
+                    id="cayo-players"
+                    className="deck-input no-icon"
+                    value={cayoPlayers}
+                    onChange={(e) => {
+                      const p = Number(e.target.value);
+                      setCayoPlayers(p);
+                      setCayoHostPct(p === 1 ? 100 : 100 - 15 * (p - 1));
+                    }}
+                  >
+                    <option value={1}>Solo (100% Host)</option>
+                    <option value={2}>Duo (Max 85% Host)</option>
+                    <option value={3}>Trio (Max 70% Host)</option>
+                    <option value={4}>Quad (Max 55% Host)</option>
+                  </select>
+                </div>
+              </div>
+
+              {cayoPlayers > 1 && (
+                <div style={{ marginTop: '14px' }}>
+                  <div className="meter-labels" style={{ fontSize: '0.8rem', marginBottom: '6px' }}>
+                    <span>Host Cut (Min 15% per crew enforced)</span>
+                    <strong className="mono">{cayoResult.hostPct}%</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min={15}
+                    max={cayoResult.maxHostPct}
+                    step={5}
+                    value={cayoResult.hostPct}
+                    style={{
+                      width: '100%',
+                      '--pct': `${Math.round(((cayoResult.hostPct - 15) / Math.max(1, cayoResult.maxHostPct - 15)) * 100)}%`,
+                    }}
+                    onChange={(e) => setCayoHostPct(Number(e.target.value))}
+                  />
+                </div>
+              )}
+
+              <div className="mg-stat-mini-grid">
+                <div className="mg-stat-mini">
+                  <span>Pavel (2%) + Fence (10%)</span>
+                  <strong>-${(cayoResult.pavelCut + cayoResult.fenceCut).toLocaleString('en-US')}</strong>
+                </div>
+                {cayoResult.crewPayouts.map((cp) => (
+                  <div key={cp.label} className="mg-stat-mini">
+                    <span>{cp.label} ({cp.pct}%)</span>
+                    <strong>${(cp.payout + cayoEliteDollars).toLocaleString('en-US')}</strong>
                   </div>
                 ))}
               </div>
-              <div className="pro-meta-unlock-cta">
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--ink-primary)', marginBottom: 6 }}>
-                  Unlock full S-Tier Meta tables + Phone/PC Sync
-                </div>
-                <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-                  <Lock size={13} color="var(--coral)" />
-                  <span>Unlock All 10 Games ($6.99)</span>
-                </button>
-              </div>
             </div>
-          )
-        )}
-      </div>
-
-      <div className="pin-deck-card">
-        <div className="pro-meta-header" style={{ marginBottom: 6 }}>
-          <h3 style={{ fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Bookmark size={16} color={game.accentColor} />
-            <span>Pinned {game.shortTitle} Targets</span>
-          </h3>
-          <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-muted)' }}>
-            {isPro ? 'Cloud Synced' : `${savedPins.length}/1 Free Pin`}
-          </span>
+          )}
         </div>
 
-        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--ink-secondary)', lineHeight: 1.48 }}>
-          Save portal coords, flip prices, or squad splits here so they stay ready on your phone while you play.
-        </p>
+        {/* RIGHT META REFERENCE + PER-GAME LOCAL PINS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="mg-meta-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+              <TrendingUp size={15} color={game.accentColor} />
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '0.96rem', fontWeight: 700 }}>
+                {game.proMetaTitle}
+              </h3>
+            </div>
 
-        {pinNotice && (
-          <p style={{ margin: '8px 0 0', fontSize: '0.78rem', fontWeight: 600, color: 'var(--teal-dark)' }}>
-            {pinNotice}
-          </p>
-        )}
-
-        {gamePins.length === 0 ? (
-          <div
-            style={{
-              marginTop: 10,
-              padding: '10px 12px',
-              borderRadius: 10,
-              border: '1px dashed var(--border-strong)',
-              fontSize: '0.78rem',
-              color: 'var(--ink-muted)',
-            }}
-          >
-            No {game.shortTitle} targets pinned yet. Click <strong>Pin Target</strong> on the calculator to save one.
-          </div>
-        ) : (
-          gamePins.map((pin) => (
-            <div key={pin.id} className="pin-item-row">
-              <div style={{ minWidth: 0 }}>
-                <div className="pin-item-label">{pin.label}</div>
-                <div className="pin-item-val">{pin.value}</div>
+            {(game.proMetaRows || []).map((row) => (
+              <div key={row.label} className="mg-meta-row">
+                <strong>{row.label}</strong>
+                <span>{row.val}</span>
               </div>
-              {onRemovePin && (
-                <button
-                  type="button"
-                  className="calc-reset-btn"
-                  aria-label={`Remove ${pin.label}`}
-                  onClick={() => {
-                    playSwitchTick(soundEnabled, 680);
-                    onRemovePin(pin.id);
-                  }}
-                >
-                  <Trash2 size={13} />
+            ))}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '14px' }}>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                style={{ justifyContent: 'center', minHeight: '40px' }}
+                onClick={() =>
+                  copyText(
+                    formatDiscordSummary({
+                      gameTitle: currentShareSpec.gameTitle,
+                      headline: currentShareSpec.toolTitle,
+                      heroLabel: currentShareSpec.heroLabel,
+                      heroValue: currentShareSpec.heroValue,
+                      rows: currentShareSpec.rows,
+                    }),
+                    'discord-spec'
+                  )
+                }
+              >
+                {copiedKey === 'discord-spec' ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copiedKey === 'discord-spec' ? 'Copied' : 'Copy Discord'}</span>
+              </button>
+              <button
+                type="button"
+                className="stage-dark-btn"
+                style={{ minHeight: '40px', padding: '7px 10px', fontSize: '0.78rem' }}
+                onClick={() => {
+                  playSwitchTick(soundEnabled, 840);
+                  downloadStudioSpecPng(currentShareSpec);
+                }}
+              >
+                <Share2 size={14} />
+                <span>Save PNG</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mg-pin-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 700, fontSize: '0.9rem' }}>
+                <Compass size={15} color="var(--ocean)" />
+                <span>Saved {game.shortTitle} Pins ({gamePins.length}{isPro ? '' : ' / 5 Free'})</span>
+              </div>
+              {!isPro && (
+                <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
+                  Sync Cloud
                 </button>
               )}
             </div>
-          ))
-        )}
-      </div>
-    </aside>
-  );
 
-  return (
-    <div className="multigame-deck-wrapper">
-      {/* Game Header Banner */}
-      <div className="game-lead-banner" style={{ borderColor: game.accentColor }}>
-        <div className="game-lead-info">
-          <div className="game-badge-row">
-            <span className="game-genre-tag">{game.genre}</span>
-            <span className="game-audience-pill">{game.audienceBadge}</span>
-          </div>
-          <h1 className="game-headline">{game.fullTitle}</h1>
-          <p className="game-lead-tagline">{game.tagline}</p>
-        </div>
-
-        <div className="game-lead-pass-pill">
-          <div className="pass-pill-header">
-            <Sparkles size={15} color={game.accentColor} />
-            <span>Universal Companion Pass</span>
-          </div>
-          <div className="pass-pill-desc">
-            One-time $6.99 unlocks Pro Meta tables &amp; passwordless Phone + PC sync across all 10 games.
-          </div>
-          <button
-            type="button"
-            className="game-pass-cta-btn"
-            style={{ background: game.accentColor }}
-            onClick={onOpenProModal}
-          >
-            {isPro ? 'All-Access Pass Active' : 'Get All-Access Pass ($6.99 · One-Time)'}
-          </button>
-        </div>
-      </div>
-
-      {/* 1. MINECRAFT: NETHER PORTAL 8:1 LINKER */}
-      {game.id === 'minecraft' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <Compass size={19} color="#10B981" />
-                <h2>Nether Portal Linker (Exact 8:1 Math)</h2>
+            {pinNotice && (
+              <div className="mono" style={{ fontSize: '0.76rem', color: 'var(--teal-dark)', marginBottom: '8px' }}>
+                {pinNotice}
               </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setOwX(1280);
-                  setOwY(64);
-                  setOwZ(-840);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Enter your Overworld base coordinates to get exact Nether frame placement and avoid 128-block portal link collisions.
-            </p>
+            )}
 
-            <div className="coord-input-trio">
-              <label>
-                <span>Overworld X</span>
-                <input
-                  type="number"
-                  value={owX}
-                  onChange={(e) => setOwX(Number(e.target.value))}
-                  className="deck-input no-icon"
-                />
-              </label>
-              <label>
-                <span>Overworld Y (Altitude)</span>
-                <input
-                  type="number"
-                  value={owY}
-                  onChange={(e) => setOwY(Number(e.target.value))}
-                  className="deck-input no-icon"
-                />
-              </label>
-              <label>
-                <span>Overworld Z</span>
-                <input
-                  type="number"
-                  value={owZ}
-                  onChange={(e) => setOwZ(Number(e.target.value))}
-                  className="deck-input no-icon"
-                />
-              </label>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#10B981' }}>
-              <div className="result-label">Build Nether Portal at exact coordinates</div>
-              <div className="result-number" style={{ color: '#059669' }}>
-                X: {netherCoords.x} &nbsp; Y: {netherCoords.y} &nbsp; Z: {netherCoords.z}
-              </div>
-              <div className="result-detail">
-                1 Nether block equals 8 Overworld blocks on X and Z. Match Y altitude ({netherCoords.y}) so portals within 16 Nether blocks never cross-link.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `Nether Portal Frame → X: ${netherCoords.x}, Y: ${netherCoords.y}, Z: ${netherCoords.z} (Overworld ${owX}, ${owY}, ${owZ})`,
-                      'minecraft'
-                    )
-                  }
-                >
-                  {copiedKey === 'minecraft' ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'minecraft' ? 'Copied Coordinates' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `Overworld (${owX}, ${owZ}) → Nether`,
-                      `X: ${netherCoords.x} · Y: ${netherCoords.y} · Z: ${netherCoords.z}`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#10B981" />
-                  <span>Pin Target</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 2. FORTNITE: BATTLE PASS DAILY XP CALCULATOR */}
-      {game.id === 'fortnite' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <Zap size={19} color="#0284C7" />
-                <h2>Battle Pass Season Pace &amp; Level 100/200 Calculator</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setCurrentLevel(45);
-                  setTargetLevel(100);
-                  setDaysRemaining(32);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Calculate exact daily XP targets and match pace needed to hit Tier 100 or Super Level 200 before season downtime.
-            </p>
-
-            <div className="slider-pair-grid">
-              <label>
-                <div className="label-with-value">
-                  <span>Current Battle Pass Level</span>
-                  <strong>Level {currentLevel}</strong>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={200}
-                  value={currentLevel}
-                  onChange={(e) => setCurrentLevel(Number(e.target.value))}
-                />
-              </label>
-
-              <label>
-                <div className="label-with-value">
-                  <span>Days Left in Season</span>
-                  <strong>{daysRemaining} {daysRemaining === 1 ? 'Day' : 'Days'}</strong>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={90}
-                  value={daysRemaining}
-                  onChange={(e) => setDaysRemaining(Number(e.target.value))}
-                />
-              </label>
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label-with-value">
-                <span>Season Target Tier</span>
-                <strong>Level {targetLevel}</strong>
-              </div>
-              <div className="preset-toggle-row">
-                <button
-                  type="button"
-                  className={`subtab-btn ${targetLevel === 100 ? 'active' : ''}`}
-                  onClick={() => setTargetLevel(100)}
-                >
-                  Tier 100 (Main Pass)
-                </button>
-                <button
-                  type="button"
-                  className={`subtab-btn ${targetLevel === 150 ? 'active' : ''}`}
-                  onClick={() => setTargetLevel(150)}
-                >
-                  Level 150 (All V-Bucks)
-                </button>
-                <button
-                  type="button"
-                  className={`subtab-btn ${targetLevel === 200 ? 'active' : ''}`}
-                  onClick={() => setTargetLevel(200)}
-                >
-                  Level 200 (Super Styles)
-                </button>
-              </div>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#0284C7' }}>
-              <div className="result-label">Daily XP target to finish on time</div>
-              <div className="result-number" style={{ color: '#0284C7' }}>
-                {fortnitePace.dailyXp.toLocaleString()} XP / day
-              </div>
-              <div className="result-detail">
-                <strong>{fortnitePace.levelsNeeded} levels</strong> remaining ({fortnitePace.totalXpNeeded.toLocaleString()} XP over {daysRemaining} days) — roughly <strong>{fortnitePace.brMatchesDaily} Zero Build/BR matches per day</strong> including Daily Bonus Goals.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `Fortnite Pace (Lvl ${currentLevel} → ${targetLevel} in ${daysRemaining}d): ${fortnitePace.dailyXp.toLocaleString()} XP/day (~${fortnitePace.brMatchesDaily} matches/day)`,
-                      'fortnite'
-                    )
-                  }
-                >
-                  {copiedKey === 'fortnite' ? <Check size={14} color="#0284C7" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'fortnite' ? 'Copied Pace' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `Lvl ${currentLevel} → ${targetLevel} (${daysRemaining}d left)`,
-                      `${fortnitePace.dailyXp.toLocaleString()} XP / day`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#0284C7" />
-                  <span>Pin Target</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 3. CALL OF DUTY: CAMO MASTERY & WARZONE 3-PLATE TTK */}
-      {game.id === 'cod-warzone' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <Crosshair size={19} color="#EF4444" />
-                <h2>Dark Matter Camo Pace &amp; 3-Plate Armor TTK</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setCamosFinished(12);
-                  setHeadshotsPerMatch(7);
-                  setWeaponRpm(750);
-                  setBulletDamage(38);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Track headshot pace across all 33 weapons and simulate exact Time-to-Kill against 300 HP fully plated Warzone enemies.
-            </p>
-
-            <div className="slider-pair-grid">
-              <label>
-                <div className="label-with-value">
-                  <span>Weapons Completed (of 33)</span>
-                  <strong>{camosFinished} / 33</strong>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={33}
-                  value={camosFinished}
-                  onChange={(e) => setCamosFinished(Number(e.target.value))}
-                />
-              </label>
-
-              <label>
-                <div className="label-with-value">
-                  <span>Avg. Headshots per Match</span>
-                  <strong>{headshotsPerMatch} HS</strong>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={25}
-                  value={headshotsPerMatch}
-                  onChange={(e) => setHeadshotsPerMatch(Number(e.target.value))}
-                />
-              </label>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#EF4444' }}>
-              <div className="result-label">Dark Matter mastery finish line</div>
-              <div className="result-number" style={{ color: '#DC2626' }}>
-                {codMath.matchesNeeded} Matches (~{codMath.hoursNeeded} hrs)
-              </div>
-              <div className="result-detail">
-                {codMath.headshotsRemaining.toLocaleString()} headshots left across {codMath.weaponsRemaining} weapons. Hardcore Face Off Stakeout cuts match count by ~2.4×.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `BO6 Dark Matter (${camosFinished}/33 done): ${codMath.matchesNeeded} matches left · Warzone TTK (${weaponRpm} RPM / ${bulletDamage} DMG): ${codMath.ttkMs} ms (${codMath.shotsToKill} shots)`,
-                      'cod'
-                    )
-                  }
-                >
-                  {copiedKey === 'cod' ? <Check size={14} color="#EF4444" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'cod' ? 'Copied Loadout Math' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `${weaponRpm} RPM / ${bulletDamage} DMG @ 300 HP`,
-                      `${codMath.ttkMs} ms TTK (${codMath.shotsToKill} shots)`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#EF4444" />
-                  <span>Pin TTK</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="sub-calc-box">
-              <h3
-                style={{
-                  margin: '0 0 8px',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.98rem',
-                  fontWeight: 700,
-                  letterSpacing: '-0.015em',
-                  color: 'var(--ink-primary)',
-                }}
-              >
-                Warzone 3-Plate Armor TTK Simulator (300 HP Total)
-              </h3>
-              <div className="slider-pair-grid">
-                <label>
-                  <div className="label-with-value">
-                    <span>Fire Rate (RPM)</span>
-                    <strong>{weaponRpm} RPM</strong>
+            {gamePins.length === 0 ? (
+              <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
+                {EMPTY_PIN_HINTS[game.id] || 'Pin any calculated target above for instant second-screen access.'}
+              </p>
+            ) : (
+              gamePins.map((pin) => (
+                <div key={pin.id} className="mg-pin-item">
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--ink-secondary)' }}>
+                      {pin.label}
+                    </div>
+                    <div className="mono" style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-primary)' }}>
+                      {pin.value}
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min={300}
-                    max={1200}
-                    step={25}
-                    value={weaponRpm}
-                    onChange={(e) => setWeaponRpm(Number(e.target.value))}
-                  />
-                </label>
-                <label>
-                  <div className="label-with-value">
-                    <span>Damage per Bullet</span>
-                    <strong>{bulletDamage} DMG</strong>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      className="subtle-pill-btn"
+                      aria-label={`Copy pinned ${pin.label}`}
+                      onClick={() => copyText(pin.value, pin.id)}
+                    >
+                      {copiedKey === pin.id ? <Check size={13} /> : <Copy size={13} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="subtle-pill-btn"
+                      aria-label={`Remove pinned ${pin.label}`}
+                      onClick={() => onRemovePin(pin.id)}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
-                  <input
-                    type="range"
-                    min={18}
-                    max={120}
-                    value={bulletDamage}
-                    onChange={(e) => setBulletDamage(Number(e.target.value))}
-                  />
-                </label>
-              </div>
-
-              <div className="mini-stat-banner">
-                <span>Shots to Down: <strong>{codMath.shotsToKill} bullets</strong></span>
-                <span>Open-Bolt TTK: <strong style={{ color: '#DC2626' }}>{codMath.ttkMs} ms</strong></span>
-              </div>
-            </div>
+                </div>
+              ))
+            )}
           </div>
-          {renderSideMetaDeck()}
         </div>
-      )}
-
-      {/* 4. EA SPORTS FC 25: 5% EA TAX & SNIPING PROFIT */}
-      {game.id === 'ea-fc-25' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <TrendingUp size={19} color="#0077B6" />
-                <h2>5% EA Transfer Tax &amp; Sniping Profit Calculator</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setFcBuyPrice(105000);
-                  setFcPlayerPrice(120000);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Check your exact net coin payout, live flip profit after the 5% Ultimate Team fee, and maximum break-even buy price.
-            </p>
-
-            <div className="slider-pair-grid">
-              <label>
-                <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--ink-secondary)', marginBottom: 6 }}>
-                  Buy / Snipe Price (Coins)
-                </span>
-                <input
-                  type="number"
-                  step={500}
-                  value={fcBuyPrice}
-                  onChange={(e) => setFcBuyPrice(Number(e.target.value))}
-                  className="deck-input no-icon"
-                />
-              </label>
-
-              <label>
-                <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--ink-secondary)', marginBottom: 6 }}>
-                  Target Sale Price (Coins)
-                </span>
-                <input
-                  type="number"
-                  step={500}
-                  value={fcPlayerPrice}
-                  onChange={(e) => setFcPlayerPrice(Number(e.target.value))}
-                  className="deck-input no-icon"
-                />
-              </label>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#0077B6' }}>
-              <div className="result-label">Net coins &amp; flip profit after 5% EA tax</div>
-              <div
-                className="result-number"
-                style={{ color: fcTaxMath.profit >= 0 ? '#008577' : '#E63946' }}
-              >
-                {fcTaxMath.profit >= 0 ? '+' : ''}
-                {fcTaxMath.profit.toLocaleString()} Coins Profit
-              </div>
-              <div className="result-detail">
-                After-tax payout: <strong>{fcTaxMath.net.toLocaleString()} Coins</strong> (5% EA tax: -{fcTaxMath.tax.toLocaleString()}). Maximum break-even buy price: <strong>{fcTaxMath.breakEven.toLocaleString()} Coins</strong>.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `FC 25 Flip (Buy ${fcTaxMath.buy.toLocaleString()} → Sell ${fcTaxMath.price.toLocaleString()}): ${fcTaxMath.profit >= 0 ? '+' : ''}${fcTaxMath.profit.toLocaleString()} Coins net after 5% EA tax`,
-                      'fc25'
-                    )
-                  }
-                >
-                  {copiedKey === 'fc25' ? <Check size={14} color="#0077B6" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'fc25' ? 'Copied Trade Math' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `Sell @ ${fcTaxMath.price.toLocaleString()} (Max Buy ${fcTaxMath.breakEven.toLocaleString()})`,
-                      `${fcTaxMath.profit >= 0 ? '+' : ''}${fcTaxMath.profit.toLocaleString()} Coins net`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#0077B6" />
-                  <span>Pin Flip</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 5. ROBLOX: DEVEX USD CASHOUT & 30% MARKET TAX */}
-      {game.id === 'roblox' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <DollarSign size={19} color="#0891B2" />
-                <h2>Roblox DevEx Cashout &amp; 30% Marketplace Fee Calculator</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setRobuxAmount(100000);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Convert earned Robux into USD at the published DevEx rate ($0.0038/R$) and see net creator earnings after the 30% Gamepass fee.
-            </p>
-
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--ink-secondary)', marginBottom: 6 }}>
-                Robux Amount (R$)
-              </span>
-              <input
-                type="number"
-                step={5000}
-                value={robuxAmount}
-                onChange={(e) => setRobuxAmount(Number(e.target.value))}
-                className="deck-input no-icon"
-              />
-            </label>
-
-            <div className="preset-toggle-row" style={{ marginBottom: 14 }}>
-              {[30000, 100000, 250000, 1000000].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  className={`subtab-btn ${robuxAmount === preset ? 'active' : ''}`}
-                  onClick={() => setRobuxAmount(preset)}
-                >
-                  {preset >= 1000000 ? '1M R$' : `${preset / 1000}k R$`}
-                </button>
-              ))}
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#0891B2' }}>
-              <div className="result-label">Published DevEx USD cashout ($0.0038 / R$)</div>
-              <div className="result-number" style={{ color: '#0891B2' }}>
-                ${Number(robloxMath.devexUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-              </div>
-              <div className="result-detail">
-                If sold via Gamepass (30% fee), you keep <strong>{robloxMath.after30PctTax.toLocaleString()} R$</strong> (worth <strong>${Number(robloxMath.gamepassNetDevexUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</strong> in DevEx; 30,000 R$ minimum payout threshold).
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `Roblox ${robloxMath.robux.toLocaleString()} R$ → $${robloxMath.devexUsd} USD DevEx (After 30% Gamepass tax: ${robloxMath.after30PctTax.toLocaleString()} R$ / $${robloxMath.gamepassNetDevexUsd})`,
-                      'roblox'
-                    )
-                  }
-                >
-                  {copiedKey === 'roblox' ? <Check size={14} color="#0891B2" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'roblox' ? 'Copied DevEx Math' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `${robloxMath.robux.toLocaleString()} Earned R$`,
-                      `$${robloxMath.devexUsd} USD DevEx`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#0891B2" />
-                  <span>Pin Target</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 6. COUNTER-STRIKE 2: LOSS STREAK & BUY ECONOMY */}
-      {game.id === 'cs2' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <Shield size={19} color="#D97706" />
-                <h2>CS2 Loss Streak Bonus &amp; Team Buy Call Calculator</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setCsLossStreak(3);
-                  setCsCurrentBank(1650);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Call clean team saves or full buys in MR12 premier matches using exact consecutive loss income and current bank floor.
-            </p>
-
-            <div className="slider-pair-grid">
-              <label>
-                <div className="label-with-value">
-                  <span>Consecutive Rounds Lost</span>
-                  <strong>{csLossStreak} {csLossStreak === 1 ? 'Loss' : 'Losses'}</strong>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={4}
-                  value={csLossStreak}
-                  onChange={(e) => setCsLossStreak(Number(e.target.value))}
-                />
-              </label>
-
-              <label>
-                <div className="label-with-value">
-                  <span>Lowest Teammate Cash</span>
-                  <strong>${csEconomyMath.bank.toLocaleString()}</strong>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={8000}
-                  step={50}
-                  value={csCurrentBank}
-                  onChange={(e) => setCsCurrentBank(Number(e.target.value))}
-                />
-              </label>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#B45309' }}>
-              <div className="result-label">Next round loss bonus &amp; IGL call</div>
-              <div className="result-number" style={{ color: '#B45309' }}>
-                +${csEconomyMath.nextRoundCash.toLocaleString()} → ${csEconomyMath.projectedTotal.toLocaleString()}
-              </div>
-              <div className="result-detail">
-                <strong>IGL Call: {csEconomyMath.callout}.</strong> Loss ladder: $1,400 → $1,900 → $2,400 → $2,900 → $3,400 cap. Full Rifle + Head Armor + Utility requires ~$4,500–$4,900.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `CS2 Economy (${csLossStreak} losses, $${csEconomyMath.bank} bank): +$${csEconomyMath.nextRoundCash} next round ($${csEconomyMath.projectedTotal} total) — ${csEconomyMath.callout}`,
-                      'cs2'
-                    )
-                  }
-                >
-                  {copiedKey === 'cs2' ? <Check size={14} color="#D97706" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'cs2' ? 'Copied Economy Call' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `Loss Streak ${csLossStreak} ($${csEconomyMath.bank} bank)`,
-                      `$${csEconomyMath.projectedTotal.toLocaleString()} next round`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#D97706" />
-                  <span>Pin Call</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 7. VALORANT: RR LADDER TO NEXT RANK */}
-      {game.id === 'valorant' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <Crosshair size={19} color="#E11D48" />
-                <h2>Valorant Ranked RR Climb Pace Calculator</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setValCurrentRr(62);
-                  setValAvgGain(19);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Calculate the exact net wins needed to cross 100 RR based on your current Rank Rating and personal MMR gain per win.
-            </p>
-
-            <div className="slider-pair-grid">
-              <label>
-                <div className="label-with-value">
-                  <span>Current Rank Rating (RR)</span>
-                  <strong>{valRankMath.rr} / 100 RR</strong>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={99}
-                  value={valCurrentRr}
-                  onChange={(e) => setValCurrentRr(Number(e.target.value))}
-                />
-              </label>
-
-              <label>
-                <div className="label-with-value">
-                  <span>Avg. RR Gained per Win</span>
-                  <strong>+{valRankMath.gain} RR</strong>
-                </div>
-                <input
-                  type="range"
-                  min={12}
-                  max={30}
-                  value={valAvgGain}
-                  onChange={(e) => setValAvgGain(Number(e.target.value))}
-                />
-              </label>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#E11D48' }}>
-              <div className="result-label">Estimated net wins to rank up</div>
-              <div className="result-number" style={{ color: '#E11D48' }}>
-                {valRankMath.netWins} {valRankMath.netWins === 1 ? 'Net Win' : 'Net Wins'} (+{valRankMath.rrToRankUp} RR)
-              </div>
-              <div className="result-detail">
-                At +{valRankMath.gain} RR per win, {valRankMath.netWins} net wins cross the 100 RR promotion threshold. Keep save-round credits above <strong>3,900</strong> to guarantee next-round Vandal/Phantom + Heavy Shields.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `Valorant Climb (${valRankMath.rr}/100 RR @ +${valRankMath.gain} RR/win): ${valRankMath.netWins} net wins to rank up`,
-                      'valorant'
-                    )
-                  }
-                >
-                  {copiedKey === 'valorant' ? <Check size={14} color="#E11D48" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'valorant' ? 'Copied RR Target' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `${valRankMath.rr}/100 RR (+${valRankMath.gain}/win)`,
-                      `${valRankMath.netWins} net wins to promote`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#E11D48" />
-                  <span>Pin Target</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 8. APEX LEGENDS: 500-PACK HEIRLOOM PITY COUNTER */}
-      {game.id === 'apex-legends' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <Sparkles size={19} color="#EA580C" />
-                <h2>Heirloom 500-Pack Guaranteed Pity Counter</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setApexPacksOpened(185);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Apex guarantees 150 Heirloom Shards on or before pack #500. Track your opened packs and remaining Apex Coin value.
-            </p>
-
-            <label style={{ display: 'block', marginBottom: 14 }}>
-              <div className="label-with-value">
-                <span>Total Packs Opened (Account + Battle Pass + Store)</span>
-                <strong>{apexPityMath.opened} / 500 ({apexPityMath.pct}%)</strong>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={500}
-                value={apexPacksOpened}
-                onChange={(e) => setApexPacksOpened(Number(e.target.value))}
-              />
-            </label>
-
-            <div className="preset-toggle-row" style={{ marginBottom: 14 }}>
-              {[100, 199, 300, 425].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  className={`subtab-btn ${apexPacksOpened === preset ? 'active' : ''}`}
-                  onClick={() => setApexPacksOpened(preset)}
-                >
-                  {preset === 199 ? '199 (Lvl 500 Free)' : `${preset} Packs`}
-                </button>
-              ))}
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#EA580C' }}>
-              <div className="result-label">Packs until guaranteed 150 Heirloom Shards</div>
-              <div className="result-number" style={{ color: '#EA580C' }}>
-                {apexPityMath.remaining} Packs Remaining
-              </div>
-              <div className="result-detail">
-                Store equivalent: <strong>{apexPityMath.coinsCost.toLocaleString()} Apex Coins</strong> (~${apexPityMath.approxUsd} USD). Reminder: Collection Event packs do not advance your standard 500-pack pity counter.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `Apex Heirloom Pity: ${apexPityMath.opened}/500 opened (${apexPityMath.pct}%) — ${apexPityMath.remaining} packs left`,
-                      'apex'
-                    )
-                  }
-                >
-                  {copiedKey === 'apex' ? <Check size={14} color="#EA580C" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'apex' ? 'Copied Pity Count' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `Heirloom Pity (${apexPityMath.opened}/500)`,
-                      `${apexPityMath.remaining} packs remaining`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#EA580C" />
-                  <span>Pin Count</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
-
-      {/* 9. GTA ONLINE: CAYO PERICO & CASINO PAYOUT SPLIT */}
-      {game.id === 'gta-v' && (
-        <div className="calculator-grid-layout">
-          <div className="calc-card" onMouseMove={handleCardSpotlight}>
-            <div className="calc-card-top-row">
-              <div className="calc-card-header">
-                <DollarSign size={19} color="#2563EB" />
-                <h2>Cayo Perico &amp; Casino Heist Net Cut Splitter</h2>
-              </div>
-              <button
-                type="button"
-                className="calc-reset-btn"
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 690);
-                  setCayoPrimaryTarget(1300000);
-                  setCayoSecondaryLoot(450000);
-                  setCayoCrewMembers(2);
-                  setCayoHostPct(70);
-                }}
-              >
-                <RotateCcw size={13} />
-                <span>Reset</span>
-              </button>
-            </div>
-            <p className="calc-card-sub">
-              Automatically deducts Pavel&apos;s 2% cut and the 10% fencing fee, then splits net loot cleanly between host and crew.
-            </p>
-
-            <div className="slider-pair-grid">
-              <label>
-                <div className="label-with-value">
-                  <span>Primary Target</span>
-                  <strong>${Number(cayoPrimaryTarget).toLocaleString()}</strong>
-                </div>
-                <select
-                  value={cayoPrimaryTarget}
-                  onChange={(e) => setCayoPrimaryTarget(Number(e.target.value))}
-                  className="deck-input no-icon"
-                >
-                  <option value={1900000}>Panther Statue ($1,900,000 Event)</option>
-                  <option value={1300000}>Pink Diamond ($1,300,000)</option>
-                  <option value={1100000}>Madrazo Files / Bonds ($1,100,000)</option>
-                  <option value={770000}>Bearer Bonds Base ($770,000)</option>
-                  <option value={700000}>Ruby Necklace ($700,000)</option>
-                  <option value={630000}>Sinsimito Tequila ($630,000)</option>
-                </select>
-              </label>
-
-              <label>
-                <div className="label-with-value">
-                  <span>Secondary Loot Bags</span>
-                  <strong>${Number(cayoSecondaryLoot).toLocaleString()}</strong>
-                </div>
-                <input
-                  type="number"
-                  step={50000}
-                  value={cayoSecondaryLoot}
-                  onChange={(e) => setCayoSecondaryLoot(Number(e.target.value))}
-                  className="deck-input no-icon"
-                />
-              </label>
-            </div>
-
-            <div className="slider-pair-grid">
-              <label>
-                <div className="label-with-value">
-                  <span>Squad Size</span>
-                  <strong>{cayoCrewMembers} {cayoCrewMembers === 1 ? 'Solo' : 'Players'}</strong>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={4}
-                  value={cayoCrewMembers}
-                  onChange={(e) => setCayoCrewMembers(Number(e.target.value))}
-                />
-              </label>
-
-              <label>
-                <div className="label-with-value">
-                  <span>Host Cut Percentage</span>
-                  <strong>{cayoMath.effectiveHostPct}%</strong>
-                </div>
-                <input
-                  type="range"
-                  min={15}
-                  max={85}
-                  step={5}
-                  disabled={cayoCrewMembers === 1}
-                  value={cayoHostPct}
-                  onChange={(e) => setCayoHostPct(Number(e.target.value))}
-                />
-              </label>
-            </div>
-
-            <div className="calc-result-showcase" style={{ borderColor: '#2563EB' }}>
-              <div className="result-label">Net crew pool after Pavel 2% + Fence 10%</div>
-              <div className="result-number" style={{ color: '#2563EB' }}>
-                ${cayoMath.netPool.toLocaleString()}
-              </div>
-              <div className="result-detail">
-                Host ({cayoMath.effectiveHostPct}%): <strong>${cayoMath.hostPayout.toLocaleString()}</strong>
-                {cayoCrewMembers > 1 && (
-                  <>
-                    {' '}· Each Crew Member ({Math.round((100 - cayoMath.effectiveHostPct) / (cayoCrewMembers - 1))}%):{' '}
-                    <strong>${cayoMath.crewPayoutEach.toLocaleString()}</strong>
-                  </>
-                )}{' '}
-                · Fees deducted: -${(cayoMath.pavelCut + cayoMath.fencingFee).toLocaleString()}.
-              </div>
-              <div className="calc-action-bar">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() =>
-                    copyToClipboard(
-                      `Cayo Perico Split (${cayoCrewMembers}P, Net $${cayoMath.netPool.toLocaleString()}): Host ${cayoMath.effectiveHostPct}% = $${cayoMath.hostPayout.toLocaleString()}${cayoCrewMembers > 1 ? ` · Crew = $${cayoMath.crewPayoutEach.toLocaleString()} each` : ''}`,
-                      'cayo'
-                    )
-                  }
-                >
-                  {copiedKey === 'cayo' ? <Check size={14} color="#2563EB" /> : <Copy size={14} />}
-                  <span>{copiedKey === 'cayo' ? 'Copied Heist Split' : 'Copy for Discord'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  onClick={() =>
-                    handlePinSnapshot(
-                      `Cayo ${cayoCrewMembers}P (${cayoMath.effectiveHostPct}% Host)`,
-                      `Host $${cayoMath.hostPayout.toLocaleString()}${cayoCrewMembers > 1 ? ` / Crew $${cayoMath.crewPayoutEach.toLocaleString()}` : ''}`
-                    )
-                  }
-                >
-                  <Bookmark size={13} color="#2563EB" />
-                  <span>Pin Split</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {renderSideMetaDeck()}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

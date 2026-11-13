@@ -1,12 +1,12 @@
 {
   "name": "Unpause — Unofficial Gaming Calculators & Safe Codes",
   "short_name": "Unpause",
-  "description": "Independent, ad-free 3-second gaming calculators, 212 GB console storage checker, heist splitter, and spoiler-free weeknight routes.",
+  "description": "Independent 3-second gaming calculators for Top 10 titles: GTA VI SSD preload & keypad vault, CoD MW4 TTK, Minecraft 8:1 portals, and EA Sports FC 27 tax.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#F3F7FB",
-  "theme_color": "#F3F7FB",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
   "icons": [
     {
       "src": "/icon-192.png",
