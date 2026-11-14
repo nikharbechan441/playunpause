@@ -7,6 +7,9 @@
   "scripts": {
     "dev:client": "vite --port 5173",
     "dev:server": "node server/index.js",
+    "seo:generate": "node tools/generate_seo_files.mjs",
+    "seo:ping": "node tools/indexnow_ping.mjs",
+    "prebuild": "npm run seo:generate",
     "build": "vite build",
     "start": "node server/index.js",
     "test": "node --test tests/*.test.js"

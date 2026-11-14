@@ -26,17 +26,17 @@ export const GAME_URL_ALIASES = {
 };
 
 export const COD_MW4_WEAPONS = [
-  { id: 'cronen-osprey', name: 'Cronen Osprey', category: 'SMG · Close', damage: 36, rpm: 882, headMult: 1.28, openBoltMs: 0 },
-  { id: 'axion', name: 'Axion', category: 'AR · Flexible', damage: 34, rpm: 769, headMult: 1.34, openBoltMs: 0 },
-  { id: 'm4-mw4', name: 'M4 (MW4)', category: 'AR · Mid-Range', damage: 32, rpm: 750, headMult: 1.35, openBoltMs: 0 },
-  { id: 'kastov-762', name: 'Kastov 762', category: 'AR · Heavy', damage: 41, rpm: 600, headMult: 1.36, openBoltMs: 0 },
-  { id: 'hyeon-burst', name: 'Hyeon Burst', category: 'BR · Burst', damage: 43, rpm: 650, headMult: 1.38, openBoltMs: 0 },
-  { id: 'iso-nightshade', name: 'ISO Nightshade', category: 'SMG · Stealth', damage: 35, rpm: 857, headMult: 1.30, openBoltMs: 0 },
-  { id: 'vel-46', name: 'VEL 46', category: 'SMG · High-ROF', damage: 31, rpm: 952, headMult: 1.26, openBoltMs: 0 },
-  { id: 'ppsh-41', name: 'PPSh-41', category: 'SMG · Rapid', damage: 30, rpm: 980, headMult: 1.25, openBoltMs: 42 },
-  { id: 'wz55-striga', name: 'WZ.55 Striga', category: 'AR · Long-Beam', damage: 39, rpm: 632, headMult: 1.38, openBoltMs: 0 },
-  { id: 'kg7-vulcan', name: 'KG-7 Vulcan', category: 'LMG · Open-Bolt', damage: 44, rpm: 612, headMult: 1.32, openBoltMs: 50 },
-  { id: 'han-86', name: 'HAN 86', category: 'Marksman · Semi', damage: 68, rpm: 360, headMult: 1.50, openBoltMs: 0 },
+  { id: 'c9-smg', name: 'C9 (SMG)', category: 'SMG · Close', damage: 36, rpm: 882, headMult: 1.28, openBoltMs: 0 },
+  { id: 'xm4-ar', name: 'XM4', category: 'AR · Versatile', damage: 34, rpm: 769, headMult: 1.34, openBoltMs: 0 },
+  { id: 'm4-classic', name: 'M4', category: 'AR · Mid-Range', damage: 32, rpm: 750, headMult: 1.35, openBoltMs: 0 },
+  { id: 'ak74-heavy', name: 'AK-74', category: 'AR · Heavy', damage: 41, rpm: 600, headMult: 1.36, openBoltMs: 0 },
+  { id: 'gpr91-ar', name: 'GPR 91', category: 'AR · Precision', damage: 35, rpm: 690, headMult: 1.36, openBoltMs: 0 },
+  { id: 'jackal-pdw', name: 'Jackal PDW', category: 'SMG · Mobility', damage: 35, rpm: 857, headMult: 1.30, openBoltMs: 0 },
+  { id: 'lachmann-sub', name: 'Lachmann Sub', category: 'SMG · Close', damage: 34, rpm: 800, headMult: 1.28, openBoltMs: 0 },
+  { id: 'ppsh-41', name: 'PPSh-41', category: 'SMG · Rapid (Open-Bolt)', damage: 30, rpm: 980, headMult: 1.25, openBoltMs: 42 },
+  { id: 'krig-c', name: 'Krig C', category: 'AR · Long-Range', damage: 39, rpm: 632, headMult: 1.38, openBoltMs: 0 },
+  { id: 'raal-mg', name: 'RAAL MG', category: 'LMG · Open-Bolt (+50ms)', damage: 44, rpm: 612, headMult: 1.32, openBoltMs: 50 },
+  { id: 'dm-10', name: 'DM-10', category: 'Marksman · Semi', damage: 68, rpm: 360, headMult: 1.50, openBoltMs: 0 },
 ];
 
 export function resolveGameIdFromSlug(rawSlug) {
@@ -58,6 +58,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(255, 89, 100, 0.14)',
     icon: 'Car',
     tagline: '212–225 GB SSD Fit Check, Safe Keypad Vault Demo & Heist Payout Splitter',
+    sourceNote: 'Retail PS5/Xbox usable GB verified · Launch date Nov 19, 2026 confirmed · 212–225 GB preload projection',
     isGta6Suite: true,
     faqs: [
       {
@@ -72,18 +73,19 @@ export const TOP_GAMES = [
   },
   {
     id: 'cod-warzone',
-    shortTitle: 'CoD: MW4 / WZ',
-    fullTitle: 'Call of Duty: Modern Warfare 4 & Warzone',
-    audienceBadge: 'Season 1 · Live Nov 2026',
+    shortTitle: 'CoD / Warzone',
+    fullTitle: 'Call of Duty: Warzone & Multiplayer',
+    audienceBadge: '300 HP 3-Plate TTK',
     genre: 'First-Person Shooter',
     accentColor: '#F43F5E',
     accentSoft: 'rgba(244, 63, 94, 0.14)',
     icon: 'Crosshair',
-    tagline: 'Open-Bolt TTK Simulator, Gun A vs B Compare & Mastery Camo Tracker',
+    tagline: '300 HP 3-Plate TTK Lab, Gun A vs B Compare & Mastery Camo Tracker',
+    sourceNote: '300 HP 3-plate TTK math · Open-bolt LMG/SMG trigger delay & camo pace',
     tools: [
       {
         id: 'ttk-calc',
-        name: 'Warzone & MW4 TTK Lab',
+        name: 'Warzone 300 HP TTK Lab',
         desc: 'Compare Weapon A vs Weapon B TTK (ms) with headshots & open-bolt delay.',
         type: 'ttk',
       },
@@ -94,11 +96,11 @@ export const TOP_GAMES = [
         type: 'camo',
       },
     ],
-    proMetaTitle: 'MW4 & Warzone Season 1 TTK & Camo Benchmarks',
+    proMetaTitle: 'Warzone 300 HP TTK & Camo Benchmarks',
     proMetaRows: [
       { label: 'Close-Range SMG Meta (0–14m)', val: '490–544 ms TTK · 882–952 RPM / 31–36 DMG (@ 300 HP)' },
       { label: 'Long-Range AR Beam (40m+)', val: '620–664 ms TTK · 632–769 RPM / 34–39 DMG (@ 300 HP)' },
-      { label: 'Open-Bolt LMG Delay Rule', val: 'Add +50 ms trigger delay on KG-7 Vulcan & heavy LMGs' },
+      { label: 'Open-Bolt Trigger Delay Rule', val: 'Add +50 ms delay on RAAL MG or +42 ms on PPSh-41 open-bolt builds' },
     ],
     faqs: [
       {
@@ -121,6 +123,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(56, 189, 248, 0.14)',
     icon: 'Zap',
     tagline: 'Battle Pass Level 100/140/200 Multi-Source XP Pace & UEFN Creative Planner',
+    sourceNote: '80,000 XP per Battle Pass level · 60K Daily Bonus + UEFN Creative pacing',
     tools: [
       {
         id: 'xp-calculator',
@@ -156,11 +159,12 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(16, 185, 129, 0.14)',
     icon: 'Box',
     tagline: 'Nether 8:1 Linker, Two-Portal 3D Collision Check & Stronghold Triangulator',
+    sourceNote: 'Java & Bedrock verified: integer floor(X/8) & 128-block Overworld search radius',
     tools: [
       {
         id: 'nether-linker',
         name: 'Nether Linker & 3D Portal Check',
-        desc: 'Exact Math.floor 8:1 coords, 2nd-portal collision check & Chunk/Region map.',
+        desc: 'Exact 8:1 floor coordinates, 2nd-portal collision check & Chunk/Region map.',
         type: 'nether-portal',
       },
       {
@@ -178,8 +182,8 @@ export const TOP_GAMES = [
     ],
     faqs: [
       {
-        q: 'Why must Nether portal math use Math.floor instead of Math.round?',
-        a: 'Minecraft truncates integer division toward negative infinity for Nether coordinates: Overworld X=-20 becomes -3 (floor(-20/8)), not -2 or -3 rounded inconsistently. Always divide X and Z with floor() and mirror the Y altitude.',
+        q: 'Why must Nether portal math always round down instead of rounding to nearest?',
+        a: 'Minecraft truncates integer division toward negative infinity for Nether coordinates: Overworld X=-20 becomes -3 (never -2 or standard rounding). Divide X and Z toward negative infinity and keep Y matched.',
       },
       {
         q: 'How much obsidian is required for a clean Nether highway link?',
@@ -197,6 +201,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(34, 197, 94, 0.14)',
     icon: 'Trophy',
     tagline: '5% EA Tax Flipper, Stepped Break-Even Price & 11-Player SBC Rating Solver',
+    sourceNote: 'Exact 5% EA transfer tax & 11-player excess-rating SBC formula verified',
     tools: [
       {
         id: 'ea-tax',
@@ -238,6 +243,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(56, 189, 248, 0.14)',
     icon: 'Sparkles',
     tagline: 'DevEx USD Payout ($0.0038 / $0.0035 / $0.0054), 30% Fee & Reverse USD Target Planner',
+    sourceNote: 'Published DevEx rates ($0.0038/R$ standard · $0.0035 legacy) & 30% market fee',
     tools: [
       {
         id: 'devex-calc',
@@ -273,6 +279,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(245, 158, 11, 0.14)',
     icon: 'Shield',
     tagline: 'Authentic MR12 Loss Bonus Ladder ($1,400–$3,400), -1 Win Step-Down & 5-Player Bank',
+    sourceNote: 'Official CS2 MR12 loss bonus ladder ($1,400–$3,400, -1 on win, Level 1 pistol loss)',
     tools: [
       {
         id: 'economy-planner',
@@ -308,6 +315,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(251, 113, 133, 0.14)',
     icon: 'Target',
     tagline: 'Buy Economy Matrix (Regen/Light/Heavy Shields + Outlaw) & Win-Rate RR Climb Sim',
+    sourceNote: 'Current buy menu pricing (Light 400 · Regen 650 · Heavy 1,000 · Vandal/Phantom 2,900)',
     tools: [
       {
         id: 'val-economy',
@@ -349,6 +357,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(251, 146, 60, 0.14)',
     icon: 'Flame',
     tagline: 'Accurate Level+Prestige Heirloom Pity Counter & Ranked RP Match Estimator',
+    sourceNote: 'Verified 500-pack Heirloom pity & Prestige 0–3 level schedule (544 free packs max)',
     tools: [
       {
         id: 'heirloom-pity',
@@ -390,6 +399,7 @@ export const TOP_GAMES = [
     accentSoft: 'rgba(44, 229, 181, 0.14)',
     icon: 'DollarSign',
     tagline: 'Cayo Perico Payout Splitter (15% Crew Floor), Hard Mode & Bag Fill Solver',
+    sourceNote: 'Verified Cayo Perico fees (Pavel 2% · Fence 10% · 15% min crew · +10% Hard Mode)',
     tools: [
       {
         id: 'cayo-calc',

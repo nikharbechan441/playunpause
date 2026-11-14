@@ -1,0 +1,261 @@
+# Unpause (playunpause.com) — Full Structured Reference & Game Math Facts
+
+Canonical origin: https://playunpause.com
+Total indexable clean routes: 132
+Important attribution note: playunpause.com is an independent unofficial utility. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA.
+
+## 1. GTA VI Console Storage Estimates (Pre-Launch Guide Until Nov 19, 2026)
+| Console | Usable OS Storage | GTA VI Base Est. | With +35 GB Day-1 Patch | NZ Unlock Rule |
+| --- | --- | --- | --- | --- |
+| Xbox Series S (512 GB) | 364 GB usable | 225 GB base | 260 GB (+35 GB Day-1 patch) | Est. via Settings |
+| Xbox Series S (1 TB) | 802 GB usable | 225 GB base | 260 GB (+35 GB Day-1 patch) | Est. via Settings |
+| Xbox Series X (1 TB) | 802 GB usable | 225 GB base | 260 GB (+35 GB Day-1 patch) | Est. via Settings |
+| PS5 Base Launch Edition | 667 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+| PS5 Slim (1 TB) | 848 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+| PS5 Pro (2 TB) | 1890 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+
+### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
+| Connection Speed | PS5 Base (212 GB) | Xbox Base (225 GB) | Xbox + Patch (260 GB) |
+| --- | --- | --- | --- |
+| 25 Mbps | 20h 56m (1256m) | 22h 13m (1333m) | 25h 41m (1541m) |
+| 50 Mbps | 10h 28m (628m) | 11h 7m (667m) | 12h 50m (770m) |
+| 100 Mbps | 5h 14m (314m) | 5h 33m (333m) | 6h 25m (385m) |
+| 150 Mbps | 3h 29m (209m) | 3h 42m (222m) | 4h 17m (257m) |
+| 300 Mbps | 1h 45m (105m) | 1h 51m (111m) | 2h 8m (128m) |
+| 500 Mbps | 1h 3m (63m) | 1h 7m (67m) | 1h 17m (77m) |
+| 1000 Mbps | 31m | 33m | 39m |
+
+## 2. Call of Duty: Warzone / BO7 (300 HP Armor Plate TTK Matrix)
+| Weapon | Fire Rate | Base Body Damage | 300 HP (1 HS) | 300 HP (Body Only) |
+| --- | --- | --- | --- | --- |
+| C9 (SMG) (SMG · Close) | 882 RPM | 36 dmg (1.28x HS) | 544 ms (9 shots, 1 HS) | 544 ms (9 shots, body) |
+| XM4 (AR · Versatile) | 769 RPM | 34 dmg (1.34x HS) | 624 ms (9 shots, 1 HS) | 624 ms (9 shots, body) |
+| M4 (AR · Mid-Range) | 750 RPM | 32 dmg (1.35x HS) | 720 ms (10 shots, 1 HS) | 720 ms (10 shots, body) |
+| AK-74 (AR · Heavy) | 600 RPM | 41 dmg (1.36x HS) | 600 ms (7 shots, 1 HS) | 700 ms (8 shots, body) |
+| GPR 91 (AR · Precision) | 690 RPM | 35 dmg (1.36x HS) | 696 ms (9 shots, 1 HS) | 696 ms (9 shots, body) |
+| Jackal PDW (SMG · Mobility) | 857 RPM | 35 dmg (1.3x HS) | 560 ms (9 shots, 1 HS) | 560 ms (9 shots, body) |
+| Lachmann Sub (SMG · Close) | 800 RPM | 34 dmg (1.28x HS) | 600 ms (9 shots, 1 HS) | 600 ms (9 shots, body) |
+| PPSh-41 (SMG · Rapid (Open-Bolt)) | 980 RPM | 30 dmg (1.25x HS) | 593 ms (10 shots, 1 HS) | 593 ms (10 shots, body) |
+| Krig C (AR · Long-Range) | 632 RPM | 39 dmg (1.38x HS) | 665 ms (8 shots, 1 HS) | 665 ms (8 shots, body) |
+| RAAL MG (LMG · Open-Bolt (+50ms)) | 612 RPM | 44 dmg (1.32x HS) | 638 ms (7 shots, 1 HS) | 638 ms (7 shots, body) |
+| DM-10 (Marksman · Semi) | 360 RPM | 68 dmg (1.5x HS) | 500 ms (4 shots, 1 HS) | 667 ms (5 shots, body) |
+
+## 3. EA Sports FC 27 Ultimate Team 5% Transfer Tax Formula
+- EA collects a flat 5% tax on all Transfer Market sales (`netPerCard = sellCoins - round(sellCoins * 0.05)`).
+- Exact break-even sell price: `ceil(buyCoins / 0.95)`.
+| Buy Price | Minimum Break-Even Sell | Profit Example (+15% Sale) |
+| --- | --- | --- |
+| 100,000 | 105,264 (snap 106,000) | +9,250 at 115,000 sell |
+| 250,000 | 263,158 (snap 264,000) | +23,125 at 287,500 sell |
+| 500,000 | 526,316 (snap 527,000) | +46,250 at 575,000 sell |
+| 1,000,000 | 1,052,632 (snap 1,053,000) | +92,500 at 1,150,000 sell |
+
+## 4. Minecraft Nether Portal 8:1 Coordinate Conversion
+- Overworld X and Z divide by 8 (floored) for Nether X and Z; Y height stays matched on the vertical axis for safe linking.
+| Overworld (X, Y, Z) | Nether Target (X, Y, Z) | Overworld Chunk |
+| --- | --- | --- |
+| (0, 64, 0) | (0, 64, 0) | Chunk (0, 0) |
+| (-200, 64, 400) | (-25, 64, 50) | Chunk (-13, 25) |
+| (1200, 64, -800) | (150, 64, -100) | Chunk (75, -50) |
+| (-4000, 70, 2400) | (-500, 70, 300) | Chunk (-250, 150) |
+
+## 5. Roblox DevEx & Marketplace 30% Fee Reference
+| Gross Sales Robux | DevEx Payout (After 30% Fee at 0.0038) | Net Breakdown |
+| --- | --- | --- |
+| 30,000 R$ | $114.00 USD (if already net) | 21,000 net R$ -> $79.80 USD (after 30% fee) |
+| 50,000 R$ | $190.00 USD (if already net) | 35,000 net R$ -> $133.00 USD (after 30% fee) |
+| 100,000 R$ | $380.00 USD (if already net) | 70,000 net R$ -> $266.00 USD (after 30% fee) |
+| 500,000 R$ | $1900.00 USD (if already net) | 350,000 net R$ -> $1330.00 USD (after 30% fee) |
+
+## 6. CS2 Loss Bonus Ladder & Buy Floor Reference
+| Consecutive Losses | Round Loss Bonus |
+| --- | --- |
+| 0 | $1,400 |
+| 1 | $1,900 |
+| 2 | $2,400 |
+| 3 | $2,900 |
+| 4 | $3,400 |
+
+- Sample CT state at $3,200 with 1 loss: next-round worst-case bank if saving = $5,100 (ECO / SAVE).
+
+## 7. Fortnite Level 200 Pace & Apex Free Pack Totals
+- Battle Pass math uses 80,000 XP per level. From level 44 to 200 with 28 days remaining requires 5.6 levels/day (445,715 XP/day).
+- Apex Legends Levels 1–500 award 199 total free Apex Packs (out of 500 needed for Heirloom Shards pity).
+
+## 8. GTA Online Cayo Perico Payout Math
+- Support crew / Pavel (2%) + fencing fee (10%) deduct 12% combined on Hard Mode. Example $1.3M primary + $450k secondary at 50/50 leaves net pool $1,654,400 ($827,200 host share before $100k setup fee).
+
+## 9. Game Roster Summary
+### Grand Theft Auto VI
+- Category: Open-World Action
+- Tagline: 212–225 GB SSD Fit Check, Safe Keypad Vault Demo & Heist Payout Splitter
+
+### Call of Duty: Warzone & Multiplayer
+- Category: First-Person Shooter
+- Tagline: 300 HP 3-Plate TTK Lab, Gun A vs B Compare & Mastery Camo Tracker
+
+### Fortnite: Battle Royale
+- Category: Battle Royale
+- Tagline: Battle Pass Level 100/140/200 Multi-Source XP Pace & UEFN Creative Planner
+
+### Minecraft (Java & Bedrock)
+- Category: Sandbox / Survival
+- Tagline: Nether 8:1 Linker, Two-Portal 3D Collision Check & Stronghold Triangulator
+
+### EA Sports FC 27 (Ultimate Team)
+- Category: Sports / Market Sim
+- Tagline: 5% EA Tax Flipper, Stepped Break-Even Price & 11-Player SBC Rating Solver
+
+### Roblox Creator & Economy
+- Category: Metaverse / UGC
+- Tagline: DevEx USD Payout ($0.0038 / $0.0035 / $0.0054), 30% Fee & Reverse USD Target Planner
+
+### Counter-Strike 2 (CS2)
+- Category: Tactical FPS
+- Tagline: Authentic MR12 Loss Bonus Ladder ($1,400–$3,400), -1 Win Step-Down & 5-Player Bank
+
+### Valorant (Riot Games)
+- Category: Tactical Hero Shooter
+- Tagline: Buy Economy Matrix (Regen/Light/Heavy Shields + Outlaw) & Win-Rate RR Climb Sim
+
+### Apex Legends (Respawn / EA)
+- Category: Hero Battle Royale
+- Tagline: Accurate Level+Prestige Heirloom Pity Counter & Ranked RP Match Estimator
+
+### Grand Theft Auto V & Online
+- Category: Multiplayer Open-World
+- Tagline: Cayo Perico Payout Splitter (15% Crew Floor), Hard Mode & Bag Fill Solver
+
+## 10. Complete Canonical Route Index (132 Pages)
+- https://playunpause.com/ — Unpause — Instant Console Storage & Game Math Tools
+- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212–225 GB) — Unpause
+- https://playunpause.com/gta-6/safe-codes — GTA 6 Safe & Door Combinations Keypad — Unpause
+- https://playunpause.com/gta-6/heist-split — GTA 6 Heist Cut Splitter & Stock Flip — Unpause
+- https://playunpause.com/gta-6/night-run — GTA 6 Weeknight Routes & Missables Shield — Unpause
+- https://playunpause.com/cod-warzone — CoD Warzone 300 HP TTK & Camo Tracker — Unpause
+- https://playunpause.com/fortnite — Fortnite Battle Pass XP Pace Calculator — Unpause
+- https://playunpause.com/minecraft — Minecraft 8:1 Nether Portal & Stronghold — Unpause
+- https://playunpause.com/ea-fc-27 — EA Sports FC 27 5% Tax & SBC Solver — Unpause
+- https://playunpause.com/roblox — Roblox DevEx USD & 30% Marketplace Calc — Unpause
+- https://playunpause.com/cs2 — CS2 MR12 Loss Bonus & 5-Man Bank Tool — Unpause
+- https://playunpause.com/valorant — Valorant Round Buy Matrix & Ranked RR — Unpause
+- https://playunpause.com/apex-legends — Apex Heirloom 500-Pack & Ranked RP Tool — Unpause
+- https://playunpause.com/gta-online — GTA Online Cayo Perico Payout Splitter — Unpause
+- https://playunpause.com/gta-6/storage/xbox-series-s-512gb — GTA 6 Xbox Series S 512GB Fit Check (225 GB?) — Unpause
+- https://playunpause.com/gta-6/storage/xbox-series-s-1tb — GTA 6 Xbox Series S 1TB Storage Check (225 GB) — Unpause
+- https://playunpause.com/gta-6/storage/xbox-series-x-1tb — GTA 6 Xbox Series X 1TB Storage & NZ Unlock — Unpause
+- https://playunpause.com/gta-6/storage/ps5-base-825gb — GTA 6 Base PS5 825GB Storage Check (212 GB) — Unpause
+- https://playunpause.com/gta-6/storage/ps5-slim-1tb — GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause
+- https://playunpause.com/gta-6/storage/ps5-pro-2tb — GTA 6 PS5 Pro 2TB Storage & Patch Check — Unpause
+- https://playunpause.com/gta-6/storage/212gb-day-one-patch — GTA 6 212 GB + Day-1 Patch Storage Buffer — Unpause
+- https://playunpause.com/gta-6/storage/external-usb-drive-xbox-ps5 — Can GTA 6 Run From External USB Drive? Rules — Unpause
+- https://playunpause.com/gta-6/unlock-time/new-zealand-trick-xbox-ps5 — GTA 6 New Zealand Unlock Trick (Xbox vs PS5) — Unpause
+- https://playunpause.com/gta-6/unlock-time/ps5-midnight-region-lock — Why Changing PS5 Clock Does Not Unlock Early — Unpause
+- https://playunpause.com/gta-6/download-time/25-mbps — GTA 6 Download Time on 25 Mbps (20h 56m) — Unpause
+- https://playunpause.com/gta-6/download-time/50-mbps — GTA 6 Download Time on 50 Mbps (10h 28m) — Unpause
+- https://playunpause.com/gta-6/download-time/100-mbps — GTA 6 Download Time on 100 Mbps (5h 14m) — Unpause
+- https://playunpause.com/gta-6/download-time/150-mbps — GTA 6 Download Time on 150 Mbps (3h 29m) — Unpause
+- https://playunpause.com/gta-6/download-time/250-mbps — GTA 6 Download Time on 250 Mbps (2h 6m) — Unpause
+- https://playunpause.com/gta-6/download-time/300-mbps — GTA 6 Download Time on 300 Mbps (1h 45m) — Unpause
+- https://playunpause.com/gta-6/download-time/500-mbps — GTA 6 Download Time on 500 Mbps (1h 3m) — Unpause
+- https://playunpause.com/gta-6/download-time/1000-mbps-gigabit — GTA 6 Download Time on 1000 Mbps Gigabit (31m) — Unpause
+- https://playunpause.com/gta-6/download-time/starlink-satellite — GTA 6 Download Time on 115 Mbps (4h 33m) — Unpause
+- https://playunpause.com/gta-6/download-time/5g-home-internet — GTA 6 Download Time on 180 Mbps (2h 54m) — Unpause
+- https://playunpause.com/gta-6/safe-codes/vice-beach — GTA 6 Vice Beach Safe Codes & Clues — Unpause
+- https://playunpause.com/gta-6/safe-codes/port-gellhorn — GTA 6 Port Gellhorn Safe Codes & Clues — Unpause
+- https://playunpause.com/gta-6/safe-codes/leonida-keys — GTA 6 Leonida Keys Safe Codes & Clues — Unpause
+- https://playunpause.com/gta-6/safe-codes/grassrivers — GTA 6 Grassrivers Safe Codes & Clues — Unpause
+- https://playunpause.com/gta-6/safe-codes/ambrosia — GTA 6 Ambrosia Safe Codes & Clues — Unpause
+- https://playunpause.com/gta-6/safe-codes/mount-kalaga — GTA 6 Mount Kalaga Safe Codes & Clues — Unpause
+- https://playunpause.com/gta-6/heist-split/2-player-duo — GTA 6 2-Player Duo Heist Split Calculator — Unpause
+- https://playunpause.com/gta-6/heist-split/3-player-trio — GTA 6 3-Player Trio Heist Split Calculator — Unpause
+- https://playunpause.com/gta-6/heist-split/4-player-squad — GTA 6 4-Player Squad Heist Split Calculator — Unpause
+- https://playunpause.com/gta-6/heist-split/equal-25-percent — GTA 6 Equal 25% 4-Way Heist Split Math — Unpause
+- https://playunpause.com/gta-6/stock-market-planner — GTA 6 Two-Character Stock Market Planner — Unpause
+- https://playunpause.com/gta-6/night-run/45-minute-route — GTA 6 45-Minute Express Weeknight Route — Unpause
+- https://playunpause.com/gta-6/night-run/90-minute-route — GTA 6 90-Minute Standard Night Run Route — Unpause
+- https://playunpause.com/gta-6/missables-shield — GTA 6 Spoiler-Free Missables Lockout Shield — Unpause
+- https://playunpause.com/cod-warzone/ttk/c9-smg — C9 (SMG) Warzone TTK (544 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/xm4 — XM4 Warzone TTK (624 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/m4 — M4 Warzone TTK (720 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/ak-74 — AK-74 Warzone TTK (600 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/gpr-91 — GPR 91 Warzone TTK (696 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/jackal-pdw — Jackal PDW Warzone TTK (560 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/lachmann-sub — Lachmann Sub Warzone TTK (600 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/ppsh-41-open-bolt — PPSh-41 Warzone TTK (593 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/krig-c — Krig C Warzone TTK (665 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/raal-mg-open-bolt — RAAL MG Warzone TTK (638 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/dm-10 — DM-10 Warzone TTK (500 ms @ 300 HP) — Unpause
+- https://playunpause.com/cod-warzone/ttk/c9-vs-jackal-pdw — C9 vs Jackal PDW Warzone TTK Compare — Unpause
+- https://playunpause.com/cod-warzone/ttk/xm4-vs-krig-c — XM4 vs Krig C Warzone AR TTK Compare — Unpause
+- https://playunpause.com/cod-warzone/ttk/100-hp-multiplayer — CoD 100 HP Multiplayer TTK Calculator — Unpause
+- https://playunpause.com/cod-warzone/camo-tracker — CoD Mastery Camo Pace & Weapon Tracker — Unpause
+- https://playunpause.com/cod-warzone/33-weapons-mastery-skip-launchers — Skip Launchers for CoD 33-Weapon Mastery — Unpause
+- https://playunpause.com/ea-fc-27/tax/10k-coins — EA FC 27 10,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/tax/25k-coins — EA FC 27 25,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/tax/50k-coins — EA FC 27 50,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/tax/100k-coins — EA FC 27 100,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/tax/250k-coins — EA FC 27 250,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/tax/500k-coins — EA FC 27 500,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/tax/1-million-coins — EA FC 27 1,000,000 Coin Tax & Break-Even — Unpause
+- https://playunpause.com/ea-fc-27/sbc/82-rated-squad — EA FC 27 82-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/83-rated-squad — EA FC 27 83-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/84-rated-squad — EA FC 27 84-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/85-rated-squad — EA FC 27 85-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/86-rated-squad — EA FC 27 86-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/87-rated-squad — EA FC 27 87-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/88-rated-squad — EA FC 27 88-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/89-rated-squad — EA FC 27 89-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/ea-fc-27/sbc/90-rated-squad — EA FC 27 90-Rated SBC Formula & Solver — Unpause
+- https://playunpause.com/minecraft/nether-portal-calculator — Minecraft Nether Portal 8:1 Calculator — Unpause
+- https://playunpause.com/minecraft/negative-coordinates-floor-math — Minecraft Negative Coordinate Portal Fix — Unpause
+- https://playunpause.com/minecraft/portal-linking-128-block-radius — Minecraft 128-Block Portal Collision Check — Unpause
+- https://playunpause.com/minecraft/bedrock-vs-java-nether-portals — Minecraft Java vs Bedrock Portal Linking — Unpause
+- https://playunpause.com/minecraft/nether-roof-y128-highway — Minecraft Nether Roof Y=128 Highway Linker — Unpause
+- https://playunpause.com/minecraft/stronghold-triangulation-calculator — Minecraft Stronghold 2-Throw Triangulator — Unpause
+- https://playunpause.com/minecraft/chunk-border-mca-region-finder — Minecraft Chunk & .mca Region File Finder — Unpause
+- https://playunpause.com/minecraft/2-throw-eye-of-ender — Find End Portal With 2 Eyes of Ender — Unpause
+- https://playunpause.com/minecraft/obsidian-portal-size-calculator — Minecraft Nether Portal Obsidian Calculator — Unpause
+- https://playunpause.com/minecraft/overworld-to-nether-converter — Nether to Overworld x8 Portal Converter — Unpause
+- https://playunpause.com/roblox/devex/30000-robux-to-usd — 30,000 R$ to USD DevEx Payout ($114.00) — Unpause
+- https://playunpause.com/roblox/devex/50000-robux-to-usd — 50,000 R$ to USD DevEx Payout ($190.00) — Unpause
+- https://playunpause.com/roblox/devex/100000-robux-to-usd — 100,000 R$ to USD DevEx Payout ($380.00) — Unpause
+- https://playunpause.com/roblox/devex/250000-robux-to-usd — 250,000 R$ to USD DevEx Payout ($950.00) — Unpause
+- https://playunpause.com/roblox/devex/500000-robux-to-usd — 500,000 R$ to USD DevEx Payout ($1900.00) — Unpause
+- https://playunpause.com/roblox/devex/1000000-robux-to-usd — 1,000,000 R$ to USD DevEx Payout ($3800.00) — Unpause
+- https://playunpause.com/roblox/30-percent-marketplace-tax-calculator — Roblox 30% Marketplace Tax Calculator — Unpause
+- https://playunpause.com/roblox/gamepass-price-calculator — Roblox Gamepass Price After 30% Tax — Unpause
+- https://playunpause.com/roblox/devex-new-vs-old-rate — Roblox DevEx Rate: $0.0038 vs $0.0035 — Unpause
+- https://playunpause.com/roblox/us-direct-store-bonus-rate — Roblox US 18+ Direct Store $0.0054 Rate — Unpause
+- https://playunpause.com/fortnite/xp-to-level-100 — Fortnite XP to Level 100 Calculator — Unpause
+- https://playunpause.com/fortnite/xp-to-level-140-vbucks — Fortnite Level 140 V-Bucks XP Pace — Unpause
+- https://playunpause.com/fortnite/xp-to-level-200-super-styles — Fortnite XP to Level 200 Super Styles — Unpause
+- https://playunpause.com/fortnite/uefn-creative-weekly-xp-cap — Fortnite UEFN Creative Weekly XP Cap — Unpause
+- https://playunpause.com/fortnite/lego-festival-afk-playtime-xp — Fortnite LEGO & Festival XP Calculator — Unpause
+- https://playunpause.com/fortnite/daily-xp-pace-calculator — Fortnite Daily XP Pace Calculator (80K/Lvl) — Unpause
+- https://playunpause.com/cs2/mr12-loss-bonus-table — CS2 MR12 Loss Bonus Table & Calculator — Unpause
+- https://playunpause.com/cs2/pistol-round-loss-1900 — CS2 Pistol Round Loss Bonus ($1,900 Rule) — Unpause
+- https://playunpause.com/cs2/ct-full-buy-cost-m4-util — CS2 CT Full Buy Cost (M4 + Armor + Kit) — Unpause
+- https://playunpause.com/cs2/t-side-ak47-bomb-plant-bonus — CS2 T-Side AK-47 & +$800 Bomb Plant Math — Unpause
+- https://playunpause.com/cs2/force-buy-vs-eco-calculator — CS2 Force Buy vs Hard Eco Callout Tool — Unpause
+- https://playunpause.com/cs2/5-player-team-drop-calculator — CS2 5-Player Team Bank & Rifle Drop Tool — Unpause
+- https://playunpause.com/valorant/round-buy-economy-calculator — Valorant Round Buy & Shield Economy Tool — Unpause
+- https://playunpause.com/valorant/vandal-phantom-heavy-shields-3900 — Valorant 3,900 Rifle + Heavy Shield Check — Unpause
+- https://playunpause.com/valorant/ranked-rr-to-rank-up-calculator — Valorant Ranked RR Promotion Simulator — Unpause
+- https://playunpause.com/valorant/loss-streak-save-credits — Valorant Loss Streak Credits (1,900–2,900) — Unpause
+- https://playunpause.com/valorant/eco-bonus-thrifty-math — Valorant Outlaw & Bonus Round Economy — Unpause
+- https://playunpause.com/apex-legends/heirloom-500-pack-calculator — Apex Legends 500-Pack Heirloom Calculator — Unpause
+- https://playunpause.com/apex-legends/level-500-prestige-free-packs — Apex Legends Free Packs Level 1–2000 — Unpause
+- https://playunpause.com/apex-legends/ranked-rp-entry-cost-calculator — Apex Legends Ranked RP Entry Cost Planner — Unpause
+- https://playunpause.com/apex-legends/diamond-to-master-rp-grind — Apex Diamond to Master RP Grind Calculator — Unpause
+- https://playunpause.com/apex-legends/heirloom-shards-pity-tracker — Do Event Packs Count Toward Apex 500 Pity? — Unpause
+- https://playunpause.com/gta-online/cayo-perico-payout-calculator — GTA Online Cayo Perico Payout Calculator — Unpause
+- https://playunpause.com/gta-online/cayo-perico-pink-diamond-gold — Cayo Perico Pink Diamond + Gold Duo Payout — Unpause
+- https://playunpause.com/gta-online/cayo-perico-panther-statue — Cayo Perico Panther Statue Hard Mode Math — Unpause
+- https://playunpause.com/gta-online/cayo-perico-solo-cocaine-elite — Cayo Perico Solo Cocaine Bag & Elite Pay — Unpause
+- https://playunpause.com/gta-online/cayo-perico-duo-85-15-cut — Cayo Perico 85/15 Duo Cut Payout Math — Unpause
+- https://playunpause.com/gta-online/cayo-perico-4-player-cut — Cayo Perico 4-Player 55/15 Split Math — Unpause
+- https://playunpause.com/legal/terms — Terms of Service & ECTA Disclosures — Unpause
+- https://playunpause.com/legal/privacy — Privacy Notice (POPIA · GDPR · CCPA) — Unpause
+- https://playunpause.com/legal/refunds — 14-Day Refund & Sponsor Ad Policy — Unpause
+- https://playunpause.com/legal/ip — IP, Trademarks, DMCA & Affiliate Info — Unpause

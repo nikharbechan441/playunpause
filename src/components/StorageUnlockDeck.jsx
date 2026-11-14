@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   HardDrive,
   Download,
   Share2,
   Copy,
   Check,
+  Link2,
   ExternalLink,
   AlertTriangle,
   Globe,
@@ -18,6 +19,7 @@ import {
   shareOrDownloadCanvas,
 } from '../utils/canvasCards.js';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
+import { copyTextReliably } from '../utils/clipboard.js';
 
 export function formatDurationMinutes(totalMinutes) {
   const mins = Math.max(0, Math.round(totalMinutes));
@@ -36,16 +38,38 @@ export function formatCountdownMs(diffMs) {
   return `${days}d ${hours}h ${mins}m`;
 }
 
-export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnabled, nowMs }) {
+export default function StorageUnlockDeck({
+  gamePack,
+  runtimeConfig,
+  soundEnabled,
+  nowMs,
+  onOpenProModal,
+  initialPreset = null,
+  presetKey = '',
+}) {
   const consoles = gamePack.consoles || [];
-  const [selectedConsoleId, setSelectedConsoleId] = useState(consoles[0]?.id || 'xss-512');
-  const [alreadyFreeGb, setAlreadyFreeGb] = useState(95);
-  const [includeDayOnePatch, setIncludeDayOnePatch] = useState(false);
+  const [selectedConsoleId, setSelectedConsoleId] = useState(
+    () => initialPreset?.consoleId || consoles[0]?.id || 'xss-512'
+  );
+  const [alreadyFreeGb, setAlreadyFreeGb] = useState(
+    () => initialPreset?.freeGb ?? 140
+  );
+  const [includeDayOnePatch, setIncludeDayOnePatch] = useState(
+    () => Boolean(initialPreset?.includePatch)
+  );
   const [customOffsetGb, setCustomOffsetGb] = useState(0);
-  const [mbps, setMbps] = useState(120);
-  const [sacrificedIds, setSacrificedIds] = useState(['cod-hq']);
+  const [mbps, setMbps] = useState(() => initialPreset?.mbps ?? 120);
+  const [sacrificedIds, setSacrificedIds] = useState([]);
   const [actionToast, setActionToast] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (!initialPreset) return;
+    if (initialPreset.consoleId) setSelectedConsoleId(initialPreset.consoleId);
+    if (initialPreset.freeGb !== undefined) setAlreadyFreeGb(initialPreset.freeGb);
+    if (initialPreset.includePatch !== undefined) setIncludeDayOnePatch(Boolean(initialPreset.includePatch));
+    if (initialPreset.mbps !== undefined) setMbps(initialPreset.mbps);
+  }, [presetKey]);
 
   const selectedConsole = useMemo(
     () => consoles.find((c) => c.id === selectedConsoleId) || consoles[0],
@@ -170,46 +194,46 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
       ? sacrificedGames.map((g) => `-${g.title} (+${g.sizeGb} GB)`).join(', ')
       : 'None';
     const summary = [
-      `**Unpause // GTA VI Preload Telemetry**`,
+      `**Unpause — GTA VI Storage Fit Plan**`,
       `• Console: ${selectedConsole.shortName} (${usableGb} GB usable)`,
       `• Required Install: ${installTargetGb} GB · Status: **${statusLine}**`,
       `• Existing Free: ${clampedFreeGb} GB · Uninstalled: ${clearedList} · Total Free: ${totalClearedGb} GB`,
       `• ETA @ ${mbps} Mbps: ${downloadTimeText} · Rollout: ${selectedConsole.nzStatusShort}`,
-      `https://playunpause.com/?game=gta-6`,
+      `https://playunpause.com/gta-6/storage`,
     ].join('\n');
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(summary).catch(() => {});
-    }
-    flashToast('Discord telemetry summary copied.');
+    copyTextReliably(summary).then((ok) => {
+      flashToast(ok ? 'Discord summary copied.' : 'Copy blocked — copy from browser bar.');
+    });
   };
 
   return (
     <section className="deck-panel" aria-label="Console SSD Preload & Launch Unlock Calculator">
-      <div className="studio-hero-band">
-        <div>
-          <div className="panel-eyebrow">
-            <Cpu size={13} />
-            <span>EST. PRELOAD TELEMETRY · 212 GB PS5 / 225 GB XBOX · SUBJECT TO PATCHES</span>
-          </div>
-          <h1 className="panel-title">GTA VI SSD Fit Check &amp; Download ETA</h1>
-          <p className="panel-subtitle">
-            Select your console SKU, dial in free NVMe space, toggle the Day-1 patch buffer, and see
-            what stays or clears in 3 seconds.
-          </p>
-        </div>
-
-        <div className="hud-readout" title={`NZ Countdown: ${nzCountdown}`}>
-          <Globe size={15} />
-          <span>Nov 18 NZ · Nov 19 Global</span>
-        </div>
-      </div>
-
       <div className="deck-body-pad">
+        <div
+          className={fits ? 'mobile-live-verdict ok' : 'mobile-live-verdict short'}
+          style={{
+            borderColor: fits ? 'var(--teal-border)' : 'var(--coral-border)',
+            background: fits ? 'var(--teal-soft)' : 'var(--coral-soft)',
+          }}
+        >
+          <div>
+            <div className="mono" style={{ fontSize: '0.78rem', fontWeight: 700, color: fits ? 'var(--teal-dark)' : 'var(--coral)' }}>
+              {fits ? `FITS ON ${selectedConsole.shortName.toUpperCase()}` : `SHORT BY ${shortfallGb} GB`}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--ink-secondary)', marginTop: '2px' }}>
+              {totalClearedGb} GB free vs {installTargetGb} GB req · ETA {downloadTimeText}
+            </div>
+          </div>
+          <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {fits ? `+${surplusGb} GB` : `-${shortfallGb} GB`}
+          </span>
+        </div>
+
         <div className="storage-stage-grid">
           {/* LEFT WORKBENCH */}
           <div>
             <div className="meter-labels" style={{ marginBottom: '10px' }}>
-              <span className="section-label">1. Select Console Model (3x2 Hardware Grid)</span>
+              <h2 className="section-label" style={{ margin: 0 }}>Pick your console</h2>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"
@@ -266,7 +290,7 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
                     </span>
                     <span className="console-key-name">{c.shortName}</span>
                     <span className="console-key-meta">
-                      {c.usableGb} GB usable · {installGb} GB req
+                      {c.usableGb} GB net · {installGb} req
                     </span>
                   </button>
                 );
@@ -420,7 +444,7 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
 
             {/* UNINSTALL QUEUE */}
             <div className="meter-labels" style={{ marginTop: '12px' }}>
-              <span className="section-label">2. Queue Installed Titles to Clear</span>
+              <h2 className="section-label" style={{ margin: 0 }}>Tap installed games to test clearing space</h2>
               {sacrificedIds.length > 0 && (
                 <button
                   type="button"
@@ -480,20 +504,20 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
           </div>
 
           {/* RIGHT SPEC CARD PREVIEW & PNG EXPORT */}
-          <div className="live-receipt-stage mobile-answer-first">
+          <div className="live-receipt-stage">
             <div className="thermal-paper-wrap">
               <div className="thermal-paper">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
-                  <div className="receipt-title">UNPAUSE // PRELOAD SPEC CARD</div>
+                  <div className="receipt-title">UNPAUSE · STORAGE FIT RECEIPT</div>
                   <span
                     className="mono"
                     style={{
-                      fontSize: '0.7rem',
+                      fontSize: '0.78rem',
                       fontWeight: 700,
                       color: fits ? 'var(--teal-dark)' : 'var(--coral)',
                     }}
                   >
-                    {fits ? 'PASS READY' : 'SHORTAGE'}
+                    {fits ? 'FITS' : 'SHORT'}
                   </span>
                 </div>
                 <div className="receipt-sub">
@@ -560,7 +584,7 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
               </div>
             </div>
 
-            <div className="stage-action-row">
+            <div className="stage-action-row stage-action-row-3">
               <button
                 type="button"
                 className="stage-dark-btn"
@@ -568,6 +592,27 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
               >
                 {actionToast.includes('Discord') ? <Check size={15} /> : <Copy size={15} />}
                 <span>Copy Discord</span>
+              </button>
+              <button
+                type="button"
+                className="stage-dark-btn"
+                data-share-url={`/gta-6/storage?c=${encodeURIComponent(selectedConsoleId)}&free=${clampedFreeGb}&patch=${includeDayOnePatch ? 1 : 0}&mbps=${mbps}`}
+                onClick={async () => {
+                  const shareUrl = `${window.location.origin}/gta-6/storage?c=${encodeURIComponent(selectedConsoleId)}&free=${clampedFreeGb}&patch=${includeDayOnePatch ? 1 : 0}&mbps=${mbps}`;
+                  playSwitchTick(soundEnabled, 820);
+                  const ok = await copyTextReliably(shareUrl);
+                  setActionToast(ok ? 'Shareable link copied to clipboard.' : 'Clipboard blocked — copy URL from address bar.');
+                  setTimeout(() => setActionToast(''), 2200);
+                }}
+              >
+                {actionToast.includes('Shareable') ? <Check size={15} /> : <Link2 size={15} />}
+                <span>
+                  {actionToast.includes('Shareable')
+                    ? 'Copied Link'
+                    : actionToast.includes('Clipboard blocked')
+                      ? 'Copy Blocked'
+                      : 'Share Link'}
+                </span>
               </button>
               <button
                 type="button"
@@ -579,23 +624,26 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
                 <span>{isExporting ? 'Rendering…' : 'Save Spec PNG'}</span>
               </button>
             </div>
-            <button
-              type="button"
-              className="subtle-pill-btn"
-              style={{ width: '100%', marginTop: '8px', justifyContent: 'center' }}
-              onClick={handleCopyCard}
-              disabled={isExporting}
-            >
-              {actionToast.includes('PNG copied') ? <Check size={13} /> : <Copy size={13} />}
-              <span>Copy Image to Clipboard</span>
-            </button>
+
+            {onOpenProModal && (
+              <div className="sync-quiet-note">
+                <span>Save &amp; sync your storage list between phone and PC</span>
+                <button
+                  type="button"
+                  className="sync-quiet-btn"
+                  onClick={onOpenProModal}
+                >
+                  Phone ↔ PC Sync
+                </button>
+              </div>
+            )}
 
             {actionToast && (
               <div
                 className="mono"
                 style={{
                   marginTop: '8px',
-                  fontSize: '0.78rem',
+                  fontSize: '0.79rem',
                   fontWeight: 600,
                   color: 'var(--teal-dark)',
                   textAlign: 'center',
@@ -607,7 +655,7 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
             )}
 
             <div className="nz-compact-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', fontWeight: 700, fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', fontWeight: 700, fontSize: '0.84rem' }}>
                 <HardDrive size={14} color={selectedConsole.nzTrickWorks ? 'var(--teal-dark)' : 'var(--coral)'} />
                 <span>
                   {selectedConsole.platform === 'xbox'
@@ -615,10 +663,10 @@ export default function StorageUnlockDeck({ gamePack, runtimeConfig, soundEnable
                     : 'PlayStation 5 Region-Lock Reality'}
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.77rem', lineHeight: 1.48, color: 'var(--ink-secondary)' }}>
+              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.48, color: 'var(--ink-secondary)' }}>
                 {selectedConsole.nzDetail}
               </p>
-              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: 'var(--ink-muted)' }}>
+              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
                 <Download size={12} />
                 <span>Includes 10% protocol overhead factor on {mbps} Mbps downloads.</span>
               </div>

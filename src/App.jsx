@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import {
   HardDrive,
   KeyRound,
@@ -18,17 +18,32 @@ import {
   Megaphone,
   ExternalLink,
   RefreshCw,
+  Code2,
 } from 'lucide-react';
-import { GAME_PACKS, resolveGameIdFromSlug } from './data/games/index.js';
+import { GAME_PACKS } from './data/games/index.js';
+import {
+  CANONICAL_ORIGIN,
+  GAME_TO_CANONICAL_PATH,
+  TAB_TO_CANONICAL_PATH,
+  LEGAL_META,
+  resolveSeoRequest,
+  parseSafeStatefulQuery,
+  getRelatedRoutesFor,
+  getGroupedDirectoryLinks,
+} from './data/seoRoutes.js';
 import StorageUnlockDeck, { formatCountdownMs } from './components/StorageUnlockDeck.jsx';
-import SafeKeypadVault from './components/SafeKeypadVault.jsx';
-import SquadHeistMarketDeck from './components/SquadHeistMarketDeck.jsx';
-import NightRunProDeck from './components/NightRunProDeck.jsx';
-import MultiGameToolDeck from './components/MultiGameToolDeck.jsx';
-import GameSelectorModal from './components/GameSelectorModal.jsx';
-import LegalComplianceModal from './components/LegalComplianceModal.jsx';
 import { generateQrMatrix } from './utils/qrCode.js';
 import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
+import { copyTextReliably } from './utils/clipboard.js';
+import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
+
+const SafeKeypadVault = lazy(() => import('./components/SafeKeypadVault.jsx'));
+const SquadHeistMarketDeck = lazy(() => import('./components/SquadHeistMarketDeck.jsx'));
+const NightRunProDeck = lazy(() => import('./components/NightRunProDeck.jsx'));
+const MultiGameToolDeck = lazy(() => import('./components/MultiGameToolDeck.jsx'));
+const GameSelectorModal = lazy(() => import('./components/GameSelectorModal.jsx'));
+const LegalComplianceModal = lazy(() => import('./components/LegalComplianceModal.jsx'));
+const EmbedWidgetModal = lazy(() => import('./components/EmbedWidgetModal.jsx'));
 
 const STORAGE_KEY = 'unpause_deck_state_v5';
 const LEGACY_KEYS = [
@@ -141,13 +156,19 @@ function loadInitialDeckState() {
 
 function readRouteFromLocation() {
   if (typeof window === 'undefined') {
-    return { gameId: 'gta-6', tab: 'storage', searchQuery: '', legal: null, syncCode: null };
+    return {
+      route: resolveSeoRequest('/').route,
+      isEmbed: false,
+      notFound: false,
+      gameId: 'gta-6',
+      tab: 'storage',
+      legal: null,
+      preset: {},
+      presetKey: '/',
+      normalizeToPath: null,
+      syncCode: null,
+    };
   }
-  const params = new URLSearchParams(window.location.search);
-  const rawGame = params.get('game');
-  const rawTab = params.get('tab');
-  const rawSearch = params.get('q') || '';
-  const rawLegal = params.get('legal');
 
   let syncCode = null;
   const hash = window.location.hash || '';
@@ -156,29 +177,57 @@ function readRouteFromLocation() {
     syncCode = syncMatch[1].toUpperCase();
   }
 
-  const validTabs = new Set(['storage', 'safes', 'squad', 'nightrun']);
+  const rawPath = window.location.pathname || '/';
+  const rawSearch = window.location.search || '';
+  let seoRes = resolveSeoRequest(rawPath, rawSearch);
+  let normalizeToPath = null;
+  let effectivePath = rawPath;
+  let effectiveParams = new URLSearchParams(rawSearch);
+
+  if (seoRes.status === 301 && seoRes.redirectTo) {
+    const parsedTarget = new URL(seoRes.redirectTo);
+    normalizeToPath = `${parsedTarget.pathname}${parsedTarget.search}`;
+    effectivePath = parsedTarget.pathname;
+    effectiveParams = parsedTarget.searchParams;
+    seoRes = resolveSeoRequest(effectivePath, effectiveParams);
+  }
+
+  const route = seoRes.route || null;
+  const preset = parseSafeStatefulQuery(effectiveParams, route?.preset || {});
+  const qs = effectiveParams.toString();
+
   return {
-    gameId: resolveGameIdFromSlug(rawGame),
-    tab: validTabs.has(rawTab) ? rawTab : 'storage',
-    searchQuery: rawSearch,
-    legal: rawLegal && ['terms', 'privacy', 'refunds', 'ip'].includes(rawLegal) ? rawLegal : null,
+    route,
+    isEmbed: Boolean(seoRes.isEmbed),
+    notFound: Boolean(seoRes.notFound),
+    gameId: route?.gameId || 'gta-6',
+    tab: route?.tab || 'storage',
+    legal: route?.legal || null,
+    preset,
+    presetKey: `${effectivePath}${qs ? `?${qs}` : ''}`,
+    normalizeToPath,
     syncCode,
   };
 }
 
 export default function App() {
-  const initialRoute = useMemo(() => readRouteFromLocation(), []);
+  const [routeState, setRouteState] = useState(() => readRouteFromLocation());
+  const initialSyncCodeRef = useRef(routeState.syncCode);
   const [deckState, setDeckState] = useState(loadInitialDeckState);
-  const [activeGameId, setActiveGameId] = useState(initialRoute.gameId);
-  const [activeTab, setActiveTab] = useState(initialRoute.tab);
-  const [safeInitialQuery, setSafeInitialQuery] = useState(initialRoute.searchQuery);
   const [runtimeConfig, setRuntimeConfig] = useState(DEFAULT_RUNTIME);
   const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const activeRoute = routeState.route;
+  const isEmbed = routeState.isEmbed;
+  const isNotFound = routeState.notFound;
+  const activeGameId = routeState.gameId;
+  const activeTab = routeState.tab;
+  const legalSection = routeState.legal;
 
   const [showGameModal, setShowGameModal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
-  const [legalSection, setLegalSection] = useState(initialRoute.legal);
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
 
   const [claimInput, setClaimInput] = useState('');
   const [claimReceiptInput, setClaimReceiptInput] = useState('');
@@ -194,6 +243,43 @@ export default function App() {
   const legalModalRef = useRef(null);
   const syncTimerRef = useRef(null);
   const skipNextPersistRef = useRef(false);
+  const lastToolPathRef = useRef('/');
+
+  useModalFocusTrap(showProModal, proModalRef, () => setShowProModal(false));
+  useModalFocusTrap(showSponsorModal, sponsorModalRef, () => setShowSponsorModal(false));
+
+  useEffect(() => {
+    if (!legalSection && !isNotFound && activeRoute?.path && !isEmbed) {
+      lastToolPathRef.current = routeState.presetKey || activeRoute.path;
+    }
+  }, [legalSection, isNotFound, activeRoute?.path, isEmbed, routeState.presetKey]);
+
+  const navigateToPath = (rawPath, { replace = false, scrollToTop = false } = {}) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const targetUrl = new URL(rawPath, window.location.origin);
+      const nextUrl = `${targetUrl.pathname}${targetUrl.search}`;
+      if (replace) {
+        window.history.replaceState({}, '', nextUrl);
+      } else {
+        window.history.pushState({}, '', nextUrl);
+      }
+      setRouteState(readRouteFromLocation());
+      if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+    } catch {
+      // Ignore history edge cases
+    }
+  };
+
+  const setLegalSection = (nextSection) => {
+    if (nextSection && LEGAL_META[nextSection]?.path) {
+      navigateToPath(LEGAL_META[nextSection].path);
+    } else {
+      navigateToPath(lastToolPathRef.current || '/');
+    }
+  };
 
   const activeGamePack = useMemo(
     () => GAME_PACKS.find((g) => g.id === activeGameId) || GAME_PACKS[0],
@@ -201,6 +287,10 @@ export default function App() {
   );
 
   const isPreLaunch = nowMs < Date.parse(GAME_PACKS[0].nzUnlockIsoUtc || '2026-11-18T11:00:00Z');
+  const daysUntilLaunch = useMemo(
+    () => Math.max(0, Math.ceil((Date.parse('2026-11-19T00:00:00Z') - nowMs) / 86400000)),
+    [nowMs]
+  );
   const headerNzClock = useMemo(
     () => formatCountdownMs(Date.parse(GAME_PACKS[0].nzUnlockIsoUtc) - nowMs),
     [nowMs]
@@ -269,15 +359,68 @@ export default function App() {
     };
   }, []);
 
+  // Sync dynamic document title, canonical & robots meta tag during client-side navigation
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const titleText = isNotFound
+      ? 'Page Not Found — Unpause'
+      : activeRoute?.title || 'Unpause — Instant Console Storage & Game Math Tools';
+    document.title = titleText;
+
+    let canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (isNotFound) {
+      if (canonicalEl) canonicalEl.remove();
+    } else {
+      const canonicalPath =
+        isEmbed && activeRoute?.parentCanonicalPath
+          ? activeRoute.parentCanonicalPath
+          : activeRoute?.path || '/';
+      if (!canonicalEl) {
+        canonicalEl = document.createElement('link');
+        canonicalEl.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalEl);
+      }
+      canonicalEl.setAttribute('href', `${CANONICAL_ORIGIN}${canonicalPath}`);
+    }
+
+    let robotsEl = document.querySelector('meta[name="robots"]');
+    if (isNotFound || isEmbed) {
+      if (!robotsEl) {
+        robotsEl = document.createElement('meta');
+        robotsEl.setAttribute('name', 'robots');
+        document.head.appendChild(robotsEl);
+      }
+      robotsEl.setAttribute('content', isNotFound ? 'noindex, nofollow' : 'noindex, follow');
+    } else if (robotsEl) {
+      robotsEl.remove();
+    }
+  }, [activeRoute, isEmbed, isNotFound]);
+
+  // Normalize legacy client URLs when running under standalone Vite dev server
+  useEffect(() => {
+    if (routeState.normalizeToPath && typeof window !== 'undefined') {
+      const keepHash =
+        window.location.hash && !window.location.hash.toLowerCase().startsWith('#sync=')
+          ? window.location.hash
+          : '';
+      try {
+        window.history.replaceState({}, '', `${routeState.normalizeToPath}${keepHash}`);
+      } catch {
+        // Ignore history restrictions
+      }
+    }
+  }, [routeState.normalizeToPath]);
+
   // Auto-hydrating #sync=UP-XXXXXXXX hash links (Cross-device QR flow) & scrubbing fragment from history
   useEffect(() => {
-    if (!initialRoute.syncCode) return;
-    fetch(`/api/sync/${encodeURIComponent(initialRoute.syncCode)}`)
+    const syncCode = initialSyncCodeRef.current;
+    if (!syncCode) return;
+    fetch(`/api/sync/${encodeURIComponent(syncCode)}`)
       .then(async (res) => {
         const data = await res.json().catch(() => null);
         if (res.status === 403) {
           setDeckState((prev) =>
-            prev.deckCode === initialRoute.syncCode
+            prev.deckCode === syncCode
               ? { ...prev, isPro: false, deckCode: null }
               : prev
           );
@@ -289,7 +432,7 @@ export default function App() {
           setDeckState((prev) => ({
             ...prev,
             isPro: true,
-            deckCode: data.deckCode || initialRoute.syncCode,
+            deckCode: data.deckCode || syncCode,
             crackedSafeIds: Array.isArray(data.state.crackedSafeIds) ? data.state.crackedSafeIds : prev.crackedSafeIds,
             checkedRouteIds: Array.isArray(data.state.checkedRouteIds) ? data.state.checkedRouteIds : prev.checkedRouteIds,
             savedPins: Array.isArray(data.state.savedPins) ? data.state.savedPins : prev.savedPins,
@@ -307,7 +450,7 @@ export default function App() {
           // Ignore history restrictions
         }
       });
-  }, [initialRoute.syncCode]);
+  }, []);
 
   // Debounced cloud state push when Sync Pass active
   useEffect(() => {
@@ -339,6 +482,7 @@ export default function App() {
   // Keyboard shortcuts: Ctrl/Cmd + K opens Game Selector, Escape closes active modal
   useEffect(() => {
     const onKeyDown = (e) => {
+      if (isEmbed) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setShowGameModal((open) => !open);
@@ -346,63 +490,31 @@ export default function App() {
         setShowGameModal(false);
         setShowProModal(false);
         setShowSponsorModal(false);
-        setLegalSection(null);
+        setShowEmbedModal(false);
+        if (legalSection) setLegalSection(null);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [isEmbed, legalSection]);
 
   // Browser back/forward URL navigation support
   useEffect(() => {
     const onPopState = () => {
-      const next = readRouteFromLocation();
-      setActiveGameId(next.gameId);
-      setActiveTab(next.tab);
-      setSafeInitialQuery(next.searchQuery);
-      setLegalSection(next.legal);
+      setRouteState(readRouteFromLocation());
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const syncUrlParams = (gameId, tabId) => {
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('legal');
-      if (gameId && gameId !== 'gta-6') {
-        url.searchParams.set('game', gameId);
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.delete('game');
-        if (tabId && tabId !== 'storage') {
-          url.searchParams.set('tab', tabId);
-        } else {
-          url.searchParams.delete('tab');
-        }
-      }
-      const safeHash = url.hash && url.hash.toLowerCase().startsWith('#sync=') ? '' : url.hash;
-      window.history.pushState({}, '', `${url.pathname}${url.search}${safeHash}`);
-    } catch {
-      // Ignore history edge cases
-    }
-  };
-
   const handleSelectGame = (nextGameId) => {
     playSwitchTick(deckState.soundEnabled, 700);
-    setActiveGameId(nextGameId);
-    if (nextGameId === 'gta-6') {
-      syncUrlParams('gta-6', activeTab);
-    } else {
-      syncUrlParams(nextGameId, null);
-    }
+    navigateToPath(GAME_TO_CANONICAL_PATH[nextGameId] || '/');
   };
 
   const handleSelectTab = (tabId) => {
     playSwitchTick(deckState.soundEnabled, 660);
-    setActiveGameId('gta-6');
-    setActiveTab(tabId);
-    syncUrlParams('gta-6', tabId);
+    navigateToPath(TAB_TO_CANONICAL_PATH[tabId] || '/gta-6/storage');
   };
 
   const toggleTheme = () => {
@@ -601,15 +713,60 @@ export default function App() {
   );
 
   const faqCards = useMemo(() => {
-    const packFaqs = activeGamePack.faqs || [];
+    const routeFaqs =
+      Array.isArray(activeRoute?.faqs) && activeRoute.faqs.length > 0
+        ? activeRoute.faqs
+        : activeGamePack.faqs || [];
     return [
-      ...packFaqs,
+      ...routeFaqs,
       {
         q: `What does the one-time $${runtimeConfig.passPriceUsd} Sync Pass unlock?`,
-        a: 'Instant QR and UP-XXXXXXXX cloud synchronization between Phone and Desktop across safes, weeknight routes, and unlimited multi-game pins, plus extended 90m/120m routes and Act II–III Shield. Digital delivery starts immediately on activation; GTA VI data remains pre-launch estimate until Nov 18 (11:00 UTC) and Whop calculates applicable VAT/sales tax at checkout.',
+        a: `All calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 90m/120m extended weeknight chains, unlimited pinned calcs, and 14-day hassle-free refunds.`,
       },
     ];
-  }, [activeGamePack.faqs, runtimeConfig.passPriceUsd]);
+  }, [activeRoute?.faqs, activeGamePack.faqs, runtimeConfig.passPriceUsd]);
+
+  const currentEmbedPath = useMemo(() => {
+    if (activeGameId === 'gta-6') {
+      const map = {
+        storage: '/embed/gta-6/storage',
+        safes: '/embed/gta-6/safe-codes',
+        squad: '/embed/gta-6/heist-split',
+        nightrun: '/embed/gta-6/night-run',
+      };
+      return map[activeTab] || '/embed/gta-6/storage';
+    }
+    const slug = activeGameId === 'gta-v' ? 'gta-online' : activeGameId;
+    return `/embed/${slug}`;
+  }, [activeGameId, activeTab]);
+
+  const isSubpageScenario = useMemo(
+    () =>
+      Boolean(
+        activeRoute &&
+          !activeRoute.legal &&
+          !isEmbed &&
+          !isNotFound &&
+          activeRoute.path !== '/' &&
+          !Object.values(GAME_TO_CANONICAL_PATH).includes(activeRoute.path) &&
+          !Object.values(TAB_TO_CANONICAL_PATH).includes(activeRoute.path)
+      ),
+    [activeRoute, isEmbed, isNotFound]
+  );
+
+  const relatedLinks = useMemo(
+    () => (activeRoute && !activeRoute.legal ? getRelatedRoutesFor(activeRoute, 6) : []),
+    [activeRoute]
+  );
+
+  const directoryGroups = useMemo(() => getGroupedDirectoryLinks(), []);
+
+  const handleOpenProTarget = isEmbed
+    ? () => {
+        const dest = `${CANONICAL_ORIGIN}${activeRoute?.parentCanonicalPath || '/'}`;
+        window.open(dest, '_blank', 'noopener');
+      }
+    : () => setShowProModal(true);
 
   const activeSponsorHref = sanitizeHttpsUrl(runtimeConfig.activeSponsor?.targetUrl, null);
   const passCheckoutHref = sanitizeHttpsUrl(
@@ -620,6 +777,119 @@ export default function App() {
     runtimeConfig.sponsorCheckoutUrl,
     DEFAULT_RUNTIME.sponsorCheckoutUrl
   );
+
+  if (isEmbed) {
+    return (
+      <div style={accentStyle} className="embed-root-wrap">
+        <main className="app-shell embed-app-shell">
+          <Suspense
+            fallback={
+              <div className="deck-panel embed-loading-card">
+                Loading calculator module…
+              </div>
+            }
+          >
+            {activeGamePack.isGta6Suite ? (
+              <div className="deck-stage-transition" key={`embed-gta-${activeTab}`}>
+                {activeTab === 'storage' && (
+                  <StorageUnlockDeck
+                    gamePack={activeGamePack}
+                    runtimeConfig={runtimeConfig}
+                    soundEnabled={deckState.soundEnabled}
+                    nowMs={nowMs}
+                    onOpenProModal={handleOpenProTarget}
+                    initialPreset={routeState.preset}
+                    presetKey={routeState.presetKey}
+                  />
+                )}
+                {activeTab === 'safes' && (
+                  <SafeKeypadVault
+                    gamePack={activeGamePack}
+                    crackedSafeIds={deckState.crackedSafeIds}
+                    onToggleSafe={handleToggleSafe}
+                    soundEnabled={deckState.soundEnabled}
+                    isPro={deckState.isPro}
+                    isPreLaunch={isPreLaunch}
+                    isEmbed
+                    initialQuery={routeState.preset?.query ?? ''}
+                    initialPreset={routeState.preset}
+                    presetKey={routeState.presetKey}
+                    onOpenProModal={handleOpenProTarget}
+                  />
+                )}
+                {activeTab === 'squad' && (
+                  <SquadHeistMarketDeck
+                    gamePack={activeGamePack}
+                    soundEnabled={deckState.soundEnabled}
+                    isPreLaunch={isPreLaunch}
+                    isEmbed
+                    initialPreset={routeState.preset}
+                    presetKey={routeState.presetKey}
+                  />
+                )}
+                {activeTab === 'nightrun' && (
+                  <NightRunProDeck
+                    gamePack={activeGamePack}
+                    isPro={deckState.isPro}
+                    isPreLaunch={isPreLaunch}
+                    isEmbed
+                    deckCode={deckState.deckCode}
+                    checkedRouteIds={deckState.checkedRouteIds}
+                    onToggleRouteStop={handleToggleRouteStop}
+                    onOpenProModal={handleOpenProTarget}
+                    runtimeConfig={runtimeConfig}
+                    soundEnabled={deckState.soundEnabled}
+                    initialPreset={routeState.preset}
+                    presetKey={routeState.presetKey}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="deck-stage-transition" key={`embed-mg-${activeGamePack.id}`}>
+                <MultiGameToolDeck
+                  game={activeGamePack}
+                  isPro={deckState.isPro}
+                  onOpenProModal={handleOpenProTarget}
+                  soundEnabled={deckState.soundEnabled}
+                  savedPins={deckState.savedPins}
+                  onSavePin={handleSavePin}
+                  onRemovePin={handleRemovePin}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                />
+              </div>
+            )}
+          </Suspense>
+
+          <footer className="embed-attribution-bar">
+            <div className="embed-attribution-copy">
+              <span>Powered by</span>
+              <a
+                href={`${CANONICAL_ORIGIN}${activeRoute?.parentCanonicalPath || '/'}`}
+                target="_blank"
+                rel="noopener"
+              >
+                Unpause ({activeRoute?.shortLabel || 'playunpause.com'}) ↗
+              </a>
+            </div>
+            <button
+              type="button"
+              className="subtle-pill-btn"
+              onClick={toggleTheme}
+              aria-label={
+                deckState.theme === 'paper'
+                  ? 'Switch to Obsidian dark studio theme'
+                  : 'Switch to Paper daylight theme'
+              }
+            >
+              {deckState.theme === 'paper' ? <Moon size={14} /> : <Sun size={14} />}
+              <span>{deckState.theme === 'paper' ? 'Dark' : 'Light'}</span>
+            </button>
+          </footer>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div style={accentStyle}>
@@ -650,13 +920,13 @@ export default function App() {
               className="brand-cluster"
               onClick={(e) => {
                 e.preventDefault();
-                handleSelectTab('storage');
+                navigateToPath('/');
               }}
             >
               <div className="brand-mark" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <rect x="4" y="5" width="4" height="14" rx="1.2" fill="#FFFFFF" />
-                  <path d="M11 5.5L20 12L11 18.5V5.5Z" fill="#FFFFFF" />
+                  <rect x="4" y="5" width="4" height="14" rx="1.2" fill="#38BDF8" />
+                  <path d="M11 5.5L20 12L11 18.5V5.5Z" fill="#F5F7FB" />
                 </svg>
               </div>
               <span className="brand-name">Unpause</span>
@@ -679,10 +949,13 @@ export default function App() {
           </div>
 
           <div className="topbar-controls">
-            <div className="nz-hud-pill" title="New Zealand Early Launch Clock (Nov 18 @ 11:00 UTC)">
+            <div
+              className="nz-hud-pill"
+              title={`Global launch Nov 19, 2026 · Xbox NZ earliest midnight: Nov 18 @ 11:00 UTC (${headerNzClock})`}
+            >
               <span className="nz-live-dot" />
-              <span className="nz-full-text">NZ Unlock: {headerNzClock}</span>
-              <span className="nz-compact-text">NZ: {headerNzClock}</span>
+              <span className="nz-full-text">GTA VI · Nov 19 ({daysUntilLaunch}d)</span>
+              <span className="nz-compact-text">Nov 19 ({daysUntilLaunch}d)</span>
             </div>
 
             <button
@@ -711,6 +984,20 @@ export default function App() {
 
             <button
               type="button"
+              className="tactile-icon-btn embed-header-btn"
+              onClick={() => {
+                playSwitchTick(deckState.soundEnabled, 680);
+                setShowEmbedModal(true);
+              }}
+              aria-label="Embed free calculator widget"
+              title="Embed calculator widget"
+            >
+              <Code2 size={15} />
+              <span className="embed-btn-label">Embed</span>
+            </button>
+
+            <button
+              type="button"
               className={`tactile-icon-btn pass-header-btn ${deckState.isPro ? 'sync-pill-pro' : ''}`}
               onClick={() => {
                 playSwitchTick(deckState.soundEnabled, 700);
@@ -719,10 +1006,10 @@ export default function App() {
             >
               <QrCode size={14} />
               <span className="pass-full-label">
-                {deckState.isPro ? `Synced · ${deckState.deckCode}` : `Sync Pass · $${runtimeConfig.passPriceUsd}`}
+                {deckState.isPro ? `Synced · ${deckState.deckCode}` : 'Phone ↔ PC Sync'}
               </span>
               <span className="pass-short-label">
-                {deckState.isPro ? 'Sync' : 'Pass'}
+                {deckState.isPro ? 'Synced' : 'Sync'}
               </span>
             </button>
           </div>
@@ -732,8 +1019,8 @@ export default function App() {
         <nav className="quick-game-dock-wrap" aria-label="Quick Top 10 Games">
           <div className="quick-game-dock">
             {GAME_PACKS.map((g) => {
-              const isActive = g.id === activeGameId;
-              const href = g.id === 'gta-6' ? '/' : `/?game=${g.id}`;
+              const isActive = !isNotFound && g.id === activeGameId;
+              const href = GAME_TO_CANONICAL_PATH[g.id] || '/';
               return (
                 <a
                   key={g.id}
@@ -760,6 +1047,134 @@ export default function App() {
 
       {/* MAIN STUDIO WORKBENCH */}
       <main className="app-shell">
+        {isNotFound ? (
+          <section className="deck-panel notfound-card" aria-label="Page not found">
+            <div className="deck-body-pad">
+              <div className="panel-eyebrow">
+                <span>HTTP 404 · UNKNOWN CALCULATOR PATH</span>
+              </div>
+              <h1 className="consumer-h1">404 — Calculator Route Not Found</h1>
+              <p className="consumer-sub">
+                That path does not match an active calculator or guide. Jump directly into any free deck below:
+              </p>
+              <div className="seo-scenario-chips">
+                {GAME_PACKS.map((g) => {
+                  const target = GAME_TO_CANONICAL_PATH[g.id] || '/';
+                  return (
+                    <a
+                      key={g.id}
+                      href={target}
+                      className="subtle-pill-btn seo-scenario-chip"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToPath(target, { scrollToTop: true });
+                      }}
+                    >
+                      {g.shortTitle}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        ) : (
+        <>
+        <section className="consumer-masthead" aria-label="Tool overview">
+          {Array.isArray(activeRoute?.breadcrumbs) && activeRoute.breadcrumbs.length > 0 && (
+            <nav aria-label="Breadcrumb" className="seo-breadcrumb">
+              <ol>
+                {activeRoute.breadcrumbs.map((crumb, idx) => {
+                  const isLast = idx === activeRoute.breadcrumbs.length - 1;
+                  return (
+                    <li key={crumb.path}>
+                      {isLast ? (
+                        <span aria-current="page">{crumb.name}</span>
+                      ) : (
+                        <>
+                          <a
+                            href={crumb.path}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigateToPath(crumb.path, { scrollToTop: true });
+                            }}
+                          >
+                            {crumb.name}
+                          </a>
+                          <ChevronRight size={13} aria-hidden="true" />
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+          )}
+          <div className="consumer-masthead-top">
+            <div>
+              <h1 className="consumer-h1">
+                {activeRoute?.h1 ||
+                  ({
+                    'gta-6': 'Will GTA VI fit on your console?',
+                    'cod-warzone': 'Which Warzone gun wins 3-plate TTK?',
+                    fortnite: 'Will you hit Level 200 before season end?',
+                    minecraft: 'Link Overworld & Nether portals to the block',
+                    'ea-fc-27': 'How much do you lose to the 5% EA tax?',
+                    roblox: 'What do you actually keep from DevEx cashouts?',
+                    cs2: 'Can your CS2 squad afford a full buy next round?',
+                    valorant: 'Force buy or save on this Valorant round?',
+                    'apex-legends': 'How close are you to 500-pack Heirloom pity?',
+                    'gta-v': 'Exact Cayo Perico bag fills & heist payouts',
+                  }[activeGamePack.id]) ||
+                  activeGamePack.fullTitle}
+              </h1>
+              <p className="consumer-sub">
+                {activeRoute?.answerSummary ||
+                  (activeGamePack.isGta6Suite
+                    ? 'Check exact PS5 & Xbox SSD headroom, download time, safe codes, and heist splits in seconds — free, zero popups, no account.'
+                    : `${activeGamePack.tagline} · Free, instant browser math with zero ads.`)}
+              </p>
+            </div>
+          </div>
+          {!activeRoute?.legal && activeRoute?.path !== '/' && relatedLinks.length > 0 && (
+            <div className="seo-scenario-strip">
+              <span className="seo-strip-label">{isSubpageScenario ? 'Related presets:' : 'Popular presets:'}</span>
+              <div className="seo-scenario-chips">
+                {relatedLinks.map((rel) => (
+                  <a
+                    key={rel.path}
+                    href={rel.path}
+                    className="subtle-pill-btn seo-scenario-chip"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigateToPath(rel.path);
+                    }}
+                  >
+                    {rel.shortLabel}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeGamePack.sourceNote && (
+            <div className="source-verified-bar">
+              <span className="source-verified-pill">
+                <Check size={14} color="var(--teal-dark)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <span>{activeGamePack.sourceNote}</span>
+              </span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
+                100% Free Core Tools · Works Offline
+              </span>
+            </div>
+          )}
+        </section>
+
+        <Suspense
+          fallback={
+            <div className="deck-panel" style={{ padding: '24px', color: 'var(--ink-secondary)' }}>
+              Loading calculator module…
+            </div>
+          }
+        >
         {activeGamePack.isGta6Suite ? (
           <div className="deck-stage-transition" key={`gta-${activeTab}`}>
             <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Tools">
@@ -788,6 +1203,9 @@ export default function App() {
                 runtimeConfig={runtimeConfig}
                 soundEnabled={deckState.soundEnabled}
                 nowMs={nowMs}
+                onOpenProModal={() => setShowProModal(true)}
+                initialPreset={routeState.preset}
+                presetKey={routeState.presetKey}
               />
             )}
 
@@ -799,7 +1217,9 @@ export default function App() {
                 soundEnabled={deckState.soundEnabled}
                 isPro={deckState.isPro}
                 isPreLaunch={isPreLaunch}
-                initialQuery={safeInitialQuery}
+                initialQuery={routeState.preset?.query ?? ''}
+                initialPreset={routeState.preset}
+                presetKey={routeState.presetKey}
                 onOpenProModal={() => setShowProModal(true)}
               />
             )}
@@ -809,6 +1229,8 @@ export default function App() {
                 gamePack={activeGamePack}
                 soundEnabled={deckState.soundEnabled}
                 isPreLaunch={isPreLaunch}
+                initialPreset={routeState.preset}
+                presetKey={routeState.presetKey}
               />
             )}
 
@@ -823,6 +1245,8 @@ export default function App() {
                 onOpenProModal={() => setShowProModal(true)}
                 runtimeConfig={runtimeConfig}
                 soundEnabled={deckState.soundEnabled}
+                initialPreset={routeState.preset}
+                presetKey={routeState.presetKey}
               />
             )}
           </div>
@@ -836,9 +1260,12 @@ export default function App() {
               savedPins={deckState.savedPins}
               onSavePin={handleSavePin}
               onRemovePin={handleRemovePin}
+              initialPreset={routeState.preset}
+              presetKey={routeState.presetKey}
             />
           </div>
         )}
+        </Suspense>
 
         {/* TRUST / GAME DOMAIN FAQ GRID */}
         <section className="trust-faq-grid" aria-label="Quick Reference FAQs">
@@ -849,16 +1276,67 @@ export default function App() {
             </article>
           ))}
         </section>
+        </>
+        )}
+
+        {/* SEO INTERNAL LINK DIRECTORY HUB */}
+        <section className="seo-directory-hub" aria-label="Complete Unpause Calculator Directory">
+          <div className="seo-directory-head">
+            <div>
+              <h2>Popular Unpause Calculators &amp; Scenario Pages</h2>
+              <p>Instant zero-ad companion pages indexed across GTA VI and Top 9 live games.</p>
+            </div>
+            <button
+              type="button"
+              className="subtle-pill-btn"
+              onClick={() => {
+                playSwitchTick(deckState.soundEnabled, 680);
+                setShowEmbedModal(true);
+              }}
+            >
+              <Code2 size={14} />
+              <span>Embed Free Calculator Widget</span>
+            </button>
+          </div>
+          <div className="seo-directory-grid">
+            {directoryGroups.map((group) => (
+              <div key={group.cluster} className="seo-directory-card">
+                <h3>{group.cluster}</h3>
+                <div className="seo-directory-links">
+                  {group.links.map((link) => (
+                    <a
+                      key={link.path}
+                      href={link.path}
+                      className={`seo-dir-link ${activeRoute?.path === link.path ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToPath(link.path, { scrollToTop: true });
+                      }}
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* TRANSPARENT STUDIO FOOTER */}
         <footer className="studio-footer">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', columnGap: '14px', rowGap: '4px', flexWrap: 'wrap' }}>
               <span>Unpause (playunpause.com) · Independent Player Companion</span>
-              <span>·</span>
               <a
                 href={`mailto:${runtimeConfig.supportEmail}`}
-                style={{ color: 'var(--ink-secondary)', textDecoration: 'none' }}
+                style={{
+                  color: 'var(--ink-secondary)',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  minHeight: '44px',
+                  padding: '0 8px 0 0',
+                }}
               >
                 {runtimeConfig.supportEmail}
               </a>
@@ -868,31 +1346,54 @@ export default function App() {
               <button
                 type="button"
                 className="subtle-pill-btn"
-                onClick={() => setLegalSection('terms')}
+                onClick={() => {
+                  playSwitchTick(deckState.soundEnabled, 680);
+                  setShowEmbedModal(true);
+                }}
+              >
+                <Code2 size={13} />
+                <span>Embed Widget</span>
+              </button>
+              <a
+                href={LEGAL_META.terms.path}
+                className="subtle-pill-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLegalSection('terms');
+                }}
               >
                 Terms
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
+                href={LEGAL_META.privacy.path}
                 className="subtle-pill-btn"
-                onClick={() => setLegalSection('privacy')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLegalSection('privacy');
+                }}
               >
-                Privacy (POPIA/GDPR)
-              </button>
-              <button
-                type="button"
+                Privacy
+              </a>
+              <a
+                href={LEGAL_META.refunds.path}
                 className="subtle-pill-btn"
-                onClick={() => setLegalSection('refunds')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLegalSection('refunds');
+                }}
               >
-                Refund &amp; Ads
-              </button>
-              <button
-                type="button"
+                Refund Policy
+              </a>
+              <a
+                href={LEGAL_META.ip.path}
                 className="subtle-pill-btn"
-                onClick={() => setLegalSection('ip')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLegalSection('ip');
+                }}
               >
                 IP &amp; DMCA
-              </button>
+              </a>
               <button
                 type="button"
                 className="subtle-pill-btn"
@@ -906,12 +1407,12 @@ export default function App() {
                 onClick={() => setShowSponsorModal(true)}
               >
                 <Megaphone size={13} />
-                <span>Sponsor 24h</span>
+                <span>Sponsor Slot</span>
               </button>
             </div>
           </div>
 
-          <p style={{ margin: '10px 0 0', fontSize: '0.73rem', lineHeight: 1.55, color: 'var(--ink-muted)' }}>
+          <p style={{ margin: '10px 0 0', fontSize: '0.78rem', lineHeight: 1.55, color: 'var(--ink-muted)' }}>
             Unofficial Player Companion &amp; Non-Affiliation Notice: Unpause is an independent utility
             built cleanly for second-screen speed. Not affiliated with, endorsed by, or sponsored by
             Rockstar Games, Take-Two Interactive, Activision, Epic Games, Mojang AB, Microsoft,
@@ -923,7 +1424,7 @@ export default function App() {
       </main>
 
       {/* MOBILE BOTTOM NAVIGATION RAIL FOR GTA VI MODES */}
-      {activeGamePack.isGta6Suite && (
+      {!isNotFound && activeGamePack.isGta6Suite && (
         <nav className="mobile-bottom-rail" aria-label="Mobile GTA VI Modes">
           {GTA_MODES.map((m) => {
             const IconM = m.icon;
@@ -945,14 +1446,18 @@ export default function App() {
       )}
 
       {/* MODAL 1: GAME SWITCHER */}
-      <GameSelectorModal
-        isOpen={showGameModal}
-        onClose={() => setShowGameModal(false)}
-        activeGameId={activeGameId}
-        onSelectGame={handleSelectGame}
-        soundEnabled={deckState.soundEnabled}
-        modalRef={gameModalRef}
-      />
+      {showGameModal && (
+        <Suspense fallback={null}>
+          <GameSelectorModal
+            isOpen={showGameModal}
+            onClose={() => setShowGameModal(false)}
+            activeGameId={activeGameId}
+            onSelectGame={handleSelectGame}
+            soundEnabled={deckState.soundEnabled}
+            modalRef={gameModalRef}
+          />
+        </Suspense>
+      )}
 
       {/* MODAL 2: UNPAUSE SYNC PASS & QR CROSS-DEVICE LINK */}
       {showProModal && (
@@ -1027,7 +1532,7 @@ export default function App() {
                 <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: 'var(--ink-secondary)' }}>
                   Scan on your phone while playing on console or PC — safes, routes &amp; pinned calcs sync automatically.
                 </p>
-                <p style={{ margin: '0 0 12px', fontSize: '0.73rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+                <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
                   Security notice: Your <code>UP-</code> code and QR link act as a bearer sync key. Keep screenshots private.
                 </p>
 
@@ -1035,16 +1540,21 @@ export default function App() {
                   <button
                     type="button"
                     className="secondary-key-btn"
-                    onClick={() => {
-                      if (navigator?.clipboard?.writeText && syncShareUrl) {
-                        navigator.clipboard.writeText(syncShareUrl).catch(() => {});
-                      }
-                      setCopiedSyncLink(true);
-                      setTimeout(() => setCopiedSyncLink(false), 1800);
+                    onClick={async () => {
+                      if (!syncShareUrl) return;
+                      const ok = await copyTextReliably(syncShareUrl);
+                      setCopiedSyncLink(ok ? 'ok' : 'blocked');
+                      setTimeout(() => setCopiedSyncLink(''), 2000);
                     }}
                   >
-                    {copiedSyncLink ? <Check size={14} /> : <Copy size={14} />}
-                    <span>{copiedSyncLink ? 'Sync Link Copied' : 'Copy Sync Link'}</span>
+                    {copiedSyncLink === 'ok' ? <Check size={14} /> : <Copy size={14} />}
+                    <span>
+                      {copiedSyncLink === 'ok'
+                        ? 'Sync Link Copied'
+                        : copiedSyncLink === 'blocked'
+                          ? 'Copy Blocked — Copy From QR'
+                          : 'Copy Sync Link'}
+                    </span>
                   </button>
                   <button type="button" className="subtle-pill-btn" onClick={handlePullCloudNow}>
                     <RefreshCw size={13} /> Refresh Cloud
@@ -1084,10 +1594,10 @@ export default function App() {
                     <ExternalLink size={14} />
                   </a>
                 </div>
-                <p style={{ margin: '10px 0 0', fontSize: '0.73rem', color: 'var(--ink-muted)', textAlign: 'center', lineHeight: 1.5 }}>
-                  18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery; GTA VI modules remain pre-launch previews until Nov 18 (11:00 UTC). Includes 14-day hassle-free refunds.
+                <p style={{ margin: '10px 0 0', fontSize: '0.78rem', color: 'var(--ink-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+                  18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery; GTA VI modules remain pre-launch previews until Nov 19, 2026. Includes 14-day hassle-free refunds.
                 </p>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.73rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.78rem' }}>
                   <button
                     type="button"
                     style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
@@ -1222,7 +1732,7 @@ export default function App() {
                 moderation review before publishing; tax calculated by Whop. See{' '}
                 <button
                   type="button"
-                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                  className="inline-legal-link-btn"
                   onClick={() => {
                     setShowSponsorModal(false);
                     setLegalSection('refunds');
@@ -1249,15 +1759,31 @@ export default function App() {
       )}
 
       {/* MODAL 4: COMPLIANCE & LEGAL */}
-      <LegalComplianceModal
-        isOpen={Boolean(legalSection)}
-        activeSection={legalSection || 'terms'}
-        onSelectSection={setLegalSection}
-        onClose={() => setLegalSection(null)}
-        modalRef={legalModalRef}
-        runtimeConfig={runtimeConfig}
-        soundEnabled={deckState.soundEnabled}
-      />
+      {Boolean(legalSection) && (
+        <Suspense fallback={null}>
+          <LegalComplianceModal
+            isOpen={Boolean(legalSection)}
+            activeSection={legalSection || 'terms'}
+            onSelectSection={setLegalSection}
+            onClose={() => setLegalSection(null)}
+            modalRef={legalModalRef}
+            runtimeConfig={runtimeConfig}
+            soundEnabled={deckState.soundEnabled}
+          />
+        </Suspense>
+      )}
+
+      {/* MODAL 5: EMBED CALCULATOR WIDGET */}
+      {showEmbedModal && (
+        <Suspense fallback={null}>
+          <EmbedWidgetModal
+            isOpen={showEmbedModal}
+            onClose={() => setShowEmbedModal(false)}
+            initialEmbedPath={currentEmbedPath}
+            soundEnabled={deckState.soundEnabled}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

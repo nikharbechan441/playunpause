@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Clock,
   ShieldAlert,
@@ -8,10 +8,12 @@ import {
   MapPin,
   Copy,
   Check,
+  Link2,
   QrCode,
   Sparkles,
 } from 'lucide-react';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
+import { copyTextReliably } from '../utils/clipboard.js';
 
 const SESSION_DURATIONS = [
   { mins: 45, label: '45m Express (Free)', free: true },
@@ -23,16 +25,26 @@ export default function NightRunProDeck({
   gamePack,
   isPro,
   isPreLaunch,
+  isEmbed = false,
   deckCode,
   checkedRouteIds,
   onToggleRouteStop,
   onOpenProModal,
   runtimeConfig,
   soundEnabled,
+  initialPreset = null,
+  presetKey = '',
 }) {
-  const [sessionMins, setSessionMins] = useState(45);
+  const [sessionMins, setSessionMins] = useState(() => initialPreset?.mins ?? 45);
   const [activeWaypointId, setActiveWaypointId] = useState(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedRouteLink, setCopiedRouteLink] = useState(false);
+
+  useEffect(() => {
+    if (initialPreset?.mins && [45, 90, 120].includes(initialPreset.mins)) {
+      setSessionMins(initialPreset.mins);
+    }
+  }, [presetKey]);
 
   const waypoints = gamePack.routeWaypoints || [];
   const missables = gamePack.missablesShield || [];
@@ -58,15 +70,15 @@ export default function NightRunProDeck({
     setActiveWaypointId((prev) => (prev === wpId ? null : wpId));
   };
 
-  const handleCopyDeckCode = () => {
+  const handleCopyDeckCode = async () => {
     if (!deckCode) return;
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(deckCode).catch(() => {});
-    }
     playSwitchTick(soundEnabled, 880);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 1800);
+    const ok = await copyTextReliably(deckCode);
+    setCopiedCode(ok ? 'ok' : 'blocked');
+    setTimeout(() => setCopiedCode(''), 2000);
   };
+
+  const TitleTag = isEmbed ? 'h1' : 'h2';
 
   return (
     <section className="deck-panel" aria-label="Weeknight Route Planner & Missables Shield">
@@ -80,7 +92,7 @@ export default function NightRunProDeck({
                 : 'WEEKNIGHT TIME-BOXED CHECKLIST · ZERO SPOILERS'}
             </span>
           </div>
-          <h1 className="panel-title">GTA VI Weeknight Route &amp; Missables Shield</h1>
+          <TitleTag className="panel-title">GTA VI Weeknight Route &amp; Missables Shield</TitleTag>
           <p className="panel-subtitle">
             Finish a productive Leonida circuit inside 45 minutes on a weeknight, inspect coastal
             waypoints, and keep story missables protected before crossing Act gates.
@@ -104,6 +116,27 @@ export default function NightRunProDeck({
               {opt.label}
             </button>
           ))}
+          <button
+            type="button"
+            className="subtab-btn"
+            data-share-url={`/gta-6/night-run?mins=${sessionMins}`}
+            onClick={async () => {
+              const shareUrl = `${window.location.origin}/gta-6/night-run?mins=${sessionMins}`;
+              playSwitchTick(soundEnabled, 820);
+              const ok = await copyTextReliably(shareUrl);
+              setCopiedRouteLink(ok ? 'ok' : 'blocked');
+              setTimeout(() => setCopiedRouteLink(''), 2000);
+            }}
+          >
+            {copiedRouteLink === 'ok' ? <Check size={13} /> : <Link2 size={13} />}
+            <span>
+              {copiedRouteLink === 'ok'
+                ? 'Copied'
+                : copiedRouteLink === 'blocked'
+                  ? 'Copy Blocked'
+                  : 'Share Link'}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -130,7 +163,7 @@ export default function NightRunProDeck({
                   <button
                     type="button"
                     className="subtle-pill-btn"
-                    style={{ minHeight: '28px', padding: '2px 9px', fontSize: '0.72rem' }}
+                    style={{ padding: '4px 10px', fontSize: '0.78rem' }}
                     onClick={() => setActiveWaypointId(null)}
                   >
                     Filter: {focusedWaypoint.name} ×

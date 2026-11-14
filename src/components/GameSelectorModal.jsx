@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { TOP_GAMES } from '../data/games/allGames.js';
 import { playSwitchTick } from '../utils/soundHaptics.js';
+import { useModalFocusTrap } from '../utils/useModalFocusTrap.js';
 
 const ICON_MAP = {
   Car,
@@ -41,6 +42,8 @@ export default function GameSelectorModal({
   const [search, setSearch] = useState('');
   const [focusedIdx, setFocusedIdx] = useState(0);
   const inputRef = useRef(null);
+
+  useModalFocusTrap(isOpen, modalRef, onClose, { initialFocusRef: inputRef });
 
   const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -180,7 +183,7 @@ export default function GameSelectorModal({
                   <div className="game-item-title-row">
                     <span className="game-item-title">{game.shortTitle}</span>
                     {isSelected && (
-                      <span className="mono" style={{ fontSize: '0.71rem', color: game.accentColor, fontWeight: 700 }}>
+                      <span className="mono" style={{ fontSize: '0.77rem', color: 'var(--select-accent)', fontWeight: 700 }}>
                         ACTIVE
                       </span>
                     )}

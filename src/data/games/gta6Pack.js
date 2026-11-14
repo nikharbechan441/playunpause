@@ -7,6 +7,8 @@ export const gta6Pack = {
   shortTitle: 'GTA VI',
   fullTitle: 'Grand Theft Auto VI',
   statusBadge: 'Est. 212–225 GB Pre-Load',
+  sourceNote:
+    'Retail Xbox/PS5 usable GB verified · Launch Nov 19, 2026 (Rockstar Games) · 212–225 GB install projected pre-preload',
   installSizeGb: 212,
   dayOnePatchGb: 35,
   nzUnlockIsoUtc: '2026-11-18T11:00:00Z', // Midnight Nov 19 NZDT (UTC+13)

@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Copy,
   Check,
+  Link2,
   Zap,
   TrendingUp,
   Crosshair,
@@ -19,6 +20,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { COD_MW4_WEAPONS } from '../data/games/allGames.js';
+import { GAME_TO_CANONICAL_PATH } from '../data/seoRoutes.js';
 import {
   downloadStudioSpecPng,
   formatDiscordSummary,
@@ -46,6 +48,7 @@ import {
   calcGtaOnlineHeist,
 } from '../utils/gameMath.js';
 import { playSwitchTick } from '../utils/soundHaptics.js';
+import { copyTextReliably } from '../utils/clipboard.js';
 
 const ICON_MAP = {
   Crosshair,
@@ -94,6 +97,8 @@ export default function MultiGameToolDeck({
   savedPins = [],
   onSavePin,
   onRemovePin,
+  initialPreset = null,
+  presetKey = '',
 }) {
   const [copiedKey, setCopiedKey] = useState(null);
   const [pinNotice, setPinNotice] = useState('');
@@ -109,11 +114,9 @@ export default function MultiGameToolDeck({
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
-  const copyText = (text, key) => {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => {});
-    }
-    flashCopied(key);
+  const copyText = async (text, key) => {
+    const ok = await copyTextReliably(text);
+    flashCopied(ok ? key : `blocked:${key}`);
   };
 
   const handlePinSnapshot = (label, value) => {
@@ -135,9 +138,9 @@ export default function MultiGameToolDeck({
     setTimeout(() => setPinNotice(''), 2000);
   };
 
-  // ==================== 1. COD: MW4 & WARZONE ====================
-  const [weaponAId, setWeaponAId] = useState('cronen-osprey');
-  const [weaponBId, setWeaponBId] = useState('axion');
+  // ==================== 1. COD: WARZONE & MULTIPLAYER ====================
+  const [weaponAId, setWeaponAId] = useState('raal-mg');
+  const [weaponBId, setWeaponBId] = useState('c9-smg');
   const [customDmg, setCustomDmg] = useState(36);
   const [customRpm, setCustomRpm] = useState(882);
   const [useCustomStats, setUseCustomStats] = useState(false);
@@ -360,6 +363,150 @@ export default function MultiGameToolDeck({
   );
   const cayoEliteDollars = cayoEliteBonus ? (cayoHardMode ? 100000 : 50000) : 0;
 
+  // Sync route presets on initial deep-link or SPA subpage navigation
+  useEffect(() => {
+    const p = initialPreset;
+    if (!p || typeof p !== 'object') return;
+    if (p.weaponAId) setWeaponAId(p.weaponAId);
+    if (p.weaponBId) setWeaponBId(p.weaponBId);
+    if (p.codHp !== undefined) setCodHp(p.codHp);
+    if (p.codHeadshots !== undefined) setCodHeadshots(p.codHeadshots);
+    if (p.codOpenBolt !== undefined) setCodOpenBolt(Boolean(p.codOpenBolt));
+
+    if (p.fnLevel !== undefined) setFnCurLvl(p.fnLevel);
+    if (p.fnTarget !== undefined) setFnTargetLvl(p.fnTarget);
+    if (p.fnDays !== undefined) setFnDaysLeft(p.fnDays);
+    if (p.fnCreative !== undefined) setFnIncludeCreative(Boolean(p.fnCreative));
+    if (p.fnLego !== undefined) setFnIncludeLego(Boolean(p.fnLego));
+
+    if (p.mcDir) setMcDir(p.mcDir);
+    if (p.netherX !== undefined) setMcX(String(p.netherX));
+    if (p.netherY !== undefined) setMcY(String(p.netherY));
+    if (p.netherZ !== undefined) setMcZ(String(p.netherZ));
+
+    if (p.buyPrice !== undefined) setEaBuyCoins(p.buyPrice);
+    if (p.sellPrice !== undefined) setEaSellCoins(p.sellPrice);
+    if (p.quantity !== undefined) setEaQty(p.quantity);
+    if (Array.isArray(p.sbcRatings) && p.sbcRatings.length === 11) setSbcRatings(p.sbcRatings);
+
+    if (p.robux !== undefined) setRbxGross(p.robux);
+    if (p.devexRate) setRbxRateId(p.devexRate);
+    if (p.groupSplit !== undefined) setRbxGroupSplit(p.groupSplit);
+    if (p.desiredNet !== undefined) setRbxDesiredNet(p.desiredNet);
+
+    if (p.cs2Cash !== undefined) setCsCash(p.cs2Cash);
+    if (p.cs2Loss !== undefined) setCsLossLevel(p.cs2Loss);
+    if (p.cs2Side) setCsSide(p.cs2Side);
+    if (p.cs2Plant !== undefined) setCsBombPlanted(Boolean(p.cs2Plant));
+
+    if (p.valCreds !== undefined) setValCreds(p.valCreds);
+    if (p.valWeapon !== undefined) setValWeaponCost(p.valWeapon);
+    if (p.valArmor !== undefined) setValArmorCost(p.valArmor);
+    if (p.valUtil !== undefined) setValUtilCost(p.valUtil);
+    if (p.valLoss !== undefined) setValLossStreak(p.valLoss);
+    if (p.valRr !== undefined) setValCurRr(p.valRr);
+    if (p.valWr !== undefined) setValWr(p.valWr);
+
+    if (p.apexLevel !== undefined) setApexLevel(p.apexLevel);
+    if (p.apexPrestige !== undefined) setApexPrestige(p.apexPrestige);
+    if (p.apexBp !== undefined) setApexBpPacks(p.apexBp);
+    if (p.apexBought !== undefined) setApexPurchasedPacks(p.apexBought);
+    if (p.apexRp !== undefined) setApexCurRp(p.apexRp);
+    if (p.apexTier) setApexTargetTier(p.apexTier);
+    if (p.apexAvgRp !== undefined) setApexAvgRp(p.apexAvgRp);
+
+    if (p.cayoPrimary !== undefined) setCayoPrimaryVal(p.cayoPrimary);
+    if (p.cayoSecondary !== undefined) setCayoSecondaryVal(p.cayoSecondary);
+    if (p.cayoPlayers !== undefined) setCayoPlayers(p.cayoPlayers);
+    if (p.cayoHostPct !== undefined) setCayoHostPct(p.cayoHostPct);
+    if (p.cayoHard !== undefined) setCayoHardMode(Boolean(p.cayoHard));
+  }, [presetKey]);
+
+  const currentShareUrl = useMemo(() => {
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'https://playunpause.com';
+    const defaultBase = GAME_TO_CANONICAL_PATH[game.id] || '/';
+    const rawPathname =
+      typeof window !== 'undefined' && window.location?.pathname
+        ? window.location.pathname
+        : defaultBase;
+    const base =
+      defaultBase !== '/' && (rawPathname === defaultBase || rawPathname.startsWith(`${defaultBase}/`))
+        ? rawPathname
+        : defaultBase;
+    switch (game.id) {
+      case 'cod-warzone':
+        return `${origin}${base}?a=${encodeURIComponent(weaponAId)}&b=${encodeURIComponent(weaponBId)}&hp=${codHp}&hs=${codHeadshots}&bolt=${codOpenBolt ? 1 : 0}`;
+      case 'fortnite':
+        return `${origin}${base}?lvl=${fnCurLvl}&target=${fnTargetLvl}&days=${fnDaysLeft}&creative=${fnIncludeCreative ? 1 : 0}&lego=${fnIncludeLego ? 1 : 0}`;
+      case 'minecraft':
+        return `${origin}${base}?dir=${encodeURIComponent(mcDir)}&x=${parseSafeNum(mcX, -20)}&y=${parseSafeNum(mcY, 64)}&z=${parseSafeNum(mcZ, 1023)}`;
+      case 'ea-fc-27':
+        return `${origin}${base}?buy=${eaBuyCoins}&sell=${eaSellCoins}&qty=${eaQty}&sbc=${encodeURIComponent(sbcRatings.join(','))}`;
+      case 'roblox':
+        return `${origin}${base}?robux=${rbxGross}&rate=${encodeURIComponent(rbxRateId)}&split=${rbxGroupSplit}&net=${rbxDesiredNet}`;
+      case 'cs2':
+        return `${origin}${base}?side=${encodeURIComponent(csSide)}&cash=${csCash}&loss=${csLossLevel}&plant=${csBombPlanted ? 1 : 0}`;
+      case 'valorant':
+        return `${origin}${base}?cred=${valCreds}&vw=${valWeaponCost}&va=${valArmorCost}&vu=${valUtilCost}&vl=${valLossStreak}&rr=${valCurRr}&wr=${valWr}`;
+      case 'apex-legends':
+        return `${origin}${base}?apexLvl=${apexLevel}&prestige=${apexPrestige}&bp=${apexBpPacks}&bought=${apexPurchasedPacks}&tier=${encodeURIComponent(apexTargetTier)}&apexRp=${apexCurRp}&avgRp=${apexAvgRp}`;
+      case 'gta-v':
+        return `${origin}${base}?cayo=${cayoPrimaryVal}&csec=${cayoSecondaryVal}&players=${cayoPlayers}&hostPct=${cayoHostPct}&hard=${cayoHardMode ? 1 : 0}`;
+      default:
+        return `${origin}${base}`;
+    }
+  }, [
+    game.id,
+    weaponAId,
+    weaponBId,
+    codHp,
+    codHeadshots,
+    codOpenBolt,
+    fnCurLvl,
+    fnTargetLvl,
+    fnDaysLeft,
+    fnIncludeCreative,
+    fnIncludeLego,
+    mcDir,
+    mcX,
+    mcY,
+    mcZ,
+    eaBuyCoins,
+    eaSellCoins,
+    eaQty,
+    sbcRatings,
+    rbxGross,
+    rbxRateId,
+    rbxGroupSplit,
+    rbxDesiredNet,
+    csSide,
+    csCash,
+    csLossLevel,
+    csBombPlanted,
+    valCreds,
+    valWeaponCost,
+    valArmorCost,
+    valUtilCost,
+    valLossStreak,
+    valCurRr,
+    valWr,
+    apexLevel,
+    apexPrestige,
+    apexBpPacks,
+    apexPurchasedPacks,
+    apexTargetTier,
+    apexCurRp,
+    apexAvgRp,
+    cayoPrimaryVal,
+    cayoSecondaryVal,
+    cayoPlayers,
+    cayoHostPct,
+    cayoHardMode,
+  ]);
+
   const currentShareSpec = useMemo(() => {
     switch (game.id) {
       case 'cod-warzone':
@@ -505,38 +652,17 @@ export default function MultiGameToolDeck({
 
   return (
     <div className="mg-workspace" style={{ '--game-accent': game.accentColor, '--game-accent-soft': game.accentSoft }}>
-      {/* HEADER LEAD BANNER */}
-      <div className="mg-lead-banner">
-        <div className="mg-lead-title-group">
-          <div className="mg-game-avatar" style={{ background: game.accentSoft }}>
-            <IconComp size={20} color={game.accentColor} />
-          </div>
-          <div>
-            <h1 className="mg-title">{game.fullTitle}</h1>
-            <p className="mg-tagline">{game.tagline}</p>
-          </div>
-        </div>
-
-        <div className="mg-badge-row">
-          <span className="mg-genre-pill">Unofficial Companion</span>
-          <span className="mg-genre-pill">{game.genre}</span>
-          <span className="mg-genre-pill" style={{ color: game.accentColor }}>
-            {game.audienceBadge}
-          </span>
-        </div>
-      </div>
-
       {/* MAIN CALCULATOR + UNBLURRED SIDE META STACK */}
       <div className="mg-split-grid">
         <div className="mg-stack-cards">
-          {/* ==================== COD MW4 ==================== */}
+          {/* ==================== COD WARZONE ==================== */}
           {game.id === 'cod-warzone' && (
             <>
               <div className="mg-subcard">
                 <div className="mg-subcard-head">
                   <h2 className="mg-subcard-title">
                     <Crosshair size={16} color={game.accentColor} />
-                    <span>Warzone / MW4 Weapon A vs B TTK Comparator</span>
+                    <span>Warzone Weapon A vs B TTK Comparator</span>
                   </h2>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <button
@@ -563,7 +689,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
-                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                       {useCustomStats ? 'CUSTOM WEAPON A' : weaponAObj.name.toUpperCase()} VS {weaponBObj.name.toUpperCase()} ({codHp} HP)
                     </div>
                     <div className="mg-hero-value">
@@ -579,7 +705,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-field-grid two-col">
                   <div className="mg-field">
-                    <label htmlFor="cod-weap-a">Weapon A (Season 1)</label>
+                    <label htmlFor="cod-weap-a">Weapon A</label>
                     <select
                       id="cod-weap-a"
                       className="deck-input no-icon"
@@ -629,7 +755,7 @@ export default function MultiGameToolDeck({
                       <option value={300}>300 HP · 3 Plates</option>
                       <option value={250}>250 HP · 2 Plates</option>
                       <option value={200}>200 HP · 1 Plate</option>
-                      <option value={100}>100 HP · MW4 Core</option>
+                      <option value={100}>100 HP · Multiplayer Core</option>
                     </select>
                   </div>
 
@@ -771,7 +897,7 @@ export default function MultiGameToolDeck({
 
               <div className="mg-hero-answer mobile-answer-first">
                 <div>
-                  <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                  <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                     {fortniteResult.alreadyDone ? 'TARGET ALREADY REACHED' : `DAILY XP NEEDED OVER ${fnDaysLeft} DAYS`}
                   </div>
                   <div className="mg-hero-value">
@@ -884,7 +1010,7 @@ export default function MultiGameToolDeck({
                 <div className="mg-subcard-head">
                   <h2 className="mg-subcard-title">
                     <Box size={16} color={game.accentColor} />
-                    <span>8:1 Nether Portal Linker (Exact Math.floor + Chunk / .mca)</span>
+                    <span>8:1 Nether Portal Linker (Exact Block Rounding + Chunk / .mca)</span>
                   </h2>
                   <button
                     type="button"
@@ -902,7 +1028,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
-                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                       {mcDir === 'toNether' ? 'BUILD PAIRED NETHER PORTAL AT' : 'OVERWORLD EXIT TARGET'}
                     </div>
                     <div className="mg-hero-value">
@@ -1076,7 +1202,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
-                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                       NET PROFIT ({eaQty}x CARDS AFTER 5% TAX)
                     </div>
                     <div
@@ -1208,7 +1334,7 @@ export default function MultiGameToolDeck({
 
               <div className="mg-hero-answer mobile-answer-first">
                 <div>
-                  <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                  <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                     {rbxResult.eligible ? 'ELIGIBLE DEVEX USD CASHOUT' : 'DEVEX MINIMUM 30,000 EARNED R$ BLOCKER'}
                   </div>
                   <div
@@ -1335,7 +1461,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
-                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                       {csSide}-SIDE CALLOUT (FULL NEED: ${csResult.fullBuyNeed.toLocaleString('en-US')})
                     </div>
                     <div className="mg-hero-value">{csResult.callout}</div>
@@ -1473,7 +1599,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
-                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                       NEXT ROUND FLOOR IF LOST
                     </div>
                     <div
@@ -1597,7 +1723,7 @@ export default function MultiGameToolDeck({
 
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
-                    <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                    <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                       GUARANTEED 150 SHARDS PROGRESS
                     </div>
                     <div className="mg-hero-value">
@@ -1691,7 +1817,7 @@ export default function MultiGameToolDeck({
 
               <div className="mg-hero-answer mobile-answer-first">
                 <div>
-                  <div className="mono" style={{ fontSize: '0.73rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                  <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                     HOST NET PROFIT (AFTER $100K SETUP + PAVEL 2% + FENCE 10%)
                   </div>
                   <div className="mg-hero-value" style={{ color: 'var(--teal-dark)' }}>
@@ -1807,7 +1933,7 @@ export default function MultiGameToolDeck({
               <button
                 type="button"
                 className="subtle-pill-btn"
-                style={{ justifyContent: 'center', minHeight: '40px' }}
+                style={{ justifyContent: 'center' }}
                 onClick={() =>
                   copyText(
                     formatDiscordSummary({
@@ -1822,12 +1948,18 @@ export default function MultiGameToolDeck({
                 }
               >
                 {copiedKey === 'discord-spec' ? <Check size={14} /> : <Copy size={14} />}
-                <span>{copiedKey === 'discord-spec' ? 'Copied' : 'Copy Discord'}</span>
+                <span>
+                  {copiedKey === 'discord-spec'
+                    ? 'Copied'
+                    : copiedKey === 'blocked:discord-spec'
+                      ? 'Copy Blocked'
+                      : 'Copy Discord'}
+                </span>
               </button>
               <button
                 type="button"
                 className="stage-dark-btn"
-                style={{ minHeight: '40px', padding: '7px 10px', fontSize: '0.78rem' }}
+                style={{ padding: '7px 12px', fontSize: '0.82rem' }}
                 onClick={() => {
                   playSwitchTick(soundEnabled, 840);
                   downloadStudioSpecPng(currentShareSpec);
@@ -1835,6 +1967,21 @@ export default function MultiGameToolDeck({
               >
                 <Share2 size={14} />
                 <span>Save PNG</span>
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn share-link-wide-btn"
+                data-share-url={currentShareUrl}
+                onClick={() => copyText(currentShareUrl, 'share-url')}
+              >
+                {copiedKey === 'share-url' ? <Check size={14} /> : <Link2 size={14} />}
+                <span>
+                  {copiedKey === 'share-url'
+                    ? 'Share Link Copied'
+                    : copiedKey === 'blocked:share-url'
+                      ? 'Copy Blocked — Use Address Bar'
+                      : 'Copy Shareable Link'}
+                </span>
               </button>
             </div>
           </div>

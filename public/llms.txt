@@ -1,50 +1,36 @@
-# Unpause (https://playunpause.com)
+# Unpause (playunpause.com)
 
-> Independent, unofficial second-screen gaming companion for console and PC players. Designed to deliver exact calculations in under 3 seconds while your game is paused on a phone or desktop—zero pop-up ad clutter, zero mandatory sign-up walls, zero bloated SEO filler.
+> Fast, dark-mode, zero-popup browser utility for GTA VI console storage checking, Vice City keypad vaults, integer-exact heist splitting, and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
 
-## Supported Games & Companion Utilities
+- Canonical Site: https://playunpause.com/
+- Extended Reference & Formula Tables: https://playunpause.com/llms-full.txt
+- Full XML Sitemap (132 canonical pages): https://playunpause.com/sitemap.xml
+- Embeddable Calculators: Every core deck supports chromeless iframe embedding at `https://playunpause.com/embed/<slug>`
 
-### 1. Grand Theft Auto VI (GTA VI) — Est. & Pre-Launch Preview
-- **Console Preload & Storage Spec (`https://playunpause.com/`):** Adjustable storage estimator (community estimate: 212 GB PS5 / 225 GB Xbox Series X|S, optional +35 GB Day-1 Patch buffer) across Series S (512 GB / 1 TB), Series X (1 TB), PS5 Base (825 GB), PS5 Slim (1 TB), and PS5 Pro (2 TB). Includes download ETA by Mbps, New Zealand rolling unlock estimates (Nov 18 @ 11:00 UTC NZ vs Nov 19 Global), and Preload Spec Card PNG export.
-- **Safe & Door Keypad Vault (`https://playunpause.com/?tab=safes`):** Instant district search, interactive matte hardware 10-key playback with 1-tap mobile & desktop clipboard copy, and local completion checklists (6 fictional UI preview demo safes shown pre-launch; verified codes update live starting Nov 18).
-- **Squad Heist Cut & Two-Character Stock Planner (`https://playunpause.com/?tab=squad`):** Integer-exact squad split calculator with NPC fee deduction, per-player lock toggles, assigned roles, Crew Payout Slip export, and story stock compounder (UI preview gameplay math only).
-- **Weeknight Routes & Missables Shield (`https://playunpause.com/?tab=nightrun`):** Free 45-minute express run + interactive Leonida route grid and spoiler-free pre-launch preview pause alerts (90m & 120m extended chains and cross-device sync included with the Sync Pass, updating live at release).
+## Core Game Calculators
+- [Home (GTA VI + All 10)](https://playunpause.com/): Check GTA VI 212–225 GB SSD fit on PS5 or Xbox in seconds, compare Warzone 300 HP TTK, link Minecraft Nether portals, and solve EA FC 27 tax cleanly free.
+- [Preload & SSD Surgery](https://playunpause.com/gta-6/storage): Test if GTA 6 (212 GB PS5 / 225 GB Xbox) fits on Series S, Series X, or PS5 SSDs, pick games to clear, check NZ unlock timing, and export a Preload Spec Card.
+- [Safe Keypad Vault](https://playunpause.com/gta-6/safe-codes): Search GTA 6 safe codes by district, play interactive 10-key WebAudio sequences, copy 4-digit codes in one tap, and track cracked doors locally without ads.
+- [Squad Heist Splitter](https://playunpause.com/gta-6/heist-split): Split squad heist percentages to an exact 100%, auto-deduct NPC fees, export Crew Payout Slip PNGs to Discord, and model two-character story stock flips.
+- [Weeknight Route & Shield](https://playunpause.com/gta-6/night-run): Follow time-boxed 45m/90m/120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts with zero story spoilers.
+- [CoD / Warzone TTK](https://playunpause.com/cod-warzone): Compare Season 1 Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.
+- [Fortnite XP Pace](https://playunpause.com/fortnite): Calculate daily XP and matches to reach Level 100, Level 140 V-Bucks break-even, or Level 200 Super Styles with Daily Quests, Creative & LEGO.
+- [Minecraft 8:1 Linker](https://playunpause.com/minecraft): Convert Overworld & Nether coordinates using exact Java/Bedrock Math.floor rules, test 128-block portal collisions, and triangulate Strongholds in 2 throws.
+- [EA FC 27 Tax & SBC](https://playunpause.com/ea-fc-27): Calculate exact 5% EA transfer tax, legal FUT market price-step break-evens, multi-card trading profits, and the exact 11-player SBC Excess-Rating solver.
+- [Roblox DevEx USD](https://playunpause.com/roblox): Convert earned Robux at $0.0038/R$ Standard, $0.0035 Legacy, or $0.0054 US Direct Store rates, enforce the 30,000 R$ floor, and price Gamepasses after 30%.
+- [CS2 MR12 Economy](https://playunpause.com/cs2): Simulate authentic CS2 MR12 loss tiers ($1,400–$3,400), -1 win step-downs, Level 1 pistol losses, T +$800 bomb plants, and 5-player rifle drop balancing.
+- [Valorant Buy & RR](https://playunpause.com/valorant): Plan Valorant buys across Light (400), Regen (650), Heavy (1,000) shields & Vandal/Outlaw against 1,900–2,900 loss minimums, plus simulate Ranked RR climbs.
+- [Apex Packs & RP](https://playunpause.com/apex-legends): Calculate earned free Apex Packs across Prestige Tiers 0–3 (up to 544 packs), track 500-pack Heirloom pity, and estimate Ranked RP promotion games free.
+- [GTA Online Cayo](https://playunpause.com/gta-online): Calculate Cayo Perico net payouts with Pavel 2%, Fence 10%, $100K setup fee, +10% Hard Mode, Gold/Cocaine bag fills, and mandatory 15% crew floors.
 
-### 2. Call of Duty: Modern Warfare 4 & Warzone (Season 1)
-- **MW4 / Warzone TTK Comparator (`https://playunpause.com/?game=cod-warzone`):** Named Season 1 weapon presets (Cronen Osprey, Axion, ISO Nightshade, VEL 46, WZ.55 Striga, KG-7 Vulcan), A vs B TTK comparison, chest vs headshot zones, open-bolt delay toggle, and selectable HP (300 / 250 / 200 / 100).
-- **Mastery Camo Tracker (`https://playunpause.com/?game=cod-warzone`):** Class-aware milestone tracking across 33 launch weapons.
+## Compliance, Privacy & Attribution
+- All free interactive calculators execute 100% locally in the browser with zero ad-tech scripts and self-hosted fonts.
+- Pre-launch GTA VI figures are clearly labeled as estimates ahead of November 19, 2026 release.
+- NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
+- Optional Sync Pass ($6.99 USD Founders until Nov 18, 2026 11:00 UTC, then $9.99 USD via Whop Merchant of Record) unlocks UP-XXXXXXXX cross-device sync and 14-day refunds.
 
-### 3. Fortnite: Battle Royale
-- **Multi-Mode Battle Pass XP Pace (`https://playunpause.com/?game=fortnite`):** Tracks Level 100/140/200 targets at 80,000 XP/level with daily mixes across BR Daily Bonus Quests, UEFN Creative, LEGO/Festival playtime, and Weekly quests.
-
-### 4. Minecraft (Java & Bedrock)
-- **Nether Portal 8:1 Coordinate Linker & 2nd-Portal 3D Collision Check (`https://playunpause.com/?game=minecraft`):** Exact `Math.floor` division for negative coordinates, Java vs Bedrock search radius parity, 3D Euclidean neighbor portal collision check (`<= 128` Overworld / `16` Nether), plus Chunk & `.mca` Region Finder.
-
-### 5. EA Sports FC 27 (Ultimate Team)
-- **5% Transfer Market Tax, Price-Step Sniping & 11-Player SBC Solver (`https://playunpause.com/?game=ea-fc-27`):** Exact 5% EA tax, FUT market step-snapped break-even sell targets, multi-card quantity batches, and exact 11-player SBC Excess-Rule rating solver.
-
-### 6. Roblox (Developer Exchange & Marketplace)
-- **30% Marketplace Fee, 30,000 R$ Threshold Guard & DevEx USD Tiers (`https://playunpause.com/?game=roblox`):** Applies `$0.0038/R$` Standard, `$0.0035/R$` Legacy, and `$0.0054/R$` US 18+ Direct Store rates, enforces the 30,000 R$ minimum payout floor, and computes reverse Gamepass listing prices.
-
-### 7. Counter-Strike 2 (CS2)
-- **MR12 Loss-Bonus Ladder & 5-Player Bank Matrix (`https://playunpause.com/?game=cs2`):** Models `$1,400–$3,400` loss progression (Pistol loss starting Level 1 `$1,900`, round wins stepping down -1 tier), T (`+$800` plant) vs CT equipment budgets, and 5-teammate drop balancing.
-
-### 8. Valorant
-- **Round Buy Matrix & Ranked RR Simulator (`https://playunpause.com/?game=valorant`):** Real credit economy planner (`3,900` Rifle + Heavy, `3,300` Rifle + Light, `1,900–2,900` loss streak floor) paired with Win-Rate RR promotion simulation.
-
-### 9. Apex Legends
-- **500-Pack Heirloom Pity Breakdown & Ranked RP Ladder (`https://playunpause.com/?game=apex-legends`):** Calculates free packs across Tier 0 (Levels 1–500, 199 free packs) and Prestige 1–3 (+345 packs = 544 total) alongside Ranked RP entry-cost vs placement match estimators.
-
-### 10. GTA Online (GTA V)
-- **Cayo Perico Payout Splitter & Loot Bag Planner (`https://playunpause.com/?game=gta-v`):** Enforces GTA's mandatory `15%` crew floor (`85/70/55%` max host split), Pavel 2% + Fencing 10% deductions, Primary Target + Hard Mode + Secondary Bag Fill combinations.
-
-## Unpause Sync Pass ($6.99 USD Founders before Nov 18 11:00 UTC / $9.99 Standard)
-- Optional one-time purchase with zero recurring billing (Merchant of Record: Whop Inc., excluding applicable VAT/GST/sales tax calculated at checkout; 14-day hassle-free refund policy): unlocks instant QR & `UP-XXXXXXXX` cross-device cloud sync across phone & desktop, unlimited saved watchlists/pins, extended 90m/120m GTA VI weeknight chains & Acts II–III Missables Shield (preview, live Nov 18), and top sponsor-bar removal.
-
-## Legal, Privacy & Non-Affiliation
-- Terms of Service: https://playunpause.com/?legal=terms
-- Privacy Notice (POPIA / GDPR / CCPA): https://playunpause.com/?legal=privacy
-- Refund & Acceptable Ad Policy: https://playunpause.com/?legal=refunds
-- IP, DMCA & Affiliate Disclosures: https://playunpause.com/?legal=ip
-- Non-Affiliation: Independent, unofficial browser utility. Not affiliated with, endorsed, or sponsored by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Mojang AB, Microsoft, Electronic Arts, Respawn, Valve, Riot Games, Roblox Corp., CD PROJEKT S.A., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
-- Support & Information Officer: hello@playunpause.com | Sponsorships: sponsors@playunpause.com | IP/DMCA: dmca@playunpause.com
+## Legal & Trust Pages
+- [TERMS](https://playunpause.com/legal/terms): Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, Whop billing, and Nov 2026 preview terms. Support: hello@playunpause.com.
+- [PRIVACY](https://playunpause.com/legal/privacy): Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, HMAC-SHA256 email hashing, Cloudflare metrics, and DELETE sync purge.
+- [REFUNDS](https://playunpause.com/legal/refunds): Explore our 14-day hassle-free Sync Pass refund guarantee alongside EU/UK statutory rights and moderation rules for $149/day verified sponsorships.
+- [IP](https://playunpause.com/legal/ip): View Unpause publisher non-affiliation statements, Mojang and CD PROJEKT S.A. trademark notices, 17 U.S.C. 512(c)(3) DMCA contacts, and affiliate info.

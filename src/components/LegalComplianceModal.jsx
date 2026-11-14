@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Scale, ShieldCheck, RefreshCcw, FileCheck2, Mail } from 'lucide-react';
 import { playSwitchTick } from '../utils/soundHaptics.js';
+import { useModalFocusTrap } from '../utils/useModalFocusTrap.js';
 
 const LEGAL_TABS = [
   { id: 'terms', label: 'Terms of Service', icon: Scale },
@@ -18,8 +19,6 @@ export default function LegalComplianceModal({
   runtimeConfig,
   soundEnabled,
 }) {
-  if (!isOpen) return null;
-
   const supportEmail = runtimeConfig?.supportEmail || 'hello@playunpause.com';
   const sponsorEmail = runtimeConfig?.sponsorEmail || 'sponsors@playunpause.com';
   const passPrice = runtimeConfig?.passPriceUsd ?? 6.99;
@@ -28,6 +27,10 @@ export default function LegalComplianceModal({
   const legalOperatorName = runtimeConfig?.legalOperatorName || 'Unpause Interactive (Independent Operator, South Africa)';
   const legalServiceAddress = runtimeConfig?.legalServiceAddress || '';
   const legalContactPhone = runtimeConfig?.legalContactPhone || '';
+
+  useModalFocusTrap(isOpen, modalRef, onClose);
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -42,6 +45,7 @@ export default function LegalComplianceModal({
       <div
         className="modal-card legal-modal-card"
         ref={modalRef}
+        tabIndex={-1}
         style={{ maxWidth: 680, maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
       >
         <div
@@ -189,7 +193,7 @@ export default function LegalComplianceModal({
                   <strong>Sync Pass &amp; Cloud Sync (Contract — GDPR Art. 6(1)(b) / POPIA s. 11):</strong> Checkout is processed by <strong>Whop Inc. / Stripe</strong> (US), which indirectly supplies your receipt ID (<code>whop_ref</code>), USD amount, currency, and checkout email via signed webhooks (mandatory to provision &amp; restore a Sync Pass). Our database stores a <strong>keyed HMAC-SHA256 hash</strong> of checkout email (<code>email_hash</code>—never plaintext emails), <code>whop_ref</code>, order ledger metadata, and your synced checklist JSON (<code>sync_decks</code>). Anyone holding your <code>UP-XXXXXXXX</code> bearer code or <code>#sync=</code> QR link can access or edit synced checklists.
                 </li>
                 <li>
-                  <strong>Sponsors, Replay Ledger &amp; Edge Security (Contract / Legitimate Interest — Art. 6(1)(b),(f)):</strong> Active 24h sponsor metadata (<code>badge_text</code>, <code>target_url</code>, flight dates) is stored in <code>sponsors</code>; <code>processed_webhooks</code> stores cryptographic SHA-256 webhook body/ID replay hashes (auto-pruned after 30 days) solely to block duplicate delivery. Edge IP rate limits reset automatically every <strong>60 seconds</strong>. Cookie-free <strong>Cloudflare Web Analytics</strong> (<code>cloudflareinsights.com</code>) captures aggregate telemetry without cookies or cross-site profiling; external <strong>Google Fonts</strong> stylesheet requests transmit standard HTTP headers (IP/User-Agent) to Google LLC.
+                  <strong>Sponsors, Replay Ledger &amp; Edge Security (Contract / Legitimate Interest — Art. 6(1)(b),(f)):</strong> Active 24h sponsor metadata (<code>badge_text</code>, <code>target_url</code>, flight dates) is stored in <code>sponsors</code>; <code>processed_webhooks</code> stores cryptographic SHA-256 webhook body/ID replay hashes (auto-pruned after 30 days) solely to block duplicate delivery. Edge IP rate limits reset automatically every <strong>60 seconds</strong>. All typography fonts are <strong>self-hosted</strong> on <code>playunpause.com</code> with zero external Google Fonts requests; cookie-free <strong>Cloudflare Web Analytics</strong> (<code>cloudflareinsights.com</code>) captures aggregate telemetry without cookies or cross-site profiling.
                 </li>
               </ul>
 

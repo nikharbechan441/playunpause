@@ -565,6 +565,30 @@ test('Express mirror enforces security headers, webhook replay guard, SSRF block
     // 7. Amount parser edge case verification
     assert.equal(parseWebhookAmountCents(149, 'final_amount', { isSponsorPlan: true }), 14900);
     assert.equal(parseWebhookAmountCents(100, 'final_amount', { isSponsorPlan: false }), 100);
+
+    // 8. Self-hosted CSP & explicit 404 for missing static extensions
+    const cspCfgRes = await fetch(`${baseUrl}/api/config`);
+    assert.equal(cspCfgRes.status, 200);
+    const serverCsp = cspCfgRes.headers.get('content-security-policy');
+    assert.ok(serverCsp.includes("style-src 'self'"));
+    assert.ok(serverCsp.includes("font-src 'self' data:"));
+    assert.equal(serverCsp.includes('fonts.googleapis.com'), false);
+    assert.equal(serverCsp.includes('unsafe-inline'), false);
+
+    const ghostAssetRes = await fetch(`${baseUrl}/nonexistent-ghost.png`);
+    assert.equal(ghostAssetRes.status, 404);
+
+    // 9. Clean SEO route SSR + 301 query normalization
+    const legacyRedirRes = await fetch(`${baseUrl}/?game=minecraft`, { redirect: 'manual' });
+    assert.equal(legacyRedirRes.status, 301);
+    assert.equal(legacyRedirRes.headers.get('location'), '/minecraft');
+
+    const mcPageRes = await fetch(`${baseUrl}/minecraft`);
+    assert.equal(mcPageRes.status, 200);
+    const mcHtml = await mcPageRes.text();
+    assert.ok(mcHtml.includes('NOT AN OFFICIAL MINECRAFT PRODUCT'));
+    assert.ok(mcHtml.includes('BreadcrumbList'));
+    assert.ok(mcHtml.includes('FAQPage'));
   } finally {
     server.close();
     db.close();

@@ -10,7 +10,12 @@ import {
   extractWebhookAmountCents,
   checkAndSweepRateLimit,
 } from './securityHelpers.js';
-import { TOP_GAMES, resolveGameIdFromSlug } from '../src/data/games/allGames.js';
+import { resolveSeoRequest } from '../src/data/seoRoutes.js';
+import {
+  applyHttpSecurityHeaders,
+  isPublicCrossOriginAssetPath,
+  renderSeoHtmlDocument,
+} from '../src/data/ssrHtml.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,180 +43,6 @@ loadDotEnvIfPresent(path.join(__dirname, '..', '.env'));
 
 const DECK_CODE_REGEX = /^UP-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8,12}$/;
 const DEFAULT_LAUNCH_CUTOFF_ISO = '2026-11-18T11:00:00Z';
-
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-const LEGAL_META = {
-  terms: {
-    title: 'Terms of Service & ECTA Supplier Disclosures — Unpause',
-    desc: 'Terms of Service for playunpause.com: independent unofficial gaming calculator, 18+/parental age rule, Whop Merchant of Record taxes, Nov 18 launch estimates, and EU/UK digital rights.',
-    h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. Users must be 18+ or have verifiable parent/guardian consent. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. The Unpause One-Time Sync Pass ($6.99 USD Founders until Nov 18 2026 11:00 UTC, then $9.99 USD; plus VAT/sales tax via Whop Merchant of Record) unlocks cross-device cloud sync and extended routes during service lifetime (minimum 12 months digital conformity commitment / 30 days shutdown notice). Support: hello@playunpause.com.',
-  },
-  privacy: {
-    title: 'Privacy Notice (POPIA · GDPR · CCPA) — Unpause',
-    desc: 'Privacy architecture for playunpause.com: Information Officer contact, keyed HMAC-SHA256 email hashing, Cloudflare Web Analytics & Google Fonts disclosure, 5-7 yr tax retention, and DELETE erasure.',
-    h1: 'Unpause Privacy Notice (POPIA · EU/UK GDPR · CCPA)',
-    body: 'playunpause.com runs zero behavioral ad networks and never sells personal information. Information Officer: hello@playunpause.com. Free tool inputs stay in localStorage; paid Whop orders store HMAC-SHA256 email hashes, receipt IDs, and state JSON on Cloudflare Workers & D1 (with privacy-first Cloudflare Web Analytics and Google Fonts). No directed collection from children under 13/16/18. Tax ledgers kept 5-7 years; inactive sync state purged cleanly via email or authenticated DELETE /api/sync/:code. Escalate unresolved POPIA queries to the Information Regulator (South Africa) at POPIAComplaints@inforegulator.org.za.',
-  },
-  refunds: {
-    title: '14-Day Refund Guarantee & Sponsored Ad Policy — Unpause',
-    desc: '14-day no-questions-asked Sync Pass refunds alongside EU/UK 14-day withdrawal & CRA 2015 remedies, plus $149/day Sponsored header pill disclosure and prohibited ad rules.',
-    h1: '14-Day Refund Policy & Sponsored Ad Rules',
-    body: 'Unpause Sync Pass carries a 14-day hassle-free refund guarantee via hello@playunpause.com (or Whop Resolution Center; statement reads WHOP*PLAYUNPAUSE), honoring EU/UK 14-day statutory rights and UK CRA 2015 remedies. Header sponsors ($149/24h via sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited.',
-  },
-  ip: {
-    title: 'IP, Trademarks, DMCA & Affiliate Disclosure — Unpause',
-    desc: 'Publisher non-affiliation, Mojang & CD PROJEKT S.A. attributions, 17 U.S.C. § 512(c)(3) DMCA notice agent (dmca@playunpause.com), and verbatim Amazon Associates disclosure.',
-    h1: 'Intellectual Property, DMCA & FTC Affiliate Disclosure',
-    body: 'playunpause.com is an independent, unofficial utility not affiliated with or endorsed by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Mojang AB, Microsoft, Electronic Arts, CD PROJEKT S.A., Respawn Entertainment, Valve, Riot Games, Roblox Corp., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA. As an Amazon Associate I earn from qualifying purchases. DMCA / IP agent: dmca@playunpause.com.',
-  },
-};
-
-const GTA_TAB_META = {
-  safes: {
-    title: 'GTA 6 Safe & Door Combinations Keypad Vault — Unpause',
-    desc: 'Unofficial GTA 6 safe & keypad vault with instant district search and interactive 10-key playback (simulated UI demos pre-launch; verified codes Nov 18).',
-    h1: 'GTA 6 Safe & Door Combinations Keypad Vault (Unofficial)',
-  },
-  squad: {
-    title: 'GTA 6 Squad Heist Cut Splitter & Stock Compounder — Unpause',
-    desc: 'Unofficial integer-exact squad heist percentage splitter with NPC support fee deductions, party-chat receipt export, and two-character stock planner.',
-    h1: 'Squad Heist Cut Splitter & Two-Character Stock Planner',
-  },
-  nightrun: {
-    title: 'GTA 6 Weeknight Session Routes & Spoiler-Free Missables — Unpause',
-    desc: 'Spoiler-free pause checkpoints and 45/90/120-minute weeknight session loops for busy players, synced across phone and PC.',
-    h1: 'Weeknight Session Routes & Spoiler-Free Missables Shield',
-  },
-};
-
-function renderDynamicIndexHtml(baseHtml, query = {}, passPriceUsd = 6.99) {
-  const rawLegal = String(query.legal || '').trim().toLowerCase();
-  const rawGame = String(query.game || '').trim();
-  const rawTab = String(query.tab || '').trim().toLowerCase();
-
-  let pageTitle = '3-Second Unofficial Gaming Calculators & Safe Codes — Unpause';
-  let pageDesc =
-    'Instant unofficial calculators for Top 10 games: GTA VI SSD preload (212/225 GB) & keypad vault, CoD MW4 TTK, Minecraft portals, Fortnite XP & EA Sports FC 27 tax.';
-  let canonicalUrl = 'https://playunpause.com/';
-  let mainHtml = '';
-  let faqEntities = [];
-
-  const syncFaq = {
-    q: `How does the $${passPriceUsd} Sync Pass work?`,
-    a: 'Pay once with Apple Pay or card (Whop calculates applicable VAT/sales tax before payment) for a permanent UP-XXXXXXXX sync link and QR handoff across all 10 games. Pre-launch GTA VI modules show estimates until Nov 18 (11:00 UTC) and include 14-day hassle-free refunds.',
-  };
-
-  if (LEGAL_META[rawLegal]) {
-    const lm = LEGAL_META[rawLegal];
-    pageTitle = lm.title;
-    pageDesc = lm.desc;
-    canonicalUrl = `https://playunpause.com/?legal=${encodeURIComponent(rawLegal)}`;
-    mainHtml = `<main class="ssr-fallback-shell"><h1>${escapeHtml(lm.h1)}</h1><p>${escapeHtml(lm.body)}</p></main>`;
-  } else if (rawGame && resolveGameIdFromSlug(rawGame) !== 'gta-6') {
-    const resolvedId = resolveGameIdFromSlug(rawGame);
-    const pack = TOP_GAMES.find((g) => g.id === resolvedId) || TOP_GAMES[0];
-    pageTitle = `${pack.fullTitle} Calculator & Meta — Unpause`;
-    pageDesc = `Independent, unofficial ${pack.fullTitle} utility: ${pack.tagline}. Instant 3-second telemetry with zero pop-up ads.`;
-    canonicalUrl = `https://playunpause.com/?game=${encodeURIComponent(pack.id)}`;
-
-    const metaRowsHtml = Array.isArray(pack.proMetaRows)
-      ? `<ul>${pack.proMetaRows.map((r) => `<li><strong>${escapeHtml(r.label)}:</strong> ${escapeHtml(r.val)}</li>`).join('')}</ul>`
-      : '';
-    const faqs = [...(Array.isArray(pack.faqs) ? pack.faqs.slice(0, 2) : []), syncFaq];
-    faqEntities = faqs;
-    const faqHtml = faqs
-      .map((f) => `<article><h2>${escapeHtml(f.q)}</h2><p>${escapeHtml(f.a)}</p></article>`)
-      .join('');
-    const mojNotice =
-      pack.id === 'minecraft'
-        ? '<p><strong>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</strong></p>'
-        : '';
-    mainHtml = `<main class="ssr-fallback-shell"><h1>${escapeHtml(pack.fullTitle)} — ${escapeHtml(pack.tagline)}</h1><p>Unofficial second-screen companion calculator for ${escapeHtml(pack.fullTitle)}.</p>${mojNotice}${metaRowsHtml}${faqHtml}</main>`;
-  } else {
-    const gtaPack = TOP_GAMES[0];
-    if (GTA_TAB_META[rawTab]) {
-      pageTitle = GTA_TAB_META[rawTab].title;
-      pageDesc = GTA_TAB_META[rawTab].desc;
-      canonicalUrl = `https://playunpause.com/?tab=${encodeURIComponent(rawTab)}`;
-    }
-    const faqs = [...(Array.isArray(gtaPack.faqs) ? gtaPack.faqs.slice(0, 2) : []), syncFaq];
-    faqEntities = faqs;
-    const faqHtml = faqs
-      .map((f) => `<article><h2>${escapeHtml(f.q)}</h2><p>${escapeHtml(f.a)}</p></article>`)
-      .join('');
-    const h1Text = GTA_TAB_META[rawTab]
-      ? GTA_TAB_META[rawTab].h1
-      : 'Unpause: 3-Second Unofficial Gaming Calculators & Safe Codes for Top 10 Games';
-    mainHtml = `<main class="ssr-fallback-shell"><h1>${escapeHtml(h1Text)}</h1><p>${escapeHtml(pageDesc)}</p>${faqHtml}</main>`;
-  }
-
-  let html = baseHtml
-    .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${escapeHtml(pageTitle)}</title>`)
-    .replace(
-      /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
-      () => `<meta name="description" content="${escapeHtml(pageDesc)}" />`
-    )
-    .replace(
-      /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/,
-      () => `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`
-    )
-    .replace(
-      /<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/,
-      () => `<meta property="og:title" content="${escapeHtml(pageTitle)}" />`
-    )
-    .replace(
-      /<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/,
-      () => `<meta property="og:description" content="${escapeHtml(pageDesc)}" />`
-    )
-    .replace(
-      /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/,
-      () => `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`
-    )
-    .replace(
-      /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/,
-      () => `<meta name="twitter:title" content="${escapeHtml(pageTitle)}" />`
-    )
-    .replace(
-      /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/,
-      () => `<meta name="twitter:description" content="${escapeHtml(pageDesc)}" />`
-    )
-    .replace(
-      /("price"\s*:\s*")6\.99(")/,
-      (_, prefix, suffix) => `${prefix}${Number(passPriceUsd).toFixed(2)}${suffix}`
-    );
-
-  if (mainHtml) {
-    html = html.replace(/<div id="root">[\s\S]*?<\/div>/, () => `<div id="root">${mainHtml}</div>`);
-  }
-
-  if (faqEntities.length > 0) {
-    const faqSchema = {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: faqEntities.map((f) => ({
-        '@type': 'Question',
-        name: f.q,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: f.a,
-        },
-      })),
-    };
-    const safeJson = JSON.stringify(faqSchema).replace(/</g, '\\u003c');
-    html = html.replace('</head>', () => `  <script type="application/ld+json">${safeJson}</script>\n  </head>`);
-  }
-
-  return html;
-}
 
 export function sanitizeSyncState(rawState) {
   if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
@@ -351,38 +182,12 @@ export function createApp({ dbPath, env = process.env } = {}) {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
 
-  // Strict HTTP Security & Cross-Origin Isolation Headers (Zero 'unsafe-inline')
+  // Strict HTTP Security & Cross-Origin Isolation Headers (Zero 'unsafe-inline', /embed framing re-applied after route resolution)
   app.use((req, res, next) => {
-    const isPublicAsset =
-      /^\/(?:og-cover\.png|icon-[^/]+\.png|apple-touch-icon\.png|favicon\.[^/]+)$/i.test(req.path);
-    res.setHeader(
-      'Content-Security-Policy',
-      [
-        "default-src 'self'",
-        "script-src 'self' https://static.cloudflareinsights.com",
-        "style-src 'self' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data: blob: https:",
-        "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com",
-        "manifest-src 'self'",
-        "form-action 'self'",
-        "frame-ancestors 'none'",
-        "base-uri 'self'",
-        "object-src 'none'",
-      ].join('; ')
-    );
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader(
-      'Permissions-Policy',
-      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()'
-    );
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Resource-Policy', isPublicAsset ? 'cross-origin' : 'same-origin');
-    if (env.NODE_ENV === 'production') {
-      res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-    }
+    applyHttpSecurityHeaders(res, env, {
+      isPublicAsset: isPublicCrossOriginAssetPath(req.path),
+      isEmbed: false,
+    });
     next();
   });
 
@@ -1191,6 +996,29 @@ export function createApp({ dbPath, env = process.env } = {}) {
     const baseIndexHtml = fs.existsSync(distIndexPath)
       ? fs.readFileSync(distIndexPath, 'utf8')
       : '';
+
+    app.use((req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+      const rawHost = String(req.headers.host || '').split(':')[0].toLowerCase();
+      if (rawHost === 'www.playunpause.com') {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.redirect(301, `https://playunpause.com${req.originalUrl || req.url}`);
+      }
+      if (req.path === '/fonts' || req.path.startsWith('/fonts/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (req.path.startsWith('/og/')) {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      } else if (
+        req.path === '/sitemap.xml' ||
+        req.path === '/robots.txt' ||
+        req.path === '/llms.txt' ||
+        req.path === '/llms-full.txt'
+      ) {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+      return next();
+    });
+
     const assetsDir = path.join(distDir, 'assets');
     if (fs.existsSync(assetsDir)) {
       app.use(
@@ -1198,20 +1026,60 @@ export function createApp({ dbPath, env = process.env } = {}) {
         express.static(assetsDir, { maxAge: '365d', immutable: true, fallthrough: false })
       );
     }
-    app.use(
-      express.static(distDir, {
-        maxAge: '1h',
-        index: false,
-      })
-    );
+
+    const staticHandler = express.static(distDir, {
+      maxAge: '1h',
+      index: false,
+      redirect: false,
+    });
+    app.use((req, res, next) => {
+      if (req.path === '/index.html') return next();
+      return staticHandler(req, res, next);
+    });
+
     app.use((req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-      res.setHeader('Cache-Control', 'no-cache');
+      const isStaticAsset =
+        req.path.startsWith('/assets/') ||
+        req.path.startsWith('/fonts/') ||
+        req.path.startsWith('/og/') ||
+        (/\.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|eot|css|js|mjs|map|txt|xml|webmanifest|json)$/i.test(
+          req.path
+        ) &&
+          req.path !== '/index.html');
+
+      if (isStaticAsset) {
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        return res.status(404).type('text/plain').send('Not found');
+      }
+
+      const fullUrl = new URL(req.originalUrl || req.url, 'http://localhost');
+      const seoRes = resolveSeoRequest(req.path, fullUrl.searchParams);
+      if (seoRes.status === 301) {
+        const parsed = new URL(seoRes.redirectTo);
+        const rawHost = String(req.headers.host || '').split(':')[0].toLowerCase();
+        const hostname = String(req.hostname || rawHost || '').toLowerCase();
+        const isLocal =
+          env.NODE_ENV === 'test' ||
+          hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname === '::1';
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.redirect(301, isLocal ? `${parsed.pathname}${parsed.search}` : seoRes.redirectTo);
+      }
+
+      const isEmbed = Boolean(seoRes.isEmbed);
+      applyHttpSecurityHeaders(res, env, { isEmbed });
+      res.setHeader('Cache-Control', seoRes.notFound ? 'no-store' : 'no-cache');
+      if (seoRes.notFound) {
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      }
       if (!baseIndexHtml) {
+        if (seoRes.notFound) return res.status(404).type('text/plain').send('Not found');
         return res.sendFile('index.html', { root: distDir });
       }
-      const rendered = renderDynamicIndexHtml(baseIndexHtml, req.query, computePassPriceUsd());
-      return res.type('html').send(rendered);
+      const rendered = renderSeoHtmlDocument(baseIndexHtml, seoRes, computePassPriceUsd());
+      return res.status(seoRes.notFound ? 404 : 200).type('html').send(rendered);
     });
   }
 

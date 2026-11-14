@@ -69,10 +69,16 @@ function createMockAssets() {
           headers: { 'Content-Type': 'text/plain' },
         });
       }
-      if (u.pathname === '/og-cover.png') {
+      if (u.pathname === '/og-cover.png' || u.pathname === '/og-image.png') {
         return new Response(new Uint8Array([137, 80, 78, 71]), {
           status: 200,
           headers: { 'Content-Type': 'image/png' },
+        });
+      }
+      if (u.pathname === '/favicon.ico') {
+        return new Response(new Uint8Array([0, 0, 1, 0]), {
+          status: 200,
+          headers: { 'Content-Type': 'image/vnd.microsoft.icon' },
         });
       }
       return new Response('Not Found', { status: 404 });
@@ -93,14 +99,36 @@ test('Cloudflare Worker handles SEO prerender, /api/config, Whop ws_ webhook, sy
     ADMIN_API_KEY: 'admin-super-secret',
   };
 
-  // 1. Edge SEO prerender for /?game=minecraft
-  const seoRes = await worker.fetch(new Request('https://playunpause.com/?game=minecraft'), env);
+  // 1. Edge SEO 301 canonical redirect + clean-path SSR prerender & CSP + static asset 200/404 guards
+  const redirRes = await worker.fetch(new Request('https://playunpause.com/?game=minecraft'), env);
+  assert.equal(redirRes.status, 301);
+  assert.equal(redirRes.headers.get('location'), 'https://playunpause.com/minecraft');
+
+  const seoRes = await worker.fetch(new Request('https://playunpause.com/minecraft'), env);
   assert.equal(seoRes.status, 200);
-  assert.ok(seoRes.headers.get('content-security-policy').includes("script-src 'self'"));
+  const seoCsp = seoRes.headers.get('content-security-policy');
+  assert.ok(seoCsp.includes("script-src 'self'"));
+  assert.ok(seoCsp.includes("style-src 'self'"));
+  assert.ok(seoCsp.includes("font-src 'self' data:"));
+  assert.equal(seoCsp.includes('fonts.googleapis.com'), false);
+  assert.equal(seoCsp.includes('fonts.gstatic.com'), false);
+  assert.equal(seoCsp.includes('unsafe-inline'), false);
   assert.ok(seoRes.headers.get('strict-transport-security'));
   const html = await seoRes.text();
-  assert.ok(html.includes('Minecraft (Java &amp; Bedrock) Calculator &amp; Meta'));
+  assert.ok(html.includes('Minecraft 8:1 Nether Portal'));
+  assert.ok(html.includes('https://playunpause.com/minecraft'));
   assert.ok(html.includes('FAQPage'));
+  assert.ok(html.includes('BreadcrumbList'));
+
+  const favRes = await worker.fetch(new Request('https://playunpause.com/favicon.ico'), env);
+  assert.equal(favRes.status, 200);
+
+  const ogRes = await worker.fetch(new Request('https://playunpause.com/og-cover.png'), env);
+  assert.equal(ogRes.status, 200);
+  assert.equal(ogRes.headers.get('cross-origin-resource-policy'), 'cross-origin');
+
+  const ghostRes = await worker.fetch(new Request('https://playunpause.com/nonexistent-ghost.png'), env);
+  assert.equal(ghostRes.status, 404);
 
   // 2. /api/config enforces demoUnlockEnabled: false in production
   const cfgRes = await worker.fetch(new Request('https://playunpause.com/api/config'), env);
@@ -230,7 +258,11 @@ test('Cloudflare Worker enforces replay protection, SSRF blocking, sponsor refun
   assert.equal(ogRes.status, 200);
   assert.equal(ogRes.headers.get('cross-origin-resource-policy'), 'cross-origin');
 
-  const mcRes = await worker.fetch(new Request('https://playunpause.com/?game=minecraft'), env);
+  const mcRedir = await worker.fetch(new Request('https://playunpause.com/?game=minecraft'), env);
+  assert.equal(mcRedir.status, 301);
+  assert.equal(mcRedir.headers.get('location'), 'https://playunpause.com/minecraft');
+
+  const mcRes = await worker.fetch(new Request('https://playunpause.com/minecraft'), env);
   assert.equal(mcRes.headers.get('cross-origin-resource-policy'), 'same-origin');
   const csp = mcRes.headers.get('content-security-policy') || '';
   assert.ok(!csp.includes("'unsafe-inline'"));

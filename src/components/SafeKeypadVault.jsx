@@ -5,12 +5,14 @@ import {
   Volume2,
   Copy,
   Check,
+  Link2,
   CheckCircle2,
   Circle,
   Cloud,
   Info,
 } from 'lucide-react';
 import { playKeypadBeep, playSwitchTick, playUnlockChime, triggerHaptic } from '../utils/soundHaptics.js';
+import { copyTextReliably } from '../utils/clipboard.js';
 
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '#'];
 
@@ -21,15 +23,22 @@ export default function SafeKeypadVault({
   soundEnabled,
   isPro,
   isPreLaunch,
+  isEmbed = false,
   initialQuery = '',
+  initialPreset = null,
+  presetKey = '',
   onOpenProModal,
 }) {
   const safes = gamePack.safes || [];
   const districts = gamePack.districts || ['All Districts'];
 
-  const [selectedDistrict, setSelectedDistrict] = useState('All Districts');
-  const [query, setQuery] = useState(initialQuery);
-  const [selectedSafeId, setSelectedSafeId] = useState(safes[0]?.id || '');
+  const [selectedDistrict, setSelectedDistrict] = useState(
+    () => initialPreset?.district || 'All Districts'
+  );
+  const [query, setQuery] = useState(() => initialPreset?.query ?? initialQuery);
+  const [selectedSafeId, setSelectedSafeId] = useState(
+    () => initialPreset?.safeId || safes[0]?.id || ''
+  );
   const [activeStepIdx, setActiveStepIdx] = useState(-1);
   const [litDigit, setLitDigit] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
@@ -38,8 +47,16 @@ export default function SafeKeypadVault({
   const timersRef = useRef([]);
 
   useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
+    const nextDist = initialPreset?.district || 'All Districts';
+    setSelectedDistrict(nextDist);
+    setQuery(initialPreset?.query ?? initialQuery ?? '');
+    if (initialPreset?.safeId) {
+      setSelectedSafeId(initialPreset.safeId);
+    } else if (nextDist !== 'All Districts') {
+      const firstMatch = safes.find((s) => s.district === nextDist);
+      if (firstMatch) setSelectedSafeId(firstMatch.id);
+    }
+  }, [initialQuery, presetKey]);
 
   const clearTimers = () => {
     timersRef.current.forEach((id) => clearTimeout(id));
@@ -88,13 +105,11 @@ export default function SafeKeypadVault({
     triggerHaptic(8);
   };
 
-  const copyCode = (code) => {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(code).catch(() => {});
-    }
+  const copyCode = async (code) => {
     playSwitchTick(soundEnabled, 880);
     triggerHaptic(10);
-    setCopiedCode(code);
+    const ok = await copyTextReliably(code);
+    setCopiedCode(ok ? code : 'blocked');
     setTimeout(() => setCopiedCode(null), 1800);
   };
 
@@ -157,7 +172,11 @@ export default function SafeKeypadVault({
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <h1 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h1>
+            {isEmbed ? (
+              <h1 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h1>
+            ) : (
+              <h2 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h2>
+            )}
             <span className="district-pill">Unofficial Companion</span>
           </div>
           <p className="panel-subtitle">
@@ -178,7 +197,7 @@ export default function SafeKeypadVault({
         {selectedSafe && (
           <div className="mobile-keypad-strip" aria-label="Quick Mobile Safe Controls">
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.77rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                 {selectedSafe.district} · PIN
               </div>
               <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.1em' }}>
@@ -401,7 +420,7 @@ export default function SafeKeypadVault({
                 })}
               </div>
 
-              <div className="stage-action-row" style={{ marginTop: '14px' }}>
+              <div className="stage-action-row stage-action-row-3" style={{ marginTop: '14px' }}>
                 <button
                   type="button"
                   className="primary-coral-btn"
@@ -409,7 +428,7 @@ export default function SafeKeypadVault({
                   disabled={isPlayingSeq}
                 >
                   <Volume2 size={15} />
-                  <span>{isPlayingSeq ? 'Playing Sequence…' : 'Play Sequence'}</span>
+                  <span>{isPlayingSeq ? 'Playing…' : 'Play Sequence'}</span>
                 </button>
                 <button
                   type="button"
@@ -417,7 +436,34 @@ export default function SafeKeypadVault({
                   onClick={() => selectedSafe && copyCode(selectedSafe.code)}
                 >
                   {copiedCode === selectedSafe?.code ? <Check size={15} /> : <Copy size={15} />}
-                  <span>{copiedCode === selectedSafe?.code ? 'Copied PIN' : 'Copy PIN'}</span>
+                  <span>
+                    {copiedCode === selectedSafe?.code
+                      ? 'Copied PIN'
+                      : copiedCode === 'blocked'
+                        ? 'Copy Blocked'
+                        : 'Copy PIN'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="stage-dark-btn"
+                  data-share-url={`/gta-6/safe-codes?dist=${encodeURIComponent(selectedDistrict)}${selectedSafe ? `&safe=${encodeURIComponent(selectedSafe.id)}` : ''}${query ? `&q=${encodeURIComponent(query)}` : ''}`}
+                  onClick={async () => {
+                    const shareUrl = `${window.location.origin}/gta-6/safe-codes?dist=${encodeURIComponent(selectedDistrict)}${selectedSafe ? `&safe=${encodeURIComponent(selectedSafe.id)}` : ''}${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+                    playSwitchTick(soundEnabled, 820);
+                    const ok = await copyTextReliably(shareUrl);
+                    setCopiedCode(ok ? 'share-link' : 'share-blocked');
+                    setTimeout(() => setCopiedCode(null), 2000);
+                  }}
+                >
+                  {copiedCode === 'share-link' ? <Check size={15} /> : <Link2 size={15} />}
+                  <span>
+                    {copiedCode === 'share-link'
+                      ? 'Copied Link'
+                      : copiedCode === 'share-blocked'
+                        ? 'Copy Blocked'
+                        : 'Share Link'}
+                  </span>
                 </button>
               </div>
 

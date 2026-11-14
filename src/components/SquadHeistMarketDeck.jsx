@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Users,
   TrendingUp,
@@ -7,6 +7,7 @@ import {
   Share2,
   Copy,
   Check,
+  Link2,
   Plus,
   Minus,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import {
   shareOrDownloadCanvas,
 } from '../utils/canvasCards.js';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
+import { copyTextReliably } from '../utils/clipboard.js';
 
 const PLAYER_COLORS = ['#FF5964', '#2CE5B5', '#38BDF8', '#F59E0B'];
 const NPC_FEE_COLOR = '#64748B';
@@ -69,18 +71,56 @@ export function rebalanceCrewShares(crewList, changedId, requestedVal) {
   });
 }
 
-export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaunch = false }) {
+function buildCrewFromCuts(cutsArr) {
+  if (
+    !Array.isArray(cutsArr) ||
+    cutsArr.length < 2 ||
+    cutsArr.length > 4 ||
+    cutsArr.reduce((a, b) => a + Number(b || 0), 0) !== 100
+  ) {
+    return DEFAULT_CREW;
+  }
+  return DEFAULT_CREW.map((m, idx) => ({
+    ...m,
+    pct: idx < cutsArr.length ? Number(cutsArr[idx]) : 0,
+  }));
+}
+
+function normalizeSubTab(raw) {
+  return raw === 'market' || raw === 'stocks' ? 'market' : 'heist';
+}
+
+export default function SquadHeistMarketDeck({
+  gamePack,
+  soundEnabled,
+  isPreLaunch = false,
+  isEmbed = false,
+  initialPreset = null,
+  presetKey = '',
+}) {
   const presets = gamePack.heistPresets || [];
   const marketFlips = gamePack.marketFlips || [];
 
-  const [subTab, setSubTab] = useState('heist');
+  const [subTab, setSubTab] = useState(() => normalizeSubTab(initialPreset?.subTab));
   const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id || 'ocean-vault');
-  const [grossDollars, setGrossDollars] = useState(presets[0]?.grossDollars || 2_450_000);
-  const [supportFeePct, setSupportFeePct] = useState(presets[0]?.supportFeePct || 12);
-  const [crew, setCrew] = useState(DEFAULT_CREW);
+  const [grossDollars, setGrossDollars] = useState(
+    () => initialPreset?.gross ?? presets[0]?.grossDollars ?? 2_450_000
+  );
+  const [supportFeePct, setSupportFeePct] = useState(
+    () => initialPreset?.fee ?? presets[0]?.supportFeePct ?? 12
+  );
+  const [crew, setCrew] = useState(() => buildCrewFromCuts(initialPreset?.cuts));
   const [seedCash, setSeedCash] = useState(1_600_000);
   const [slipToast, setSlipToast] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (!initialPreset) return;
+    if (initialPreset.subTab) setSubTab(normalizeSubTab(initialPreset.subTab));
+    if (initialPreset.gross !== undefined) setGrossDollars(initialPreset.gross);
+    if (initialPreset.fee !== undefined) setSupportFeePct(initialPreset.fee);
+    if (initialPreset.cuts) setCrew(buildCrewFromCuts(initialPreset.cuts));
+  }, [presetKey]);
 
   const selectedPreset = useMemo(
     () => presets.find((p) => p.id === selectedPresetId) || presets[0],
@@ -231,7 +271,11 @@ export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaun
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <h1 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h1>
+            {isEmbed ? (
+              <h1 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h1>
+            ) : (
+              <h2 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h2>
+            )}
             <span className="district-pill">Gameplay Math Only</span>
           </div>
           <p className="panel-subtitle">
@@ -457,7 +501,7 @@ export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaun
                   ))}
                 </div>
 
-                <div className="ssd-legend-row" style={{ marginBottom: '12px', fontSize: '0.72rem' }}>
+                <div className="ssd-legend-row" style={{ marginBottom: '12px', fontSize: '0.77rem' }}>
                   <span>
                     <span className="ssd-dot" style={{ background: NPC_FEE_COLOR }} />
                     NPC ({supportFeePct}%)
@@ -472,19 +516,19 @@ export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaun
 
                 <div className="wire-summary-grid">
                   <div>
-                    <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>GROSS VAULT</div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>GROSS VAULT</div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
                       ${grossDollars.toLocaleString('en-US')}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>NPC FEE ({supportFeePct}%)</div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>NPC FEE ({supportFeePct}%)</div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--gold)' }}>
                       -${supportFeeDollars.toLocaleString('en-US')}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>NET POOL</div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>NET POOL</div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--teal-dark)' }}>
                       ${netPoolDollars.toLocaleString('en-US')}
                     </div>
@@ -514,7 +558,7 @@ export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaun
                   {greedDiagnosis}
                 </div>
 
-                <div className="stage-action-row">
+                <div className="stage-action-row stage-action-row-3">
                   <button
                     type="button"
                     className="primary-coral-btn"
@@ -532,6 +576,27 @@ export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaun
                   >
                     {slipToast.includes('copied') ? <Check size={15} /> : <Copy size={15} />}
                     <span>Copy Slip</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="stage-dark-btn"
+                    data-share-url={`/gta-6/heist-split?sub=${subTab}&gross=${grossDollars}&fee=${supportFeePct}&cuts=${crew.map((m) => m.pct).join(',')}`}
+                    onClick={async () => {
+                      const shareUrl = `${window.location.origin}/gta-6/heist-split?sub=${subTab}&gross=${grossDollars}&fee=${supportFeePct}&cuts=${crew.map((m) => m.pct).join(',')}`;
+                      playSwitchTick(soundEnabled, 820);
+                      const ok = await copyTextReliably(shareUrl);
+                      setSlipToast(ok ? 'Share link copied to clipboard.' : 'Clipboard blocked — copy URL from bar.');
+                      setTimeout(() => setSlipToast(''), 2000);
+                    }}
+                  >
+                    {slipToast.includes('Share link') ? <Check size={15} /> : <Link2 size={15} />}
+                    <span>
+                      {slipToast.includes('Share link')
+                        ? 'Copied Link'
+                        : slipToast.includes('Clipboard blocked')
+                          ? 'Copy Blocked'
+                          : 'Share Link'}
+                    </span>
                   </button>
                 </div>
 
@@ -584,15 +649,15 @@ export default function SquadHeistMarketDeck({ gamePack, soundEnabled, isPreLaun
                   </p>
                   <div className="wire-summary-grid" style={{ marginBottom: 0 }}>
                     <div>
-                      <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>ENTRY</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>ENTRY</div>
                       <div style={{ fontWeight: 700 }}>${step.startBalance.toLocaleString('en-US')}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>PEAK FLIP</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>PEAK FLIP</div>
                       <div style={{ fontWeight: 700, color: 'var(--ocean)' }}>${step.afterDrop.toLocaleString('en-US')}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>REBOUND ({step.reboundTicker})</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>REBOUND ({step.reboundTicker})</div>
                       <div style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>${step.afterRebound.toLocaleString('en-US')}</div>
                     </div>
                   </div>
