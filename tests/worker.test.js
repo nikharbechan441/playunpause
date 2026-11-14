@@ -1,8 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import worker from '../worker/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function createMockD1() {
   const sqlite = new DatabaseSync(':memory:');
@@ -538,4 +544,126 @@ test('Cloudflare Worker enforces replay protection, SSRF blocking, sponsor refun
     env
   );
   assert.equal(caseDRes.status, 403);
+});
+
+test('Worker enforces explicit static cache headers, non-poisoning 404s, 1-hop www redirects, HEAD API parity, and CWV head tags', async () => {
+  const realIndexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const assetPayloadMap = new Map([
+    ['/index.html', { body: realIndexHtml, ct: 'text/html; charset=utf-8' }],
+    ['/assets/app-test.js', { body: 'console.log(1);', ct: 'application/javascript' }],
+    ['/fonts/inter-latin.woff2', { body: 'wOF2', ct: 'font/woff2' }],
+    ['/og/minecraft.png', { body: 'PNG', ct: 'image/png' }],
+    ['/og-cover.png', { body: 'PNG', ct: 'image/png' }],
+    ['/manifest.webmanifest', { body: '{"name":"Unpause"}', ct: 'application/manifest+json' }],
+    ['/a8f4c2e91b7d40639e5a2c81f0d3b7e4.txt', { body: 'a8f4c2e91b7d40639e5a2c81f0d3b7e4', ct: 'text/plain' }],
+    ['/robots.txt', { body: 'User-agent: *\nAllow: /\n', ct: 'text/plain' }],
+  ]);
+
+  const env = {
+    DB: createMockD1(),
+    NODE_ENV: 'production',
+    ASSETS: {
+      async fetch(req) {
+        const u = new URL(req.url);
+        const hit = assetPayloadMap.get(u.pathname);
+        if (!hit) return new Response('Not Found', { status: 404 });
+        return new Response(req.method === 'HEAD' ? null : hit.body, {
+          status: 200,
+          headers: { 'Content-Type': hit.ct },
+        });
+      },
+    },
+  };
+
+  // 1. Explicit Cache-Control on static assets
+  const jsAsset = await worker.fetch(new Request('https://playunpause.com/assets/app-test.js'), env);
+  assert.equal(jsAsset.status, 200);
+  assert.equal(jsAsset.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+
+  const fontAsset = await worker.fetch(new Request('https://playunpause.com/fonts/inter-latin.woff2'), env);
+  assert.equal(fontAsset.status, 200);
+  assert.equal(fontAsset.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+
+  const ogRoot = await worker.fetch(new Request('https://playunpause.com/og-cover.png'), env);
+  assert.equal(ogRoot.status, 200);
+  assert.equal(ogRoot.headers.get('cache-control'), 'public, max-age=86400');
+  assert.equal(ogRoot.headers.get('cross-origin-resource-policy'), 'cross-origin');
+
+  const ogSub = await worker.fetch(new Request('https://playunpause.com/og/minecraft.png'), env);
+  assert.equal(ogSub.status, 200);
+  assert.equal(ogSub.headers.get('cache-control'), 'public, max-age=86400');
+
+  for (const metaPath of ['/manifest.webmanifest', '/a8f4c2e91b7d40639e5a2c81f0d3b7e4.txt', '/robots.txt']) {
+    const res = await worker.fetch(new Request(`https://playunpause.com${metaPath}`), env);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('cache-control'), 'public, max-age=3600');
+  }
+
+  // 2. Missing static assets never cache 404 & emit empty HEAD body + noindex
+  const missGet = await worker.fetch(new Request('https://playunpause.com/assets/missing.js'), env);
+  assert.equal(missGet.status, 404);
+  assert.equal(missGet.headers.get('cache-control'), 'no-store');
+  assert.equal(missGet.headers.get('x-robots-tag'), 'noindex, nofollow');
+
+  const missHead = await worker.fetch(
+    new Request('https://playunpause.com/assets/missing.js', { method: 'HEAD' }),
+    env
+  );
+  assert.equal(missHead.status, 404);
+  assert.equal(missHead.headers.get('cache-control'), 'no-store');
+  assert.equal(missHead.headers.get('x-robots-tag'), 'noindex, nofollow');
+  assert.equal(await missHead.text(), '');
+
+  // 3. 1-hop www.playunpause.com redirects combine host + canonical path/query resolution
+  const wwwSlash = await worker.fetch(new Request('https://www.playunpause.com/minecraft/'), env);
+  assert.equal(wwwSlash.status, 301);
+  assert.equal(wwwSlash.headers.get('location'), 'https://playunpause.com/minecraft');
+
+  const wwwLegacy = await worker.fetch(new Request('https://www.playunpause.com/?game=minecraft'), env);
+  assert.equal(wwwLegacy.status, 301);
+  assert.equal(wwwLegacy.headers.get('location'), 'https://playunpause.com/minecraft');
+
+  const wwwStatic = await worker.fetch(new Request('https://www.playunpause.com/og-cover.png'), env);
+  assert.equal(wwwStatic.status, 301);
+  assert.equal(wwwStatic.headers.get('location'), 'https://playunpause.com/og-cover.png');
+
+  // 4. HEAD API parity & safe JSON 400 on malformed /api/sync/%E0%A4%A
+  const headConfig = await worker.fetch(
+    new Request('https://playunpause.com/api/config', { method: 'HEAD' }),
+    env
+  );
+  assert.equal(headConfig.status, 200);
+  assert.equal(headConfig.headers.get('cache-control'), 'no-store');
+  assert.equal(headConfig.headers.get('x-robots-tag'), 'noindex, nofollow');
+  assert.equal(await headConfig.text(), '');
+
+  const headUnknownApi = await worker.fetch(
+    new Request('https://playunpause.com/api/nonexistent', { method: 'HEAD' }),
+    env
+  );
+  assert.equal(headUnknownApi.status, 404);
+  assert.equal(headUnknownApi.headers.get('cache-control'), 'no-store');
+  assert.equal(headUnknownApi.headers.get('x-robots-tag'), 'noindex, nofollow');
+  assert.equal(await headUnknownApi.text(), '');
+
+  const badPctSync = await worker.fetch(new Request('https://playunpause.com/api/sync/%E0%A4%A'), env);
+  assert.equal(badPctSync.status, 400);
+  assert.equal(badPctSync.headers.get('cache-control'), 'no-store');
+  assert.equal(badPctSync.headers.get('x-robots-tag'), 'noindex, nofollow');
+  assert.deepEqual(await badPctSync.json(), { error: 'Invalid sync code format' });
+
+  // 5. SSR HTML preserves verification meta, 3 font preloads, twitter:image:alt parity, zero inline style, & /EMBED uppercase 200
+  const mcSsrRes = await worker.fetch(new Request('https://playunpause.com/minecraft'), env);
+  assert.equal(mcSsrRes.status, 200);
+  const mcSsrHtml = await mcSsrRes.text();
+  assert.ok(mcSsrHtml.includes('content="nZU6zh7ym6R465ybaJf5-VcvHmUeKNkXLwWmNIekOuU"'));
+  assert.ok(mcSsrHtml.includes('href="/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin'));
+  assert.ok(mcSsrHtml.includes('href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin'));
+  assert.ok(mcSsrHtml.includes('href="/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin'));
+  assert.match(mcSsrHtml, /<meta\s+name="twitter:image:alt"\s+content="[^"]*Minecraft[^"]*"/i);
+  assert.equal(/\sstyle="/i.test(mcSsrHtml), false);
+
+  const upperEmbed = await worker.fetch(new Request('https://playunpause.com/EMBED/minecraft'), env);
+  assert.equal(upperEmbed.status, 200);
+  assert.equal(upperEmbed.headers.get('x-robots-tag'), 'noindex, follow');
 });

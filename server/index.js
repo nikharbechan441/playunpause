@@ -13,8 +13,11 @@ import {
 import { resolveSeoRequest } from '../src/data/seoRoutes.js';
 import {
   applyHttpSecurityHeaders,
+  getStaticAssetCacheControl,
   isPublicCrossOriginAssetPath,
+  isStaticAssetPath,
   renderSeoHtmlDocument,
+  resolveWwwRedirectLocation,
 } from '../src/data/ssrHtml.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1000,21 +1003,12 @@ export function createApp({ dbPath, env = process.env } = {}) {
     app.use((req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
       const rawHost = String(req.headers.host || '').split(':')[0].toLowerCase();
-      if (rawHost === 'www.playunpause.com') {
+      const hostname = String(req.hostname || rawHost || '').toLowerCase();
+      if (rawHost === 'www.playunpause.com' || hostname === 'www.playunpause.com') {
+        const fullUrl = new URL(req.originalUrl || req.url, 'http://localhost');
+        const target = resolveWwwRedirectLocation(req.path, fullUrl.searchParams, fullUrl.search);
         res.setHeader('Cache-Control', 'public, max-age=3600');
-        return res.redirect(301, `https://playunpause.com${req.originalUrl || req.url}`);
-      }
-      if (req.path === '/fonts' || req.path.startsWith('/fonts/')) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      } else if (req.path.startsWith('/og/')) {
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-      } else if (
-        req.path === '/sitemap.xml' ||
-        req.path === '/robots.txt' ||
-        req.path === '/llms.txt' ||
-        req.path === '/llms-full.txt'
-      ) {
-        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.redirect(301, target);
       }
       return next();
     });
@@ -1023,7 +1017,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
     if (fs.existsSync(assetsDir)) {
       app.use(
         '/assets',
-        express.static(assetsDir, { maxAge: '365d', immutable: true, fallthrough: false })
+        express.static(assetsDir, { maxAge: '365d', immutable: true, fallthrough: true })
       );
     }
 
@@ -1031,6 +1025,13 @@ export function createApp({ dbPath, env = process.env } = {}) {
       maxAge: '1h',
       index: false,
       redirect: false,
+      setHeaders: (res, filePath) => {
+        const rel = `/${path.relative(distDir, filePath).replace(/\\/g, '/')}`;
+        const cacheControl = getStaticAssetCacheControl(rel);
+        if (cacheControl) {
+          res.setHeader('Cache-Control', cacheControl);
+        }
+      },
     });
     app.use((req, res, next) => {
       if (req.path === '/index.html') return next();
@@ -1039,17 +1040,9 @@ export function createApp({ dbPath, env = process.env } = {}) {
 
     app.use((req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-      const isStaticAsset =
-        req.path.startsWith('/assets/') ||
-        req.path.startsWith('/fonts/') ||
-        req.path.startsWith('/og/') ||
-        (/\.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|eot|css|js|mjs|map|txt|xml|webmanifest|json)$/i.test(
-          req.path
-        ) &&
-          req.path !== '/index.html');
-
-      if (isStaticAsset) {
-        res.setHeader('Cache-Control', 'public, max-age=300');
+      if (isStaticAssetPath(req.path)) {
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
         return res.status(404).type('text/plain').send('Not found');
       }
 
@@ -1082,6 +1075,31 @@ export function createApp({ dbPath, env = process.env } = {}) {
       return res.status(seoRes.notFound ? 404 : 200).type('html').send(rendered);
     });
   }
+
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (req.path === '/api' || req.path.startsWith('/api/')) {
+      if (err instanceof URIError) {
+        return res.status(400).json({ error: 'Invalid sync code format' });
+      }
+      if (err?.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+        return res.status(400).json({ error: 'Malformed JSON body' });
+      }
+      if (err?.type === 'entity.too.large' || err?.status === 413) {
+        return res.status(413).json({ error: 'Payload too large' });
+      }
+      return res.status(err?.status || 500).json({ error: 'Internal server error' });
+    }
+    if (err instanceof URIError) {
+      return res.status(400).type('text/plain').send('Bad request');
+    }
+    return res.status(err?.status || 500).type('text/plain').send('Internal server error');
+  });
 
   return { app, db };
 }

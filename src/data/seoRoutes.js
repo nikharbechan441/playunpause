@@ -1976,6 +1976,8 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
 }
 
 const VALID_CONSOLE_IDS = new Set((gta6Pack.consoles || []).map((c) => c.id));
+const VALID_INSTALLED_GAME_IDS = new Set((gta6Pack.commonInstalledGames || []).map((g) => g.id));
+const VALID_WAYPOINT_IDS = new Set((gta6Pack.routeWaypoints || []).map((w) => w.id));
 const VALID_WEAPON_IDS = new Set(COD_MW4_WEAPONS.map((w) => w.id));
 const VALID_ROBLOX_RATES = new Set(['std-2025', 'legacy', 'us-direct']);
 const VALID_APEX_TIERS = new Set(['bronze', 'silver', 'gold', 'plat', 'diamond', 'master']);
@@ -1987,7 +1989,15 @@ function safeInt(raw, fallback, min, max) {
   return Math.round(clampNum(n, min, max));
 }
 
-const VALID_SAFE_IDS = new Set((gta6Pack.safeCodes || []).map((s) => s.id));
+function safeNum(raw, fallback, min, max, decimals = 2) {
+  if (raw === null || raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  const factor = 10 ** decimals;
+  return Math.round(clampNum(n, min, max) * factor) / factor;
+}
+
+const VALID_SAFE_IDS = new Set([...(gta6Pack.safes || []), ...(gta6Pack.safeCodes || [])].map((s) => s.id));
 
 function parseBoolParam(params, key) {
   if (!params.has(key)) return undefined;
@@ -2017,6 +2027,15 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.has('mbps')) clean.mbps = safeInt(params.get('mbps'), clean.mbps ?? 120, 10, 2500);
   const patchBool = parseBoolParam(params, 'patch');
   if (patchBool !== undefined) clean.includePatch = patchBool;
+  if (params.has('offset')) clean.customOffsetGb = safeInt(params.get('offset'), clean.customOffsetGb ?? 0, -60, 120);
+  if (params.has('uninstalled')) {
+    const rawIds = String(params.get('uninstalled') || '')
+      .split(',')
+      .slice(0, 15)
+      .map((s) => s.trim())
+      .filter((id) => VALID_INSTALLED_GAME_IDS.has(id));
+    clean.sacrificedIds = Array.from(new Set(rawIds));
+  }
 
   if (params.has('q')) {
     clean.query = String(params.get('q') || '').replace(/[<>"'`]/g, '').trim().slice(0, 60);
@@ -2047,9 +2066,14 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
       clean.cuts = parts;
     }
   }
+  if (params.has('seed')) clean.seedCash = safeInt(params.get('seed'), clean.seedCash ?? 1600000, 0, 50000000);
   if (params.has('mins')) {
     const m = safeInt(params.get('mins'), 45, 45, 120);
     if ([45, 90, 120].includes(m)) clean.mins = m;
+  }
+  if (params.has('wp')) {
+    const wp = String(params.get('wp') || '').trim();
+    if (VALID_WAYPOINT_IDS.has(wp)) clean.waypointId = wp;
   }
 
   if (params.has('a') && VALID_WEAPON_IDS.has(params.get('a').trim())) clean.weaponAId = params.get('a').trim();
@@ -2061,6 +2085,12 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.has('hs')) clean.codHeadshots = safeInt(params.get('hs'), clean.codHeadshots ?? 1, 0, 8);
   const boltBool = parseBoolParam(params, 'bolt');
   if (boltBool !== undefined) clean.codOpenBolt = boltBool;
+  const customBool = parseBoolParam(params, 'custom');
+  if (customBool !== undefined) clean.codUseCustom = customBool;
+  if (params.has('dmg')) clean.codCustomDmg = safeInt(params.get('dmg'), clean.codCustomDmg ?? 36, 1, 500);
+  if (params.has('rpm')) clean.codCustomRpm = safeInt(params.get('rpm'), clean.codCustomRpm ?? 882, 60, 2000);
+  if (params.has('classes')) clean.camoClassCount = safeInt(params.get('classes'), clean.camoClassCount ?? 21, 0, 33);
+  if (params.has('mpgun')) clean.camoMatchesPerGun = safeInt(params.get('mpgun'), clean.camoMatchesPerGun ?? 6, 1, 30);
 
   if (params.has('x')) clean.netherX = safeInt(params.get('x'), clean.netherX ?? -20, -30000000, 30000000);
   if (params.has('y')) clean.netherY = safeInt(params.get('y'), clean.netherY ?? 64, -64, 320);
@@ -2068,6 +2098,15 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.get('dir') === 'toOverworld' || params.get('dir') === 'toNether') {
     clean.mcDir = params.get('dir');
   }
+  if (params.has('bx')) clean.portalBX = safeInt(params.get('bx'), clean.portalBX ?? 45, -30000000, 30000000);
+  if (params.has('by')) clean.portalBY = safeInt(params.get('by'), clean.portalBY ?? 64, -64, 320);
+  if (params.has('bz')) clean.portalBZ = safeInt(params.get('bz'), clean.portalBZ ?? 980, -30000000, 30000000);
+  if (params.has('t1x')) clean.throw1X = safeNum(params.get('t1x'), clean.throw1X ?? 0, -30000000, 30000000);
+  if (params.has('t1z')) clean.throw1Z = safeNum(params.get('t1z'), clean.throw1Z ?? 0, -30000000, 30000000);
+  if (params.has('t1d')) clean.throw1Deg = safeNum(params.get('t1d'), clean.throw1Deg ?? -45, -360, 360);
+  if (params.has('t2x')) clean.throw2X = safeNum(params.get('t2x'), clean.throw2X ?? 200, -30000000, 30000000);
+  if (params.has('t2z')) clean.throw2Z = safeNum(params.get('t2z'), clean.throw2Z ?? 0, -30000000, 30000000);
+  if (params.has('t2d')) clean.throw2Deg = safeNum(params.get('t2d'), clean.throw2Deg ?? 45, -360, 360);
 
   if (params.has('buy')) clean.buyPrice = safeInt(params.get('buy'), clean.buyPrice ?? 185000, 150, 15000000);
   if (params.has('sell')) clean.sellPrice = safeInt(params.get('sell'), clean.sellPrice ?? 215000, 200, 15000000);
@@ -2091,6 +2130,14 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.get('side') === 'CT' || params.get('side') === 'T') clean.cs2Side = params.get('side');
   const plantBool = parseBoolParam(params, 'plant');
   if (plantBool !== undefined) clean.cs2Plant = plantBool;
+  if (params.has('team')) {
+    const team = String(params.get('team') || '')
+      .split(',')
+      .slice(0, 5)
+      .map((s) => safeInt(s, -1, 0, 16000))
+      .filter((n) => n >= 0);
+    if (team.length === 5) clean.csTeamCash = team;
+  }
 
   if (params.has('cred')) clean.valCreds = safeInt(params.get('cred'), clean.valCreds ?? 3900, 0, 9000);
   if (params.has('vw')) clean.valWeapon = safeInt(params.get('vw'), clean.valWeapon ?? 2900, 0, 4700);
@@ -2098,14 +2145,15 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.has('vu')) clean.valUtil = safeInt(params.get('vu'), clean.valUtil ?? 400, 0, 1200);
   if (params.has('vl')) clean.valLoss = safeInt(params.get('vl'), clean.valLoss ?? 1, 0, 2);
   if (params.has('rr')) clean.valRr = safeInt(params.get('rr'), clean.valRr ?? 44, 0, 99);
-  if (params.has('wr')) clean.valWr = safeInt(params.get('wr'), clean.valWr ?? 55, 20, 90);
+  if (params.has('wr')) clean.valWr = safeInt(params.get('wr'), clean.valWr ?? 55, 1, 99);
+  if (params.has('winRr')) clean.valWinRr = safeInt(params.get('winRr'), clean.valWinRr ?? 21, 5, 50);
+  if (params.has('lossRr')) clean.valLossRr = safeInt(params.get('lossRr'), clean.valLossRr ?? 16, 5, 50);
 
   if (params.has('lvl')) clean.fnLevel = safeInt(params.get('lvl'), clean.fnLevel ?? 44, 1, 200);
   if (params.has('target')) clean.fnTarget = safeInt(params.get('target'), clean.fnTarget ?? 200, 1, 200);
-  if (clean.fnLevel !== undefined && clean.fnTarget !== undefined && clean.fnTarget < clean.fnLevel) {
-    clean.fnTarget = clean.fnLevel;
-  }
   if (params.has('days')) clean.fnDays = safeInt(params.get('days'), clean.fnDays ?? 28, 1, 120);
+  const fnDailiesBool = parseBoolParam(params, 'dailies');
+  if (fnDailiesBool !== undefined) clean.fnDailies = fnDailiesBool;
   const fnCrBool = parseBoolParam(params, 'creative');
   if (fnCrBool !== undefined) clean.fnCreative = fnCrBool;
   const fnLegoBool = parseBoolParam(params, 'lego');
@@ -2113,10 +2161,10 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
 
   if (params.has('apexLvl')) clean.apexLevel = safeInt(params.get('apexLvl'), clean.apexLevel ?? 420, 1, 500);
   if (params.has('prestige')) clean.apexPrestige = safeInt(params.get('prestige'), clean.apexPrestige ?? 0, 0, 3);
-  if (params.has('bp')) clean.apexBp = safeInt(params.get('bp'), clean.apexBp ?? 0, 0, 200);
+  if (params.has('bp')) clean.apexBp = safeInt(params.get('bp'), clean.apexBp ?? 0, 0, 300);
   if (params.has('bought')) clean.apexBought = safeInt(params.get('bought'), clean.apexBought ?? 0, 0, 500);
-  if (params.has('apexRp')) clean.apexRp = safeInt(params.get('apexRp'), clean.apexRp ?? 0, 0, 30000);
-  if (params.has('avgRp')) clean.apexAvgRp = safeInt(params.get('avgRp'), clean.apexAvgRp ?? 120, 10, 600);
+  if (params.has('apexRp')) clean.apexRp = safeInt(params.get('apexRp'), clean.apexRp ?? 0, 0, 40000);
+  if (params.has('avgRp')) clean.apexAvgRp = safeInt(params.get('avgRp'), clean.apexAvgRp ?? 120, -100, 400);
   if (params.has('tier') && VALID_APEX_TIERS.has(params.get('tier').trim())) clean.apexTier = params.get('tier').trim();
 
   if (params.has('cayo')) clean.cayoPrimary = safeInt(params.get('cayo'), clean.cayoPrimary ?? 1300000, 630000, 2500000);
@@ -2125,6 +2173,8 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.has('hostPct')) clean.cayoHostPct = safeInt(params.get('hostPct'), clean.cayoHostPct ?? 85, 15, 100);
   const hardBool = parseBoolParam(params, 'hard');
   if (hardBool !== undefined) clean.cayoHard = hardBool;
+  const eliteBool = parseBoolParam(params, 'elite');
+  if (eliteBool !== undefined) clean.cayoElite = eliteBool;
 
   return clean;
 }

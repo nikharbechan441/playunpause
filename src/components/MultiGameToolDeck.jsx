@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Copy,
   Check,
@@ -20,7 +20,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { COD_MW4_WEAPONS } from '../data/games/allGames.js';
-import { GAME_TO_CANONICAL_PATH } from '../data/seoRoutes.js';
+import { buildMultiGameShareUrl } from '../utils/shareUrlHelpers.js';
 import {
   downloadStudioSpecPng,
   formatDiscordSummary,
@@ -89,9 +89,70 @@ const CAYO_BAGS = [
   { id: 'weed', name: 'Mixed Weed / Cash (~$315K)', val: 315000 },
 ];
 
+function NumericField({
+  value,
+  onCommit,
+  min,
+  max,
+  fallback,
+  round = true,
+  ...inputProps
+}) {
+  const [draft, setDraft] = useState(() => String(value ?? ''));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(String(value ?? ''));
+    }
+  }, [value]);
+
+  const clampNum = (num) => {
+    let next = round ? Math.round(num) : num;
+    if (min !== undefined) next = Math.max(min, next);
+    if (max !== undefined) next = Math.min(max, next);
+    return next;
+  };
+
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      {...inputProps}
+      value={draft}
+      onFocus={(e) => {
+        focusedRef.current = true;
+        inputProps.onFocus?.(e);
+      }}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setDraft(raw);
+        if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') return;
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) {
+          onCommit(clampNum(parsed));
+        }
+      }}
+      onBlur={(e) => {
+        focusedRef.current = false;
+        const parsed = Number(draft);
+        const finalVal =
+          draft.trim() !== '' && Number.isFinite(parsed)
+            ? clampNum(parsed)
+            : fallback ?? value ?? min ?? 0;
+        onCommit(finalVal);
+        setDraft(String(finalVal));
+        inputProps.onBlur?.(e);
+      }}
+    />
+  );
+}
+
 export default function MultiGameToolDeck({
   game,
   isPro,
+  isEmbed = false,
   onOpenProModal,
   soundEnabled,
   savedPins = [],
@@ -102,29 +163,54 @@ export default function MultiGameToolDeck({
 }) {
   const [copiedKey, setCopiedKey] = useState(null);
   const [pinNotice, setPinNotice] = useState('');
+  const [pinLimitAlert, setPinLimitAlert] = useState(false);
+  const [shareFallbackUrl, setShareFallbackUrl] = useState('');
+  const copyTimerRef = useRef(null);
+  const pinTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      if (pinTimerRef.current) clearTimeout(pinTimerRef.current);
+    },
+    []
+  );
 
   const gamePins = useMemo(
     () => savedPins.filter((p) => p.gameId === game.id),
     [savedPins, game.id]
   );
 
+  useEffect(() => {
+    if (isPro || gamePins.length < 5) {
+      setPinLimitAlert(false);
+    }
+  }, [isPro, gamePins.length]);
+
   const flashCopied = (key) => {
     playSwitchTick(soundEnabled, 840);
     setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 1800);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const copyText = async (text, key) => {
+  const copyText = async (text, key, fallbackUrlOnFail = '') => {
     const ok = await copyTextReliably(text);
-    flashCopied(ok ? key : `blocked:${key}`);
+    if (ok) {
+      setShareFallbackUrl('');
+      flashCopied(key);
+    } else {
+      if (fallbackUrlOnFail) setShareFallbackUrl(fallbackUrlOnFail);
+      flashCopied(`blocked:${key}`);
+    }
   };
 
   const handlePinSnapshot = (label, value) => {
     if (!onSavePin) return;
     if (!isPro && gamePins.length >= 5) {
       playSwitchTick(soundEnabled, 660);
-      setPinNotice('Free tier saves up to 5 pins per game. Unlock Sync Pass for unlimited cloud pins across Phone + PC.');
-      onOpenProModal();
+      setPinLimitAlert(true);
+      setPinNotice('Free tier saves up to 5 pins per game.');
       return;
     }
     playSwitchTick(soundEnabled, 820);
@@ -134,21 +220,23 @@ export default function MultiGameToolDeck({
       label,
       value,
     });
+    setPinLimitAlert(false);
     setPinNotice('Pinned locally.');
-    setTimeout(() => setPinNotice(''), 2000);
+    if (pinTimerRef.current) clearTimeout(pinTimerRef.current);
+    pinTimerRef.current = setTimeout(() => setPinNotice(''), 2000);
   };
 
   // ==================== 1. COD: WARZONE & MULTIPLAYER ====================
-  const [weaponAId, setWeaponAId] = useState('raal-mg');
-  const [weaponBId, setWeaponBId] = useState('c9-smg');
-  const [customDmg, setCustomDmg] = useState(36);
-  const [customRpm, setCustomRpm] = useState(882);
-  const [useCustomStats, setUseCustomStats] = useState(false);
-  const [codOpenBolt, setCodOpenBolt] = useState(true);
-  const [codHp, setCodHp] = useState(300);
-  const [codHeadshots, setCodHeadshots] = useState(1);
-  const [camoClassCount, setCamoClassCount] = useState(21);
-  const [camoMatchesPerGun, setCamoMatchesPerGun] = useState(6);
+  const [weaponAId, setWeaponAId] = useState(() => initialPreset?.weaponAId ?? 'raal-mg');
+  const [weaponBId, setWeaponBId] = useState(() => initialPreset?.weaponBId ?? 'c9-smg');
+  const [customDmg, setCustomDmg] = useState(() => initialPreset?.codCustomDmg ?? 36);
+  const [customRpm, setCustomRpm] = useState(() => initialPreset?.codCustomRpm ?? 882);
+  const [useCustomStats, setUseCustomStats] = useState(() => Boolean(initialPreset?.codUseCustom));
+  const [codOpenBolt, setCodOpenBolt] = useState(() => initialPreset?.codOpenBolt ?? true);
+  const [codHp, setCodHp] = useState(() => initialPreset?.codHp ?? 300);
+  const [codHeadshots, setCodHeadshots] = useState(() => initialPreset?.codHeadshots ?? 1);
+  const [camoClassCount, setCamoClassCount] = useState(() => initialPreset?.camoClassCount ?? 21);
+  const [camoMatchesPerGun, setCamoMatchesPerGun] = useState(() => initialPreset?.camoMatchesPerGun ?? 6);
 
   const weaponAObj = useMemo(
     () => COD_MW4_WEAPONS.find((w) => w.id === weaponAId) || COD_MW4_WEAPONS[0],
@@ -189,12 +277,12 @@ export default function MultiGameToolDeck({
   const camoMatchesLeft = camoRemainingGuns * camoMatchesPerGun;
 
   // ==================== 2. FORTNITE ====================
-  const [fnCurLvl, setFnCurLvl] = useState(44);
-  const [fnTargetLvl, setFnTargetLvl] = useState(200);
-  const [fnDaysLeft, setFnDaysLeft] = useState(28);
-  const [fnIncludeDailies, setFnIncludeDailies] = useState(true);
-  const [fnIncludeCreative, setFnIncludeCreative] = useState(true);
-  const [fnIncludeLego, setFnIncludeLego] = useState(false);
+  const [fnCurLvl, setFnCurLvl] = useState(() => initialPreset?.fnLevel ?? 44);
+  const [fnTargetLvl, setFnTargetLvl] = useState(() => initialPreset?.fnTarget ?? 200);
+  const [fnDaysLeft, setFnDaysLeft] = useState(() => initialPreset?.fnDays ?? 28);
+  const [fnIncludeDailies, setFnIncludeDailies] = useState(() => initialPreset?.fnDailies ?? true);
+  const [fnIncludeCreative, setFnIncludeCreative] = useState(() => initialPreset?.fnCreative ?? true);
+  const [fnIncludeLego, setFnIncludeLego] = useState(() => Boolean(initialPreset?.fnLego));
 
   const fortniteResult = useMemo(() => {
     const base = calcFortniteXp({
@@ -219,19 +307,19 @@ export default function MultiGameToolDeck({
   }, [fnCurLvl, fnTargetLvl, fnDaysLeft, fnIncludeDailies, fnIncludeCreative, fnIncludeLego]);
 
   // ==================== 3. MINECRAFT ====================
-  const [mcDir, setMcDir] = useState('toNether');
-  const [mcX, setMcX] = useState('-20');
-  const [mcY, setMcY] = useState('64');
-  const [mcZ, setMcZ] = useState('1023');
-  const [portalBX, setPortalBX] = useState('45');
-  const [portalBY, setPortalBY] = useState('64');
-  const [portalBZ, setPortalBZ] = useState('980');
-  const [throw1X, setThrow1X] = useState('0');
-  const [throw1Z, setThrow1Z] = useState('0');
-  const [throw1Deg, setThrow1Deg] = useState('-45');
-  const [throw2X, setThrow2X] = useState('200');
-  const [throw2Z, setThrow2Z] = useState('0');
-  const [throw2Deg, setThrow2Deg] = useState('45');
+  const [mcDir, setMcDir] = useState(() => initialPreset?.mcDir ?? 'toNether');
+  const [mcX, setMcX] = useState(() => String(initialPreset?.netherX ?? -20));
+  const [mcY, setMcY] = useState(() => String(initialPreset?.netherY ?? 64));
+  const [mcZ, setMcZ] = useState(() => String(initialPreset?.netherZ ?? 1023));
+  const [portalBX, setPortalBX] = useState(() => String(initialPreset?.portalBX ?? 45));
+  const [portalBY, setPortalBY] = useState(() => String(initialPreset?.portalBY ?? 64));
+  const [portalBZ, setPortalBZ] = useState(() => String(initialPreset?.portalBZ ?? 980));
+  const [throw1X, setThrow1X] = useState(() => String(initialPreset?.throw1X ?? 0));
+  const [throw1Z, setThrow1Z] = useState(() => String(initialPreset?.throw1Z ?? 0));
+  const [throw1Deg, setThrow1Deg] = useState(() => String(initialPreset?.throw1Deg ?? -45));
+  const [throw2X, setThrow2X] = useState(() => String(initialPreset?.throw2X ?? 200));
+  const [throw2Z, setThrow2Z] = useState(() => String(initialPreset?.throw2Z ?? 0));
+  const [throw2Deg, setThrow2Deg] = useState(() => String(initialPreset?.throw2Deg ?? 45));
 
   const mcResult = useMemo(() => calcNetherCoords(mcX, mcY, mcZ, mcDir), [mcX, mcY, mcZ, mcDir]);
   const mcCollision = useMemo(() => {
@@ -249,10 +337,14 @@ export default function MultiGameToolDeck({
   );
 
   // ==================== 4. EA SPORTS FC 27 ====================
-  const [eaBuyCoins, setEaBuyCoins] = useState(185000);
-  const [eaSellCoins, setEaSellCoins] = useState(215000);
-  const [eaQty, setEaQty] = useState(1);
-  const [sbcRatings, setSbcRatings] = useState([86, 86, 85, 85, 85, 84, 84, 84, 84, 84, 84]);
+  const [eaBuyCoins, setEaBuyCoins] = useState(() => initialPreset?.buyPrice ?? 185000);
+  const [eaSellCoins, setEaSellCoins] = useState(() => initialPreset?.sellPrice ?? 215000);
+  const [eaQty, setEaQty] = useState(() => initialPreset?.quantity ?? 1);
+  const [sbcRatings, setSbcRatings] = useState(() =>
+    Array.isArray(initialPreset?.sbcRatings) && initialPreset.sbcRatings.length === 11
+      ? initialPreset.sbcRatings
+      : [86, 86, 85, 85, 85, 84, 84, 84, 84, 84, 84]
+  );
 
   const eaTaxResult = useMemo(
     () => calcFc27Tax({ buyCoins: eaBuyCoins, sellCoins: eaSellCoins, quantity: eaQty }),
@@ -261,10 +353,10 @@ export default function MultiGameToolDeck({
   const eaSbcResult = useMemo(() => calcSbcSquadRating(sbcRatings), [sbcRatings]);
 
   // ==================== 5. ROBLOX ====================
-  const [rbxGross, setRbxGross] = useState(50000);
-  const [rbxRateId, setRbxRateId] = useState('std-2025');
-  const [rbxGroupSplit, setRbxGroupSplit] = useState(100);
-  const [rbxDesiredNet, setRbxDesiredNet] = useState(30000);
+  const [rbxGross, setRbxGross] = useState(() => initialPreset?.robux ?? 50000);
+  const [rbxRateId, setRbxRateId] = useState(() => initialPreset?.devexRate ?? 'std-2025');
+  const [rbxGroupSplit, setRbxGroupSplit] = useState(() => initialPreset?.groupSplit ?? 100);
+  const [rbxDesiredNet, setRbxDesiredNet] = useState(() => initialPreset?.desiredNet ?? 30000);
 
   const rbxResult = useMemo(
     () => calcRobloxDevEx({ grossRobux: rbxGross, rateId: rbxRateId, groupSplitPct: rbxGroupSplit, targetUsd: 114 }),
@@ -275,11 +367,15 @@ export default function MultiGameToolDeck({
   );
 
   // ==================== 6. COUNTER-STRIKE 2 ====================
-  const [csCash, setCsCash] = useState(3200);
-  const [csLossLevel, setCsLossLevel] = useState(1);
-  const [csSide, setCsSide] = useState('CT');
-  const [csBombPlanted, setCsBombPlanted] = useState(false);
-  const [csTeamCash, setCsTeamCash] = useState([4900, 3200, 2100, 5600, 3800]);
+  const [csCash, setCsCash] = useState(() => initialPreset?.cs2Cash ?? 3200);
+  const [csLossLevel, setCsLossLevel] = useState(() => initialPreset?.cs2Loss ?? 1);
+  const [csSide, setCsSide] = useState(() => initialPreset?.cs2Side ?? 'CT');
+  const [csBombPlanted, setCsBombPlanted] = useState(() => Boolean(initialPreset?.cs2Plant));
+  const [csTeamCash, setCsTeamCash] = useState(() =>
+    Array.isArray(initialPreset?.csTeamCash) && initialPreset.csTeamCash.length === 5
+      ? initialPreset.csTeamCash
+      : [4900, 3200, 2100, 5600, 3800]
+  );
 
   const csResult = useMemo(
     () => calcCs2Economy({ cash: csCash, lossLevel: csLossLevel, side: csSide, bombPlanted: csBombPlanted }),
@@ -295,15 +391,15 @@ export default function MultiGameToolDeck({
   }, [csTeamCash, csSide]);
 
   // ==================== 7. VALORANT ====================
-  const [valCreds, setValCreds] = useState(3900);
-  const [valWeaponCost, setValWeaponCost] = useState(2900);
-  const [valArmorCost, setValArmorCost] = useState(650);
-  const [valUtilCost, setValUtilCost] = useState(350);
-  const [valLossStreak, setValLossStreak] = useState(1);
-  const [valCurRr, setValCurRr] = useState(44);
-  const [valWr, setValWr] = useState(55);
-  const [valWinRr, setValWinRr] = useState(21);
-  const [valLossRr, setValLossRr] = useState(16);
+  const [valCreds, setValCreds] = useState(() => initialPreset?.valCreds ?? 3900);
+  const [valWeaponCost, setValWeaponCost] = useState(() => initialPreset?.valWeapon ?? 2900);
+  const [valArmorCost, setValArmorCost] = useState(() => initialPreset?.valArmor ?? 650);
+  const [valUtilCost, setValUtilCost] = useState(() => initialPreset?.valUtil ?? 350);
+  const [valLossStreak, setValLossStreak] = useState(() => initialPreset?.valLoss ?? 1);
+  const [valCurRr, setValCurRr] = useState(() => initialPreset?.valRr ?? 44);
+  const [valWr, setValWr] = useState(() => initialPreset?.valWr ?? 55);
+  const [valWinRr, setValWinRr] = useState(() => initialPreset?.valWinRr ?? 21);
+  const [valLossRr, setValLossRr] = useState(() => initialPreset?.valLossRr ?? 16);
 
   const valResult = useMemo(
     () =>
@@ -322,13 +418,13 @@ export default function MultiGameToolDeck({
   );
 
   // ==================== 8. APEX LEGENDS ====================
-  const [apexLevel, setApexLevel] = useState(420);
-  const [apexPrestige, setApexPrestige] = useState(0);
-  const [apexBpPacks, setApexBpPacks] = useState(28);
-  const [apexPurchasedPacks, setApexPurchasedPacks] = useState(20);
-  const [apexCurRp, setApexCurRp] = useState(8400);
-  const [apexTargetTier, setApexTargetTier] = useState('diamond');
-  const [apexAvgRp, setApexAvgRp] = useState(95);
+  const [apexLevel, setApexLevel] = useState(() => initialPreset?.apexLevel ?? 420);
+  const [apexPrestige, setApexPrestige] = useState(() => initialPreset?.apexPrestige ?? 0);
+  const [apexBpPacks, setApexBpPacks] = useState(() => initialPreset?.apexBp ?? 28);
+  const [apexPurchasedPacks, setApexPurchasedPacks] = useState(() => initialPreset?.apexBought ?? 20);
+  const [apexCurRp, setApexCurRp] = useState(() => initialPreset?.apexRp ?? 8400);
+  const [apexTargetTier, setApexTargetTier] = useState(() => initialPreset?.apexTier ?? 'diamond');
+  const [apexAvgRp, setApexAvgRp] = useState(() => initialPreset?.apexAvgRp ?? 95);
 
   const apexLevelPacks = useMemo(
     () => getFreeApexLevelPacks(apexLevel, apexPrestige),
@@ -342,12 +438,12 @@ export default function MultiGameToolDeck({
   );
 
   // ==================== 9. GTA ONLINE (CAYO PERICO) ====================
-  const [cayoPrimaryVal, setCayoPrimaryVal] = useState(1300000);
-  const [cayoSecondaryVal, setCayoSecondaryVal] = useState(495000);
-  const [cayoPlayers, setCayoPlayers] = useState(2);
-  const [cayoHostPct, setCayoHostPct] = useState(85);
-  const [cayoHardMode, setCayoHardMode] = useState(true);
-  const [cayoEliteBonus, setCayoEliteBonus] = useState(true);
+  const [cayoPrimaryVal, setCayoPrimaryVal] = useState(() => initialPreset?.cayoPrimary ?? 1300000);
+  const [cayoSecondaryVal, setCayoSecondaryVal] = useState(() => initialPreset?.cayoSecondary ?? 495000);
+  const [cayoPlayers, setCayoPlayers] = useState(() => initialPreset?.cayoPlayers ?? 2);
+  const [cayoHostPct, setCayoHostPct] = useState(() => initialPreset?.cayoHostPct ?? 85);
+  const [cayoHardMode, setCayoHardMode] = useState(() => initialPreset?.cayoHard ?? true);
+  const [cayoEliteBonus, setCayoEliteBonus] = useState(() => initialPreset?.cayoElite ?? true);
 
   const cayoResult = useMemo(
     () =>
@@ -365,6 +461,8 @@ export default function MultiGameToolDeck({
 
   // Sync route presets on initial deep-link or SPA subpage navigation
   useEffect(() => {
+    setShareFallbackUrl('');
+    setPinLimitAlert(false);
     const p = initialPreset;
     if (!p || typeof p !== 'object') return;
     if (p.weaponAId) setWeaponAId(p.weaponAId);
@@ -372,10 +470,16 @@ export default function MultiGameToolDeck({
     if (p.codHp !== undefined) setCodHp(p.codHp);
     if (p.codHeadshots !== undefined) setCodHeadshots(p.codHeadshots);
     if (p.codOpenBolt !== undefined) setCodOpenBolt(Boolean(p.codOpenBolt));
+    if (p.codUseCustom !== undefined) setUseCustomStats(Boolean(p.codUseCustom));
+    if (p.codCustomDmg !== undefined) setCustomDmg(p.codCustomDmg);
+    if (p.codCustomRpm !== undefined) setCustomRpm(p.codCustomRpm);
+    if (p.camoClassCount !== undefined) setCamoClassCount(p.camoClassCount);
+    if (p.camoMatchesPerGun !== undefined) setCamoMatchesPerGun(p.camoMatchesPerGun);
 
     if (p.fnLevel !== undefined) setFnCurLvl(p.fnLevel);
     if (p.fnTarget !== undefined) setFnTargetLvl(p.fnTarget);
     if (p.fnDays !== undefined) setFnDaysLeft(p.fnDays);
+    if (p.fnDailies !== undefined) setFnIncludeDailies(Boolean(p.fnDailies));
     if (p.fnCreative !== undefined) setFnIncludeCreative(Boolean(p.fnCreative));
     if (p.fnLego !== undefined) setFnIncludeLego(Boolean(p.fnLego));
 
@@ -383,6 +487,15 @@ export default function MultiGameToolDeck({
     if (p.netherX !== undefined) setMcX(String(p.netherX));
     if (p.netherY !== undefined) setMcY(String(p.netherY));
     if (p.netherZ !== undefined) setMcZ(String(p.netherZ));
+    if (p.portalBX !== undefined) setPortalBX(String(p.portalBX));
+    if (p.portalBY !== undefined) setPortalBY(String(p.portalBY));
+    if (p.portalBZ !== undefined) setPortalBZ(String(p.portalBZ));
+    if (p.throw1X !== undefined) setThrow1X(String(p.throw1X));
+    if (p.throw1Z !== undefined) setThrow1Z(String(p.throw1Z));
+    if (p.throw1Deg !== undefined) setThrow1Deg(String(p.throw1Deg));
+    if (p.throw2X !== undefined) setThrow2X(String(p.throw2X));
+    if (p.throw2Z !== undefined) setThrow2Z(String(p.throw2Z));
+    if (p.throw2Deg !== undefined) setThrow2Deg(String(p.throw2Deg));
 
     if (p.buyPrice !== undefined) setEaBuyCoins(p.buyPrice);
     if (p.sellPrice !== undefined) setEaSellCoins(p.sellPrice);
@@ -398,6 +511,7 @@ export default function MultiGameToolDeck({
     if (p.cs2Loss !== undefined) setCsLossLevel(p.cs2Loss);
     if (p.cs2Side) setCsSide(p.cs2Side);
     if (p.cs2Plant !== undefined) setCsBombPlanted(Boolean(p.cs2Plant));
+    if (Array.isArray(p.csTeamCash) && p.csTeamCash.length === 5) setCsTeamCash(p.csTeamCash);
 
     if (p.valCreds !== undefined) setValCreds(p.valCreds);
     if (p.valWeapon !== undefined) setValWeaponCost(p.valWeapon);
@@ -406,6 +520,8 @@ export default function MultiGameToolDeck({
     if (p.valLoss !== undefined) setValLossStreak(p.valLoss);
     if (p.valRr !== undefined) setValCurRr(p.valRr);
     if (p.valWr !== undefined) setValWr(p.valWr);
+    if (p.valWinRr !== undefined) setValWinRr(p.valWinRr);
+    if (p.valLossRr !== undefined) setValLossRr(p.valLossRr);
 
     if (p.apexLevel !== undefined) setApexLevel(p.apexLevel);
     if (p.apexPrestige !== undefined) setApexPrestige(p.apexPrestige);
@@ -420,6 +536,7 @@ export default function MultiGameToolDeck({
     if (p.cayoPlayers !== undefined) setCayoPlayers(p.cayoPlayers);
     if (p.cayoHostPct !== undefined) setCayoHostPct(p.cayoHostPct);
     if (p.cayoHard !== undefined) setCayoHardMode(Boolean(p.cayoHard));
+    if (p.cayoElite !== undefined) setCayoEliteBonus(Boolean(p.cayoElite));
   }, [presetKey]);
 
   const currentShareUrl = useMemo(() => {
@@ -427,37 +544,81 @@ export default function MultiGameToolDeck({
       typeof window !== 'undefined' && window.location?.origin
         ? window.location.origin
         : 'https://playunpause.com';
-    const defaultBase = GAME_TO_CANONICAL_PATH[game.id] || '/';
     const rawPathname =
       typeof window !== 'undefined' && window.location?.pathname
         ? window.location.pathname
-        : defaultBase;
-    const base =
-      defaultBase !== '/' && (rawPathname === defaultBase || rawPathname.startsWith(`${defaultBase}/`))
-        ? rawPathname
-        : defaultBase;
-    switch (game.id) {
-      case 'cod-warzone':
-        return `${origin}${base}?a=${encodeURIComponent(weaponAId)}&b=${encodeURIComponent(weaponBId)}&hp=${codHp}&hs=${codHeadshots}&bolt=${codOpenBolt ? 1 : 0}`;
-      case 'fortnite':
-        return `${origin}${base}?lvl=${fnCurLvl}&target=${fnTargetLvl}&days=${fnDaysLeft}&creative=${fnIncludeCreative ? 1 : 0}&lego=${fnIncludeLego ? 1 : 0}`;
-      case 'minecraft':
-        return `${origin}${base}?dir=${encodeURIComponent(mcDir)}&x=${parseSafeNum(mcX, -20)}&y=${parseSafeNum(mcY, 64)}&z=${parseSafeNum(mcZ, 1023)}`;
-      case 'ea-fc-27':
-        return `${origin}${base}?buy=${eaBuyCoins}&sell=${eaSellCoins}&qty=${eaQty}&sbc=${encodeURIComponent(sbcRatings.join(','))}`;
-      case 'roblox':
-        return `${origin}${base}?robux=${rbxGross}&rate=${encodeURIComponent(rbxRateId)}&split=${rbxGroupSplit}&net=${rbxDesiredNet}`;
-      case 'cs2':
-        return `${origin}${base}?side=${encodeURIComponent(csSide)}&cash=${csCash}&loss=${csLossLevel}&plant=${csBombPlanted ? 1 : 0}`;
-      case 'valorant':
-        return `${origin}${base}?cred=${valCreds}&vw=${valWeaponCost}&va=${valArmorCost}&vu=${valUtilCost}&vl=${valLossStreak}&rr=${valCurRr}&wr=${valWr}`;
-      case 'apex-legends':
-        return `${origin}${base}?apexLvl=${apexLevel}&prestige=${apexPrestige}&bp=${apexBpPacks}&bought=${apexPurchasedPacks}&tier=${encodeURIComponent(apexTargetTier)}&apexRp=${apexCurRp}&avgRp=${apexAvgRp}`;
-      case 'gta-v':
-        return `${origin}${base}?cayo=${cayoPrimaryVal}&csec=${cayoSecondaryVal}&players=${cayoPlayers}&hostPct=${cayoHostPct}&hard=${cayoHardMode ? 1 : 0}`;
-      default:
-        return `${origin}${base}`;
-    }
+        : undefined;
+    return buildMultiGameShareUrl(
+      game.id,
+      {
+        weaponAId,
+        weaponBId,
+        codHp,
+        codHeadshots,
+        codOpenBolt,
+        codUseCustom: useCustomStats,
+        codCustomDmg: customDmg,
+        codCustomRpm: customRpm,
+        camoClassCount,
+        camoMatchesPerGun,
+        fnLevel: fnCurLvl,
+        fnTarget: fnTargetLvl,
+        fnDays: fnDaysLeft,
+        fnDailies: fnIncludeDailies,
+        fnCreative: fnIncludeCreative,
+        fnLego: fnIncludeLego,
+        mcDir,
+        netherX: mcX,
+        netherY: mcY,
+        netherZ: mcZ,
+        portalBX,
+        portalBY,
+        portalBZ,
+        throw1X,
+        throw1Z,
+        throw1Deg,
+        throw2X,
+        throw2Z,
+        throw2Deg,
+        buyPrice: eaBuyCoins,
+        sellPrice: eaSellCoins,
+        quantity: eaQty,
+        sbcRatings,
+        robux: rbxGross,
+        devexRate: rbxRateId,
+        groupSplit: rbxGroupSplit,
+        desiredNet: rbxDesiredNet,
+        cs2Side: csSide,
+        cs2Cash: csCash,
+        cs2Loss: csLossLevel,
+        cs2Plant: csBombPlanted,
+        csTeamCash,
+        valCreds,
+        valWeapon: valWeaponCost,
+        valArmor: valArmorCost,
+        valUtil: valUtilCost,
+        valLoss: valLossStreak,
+        valRr: valCurRr,
+        valWr,
+        valWinRr,
+        valLossRr,
+        apexLevel,
+        apexPrestige,
+        apexBp: apexBpPacks,
+        apexBought: apexPurchasedPacks,
+        apexTier: apexTargetTier,
+        apexRp: apexCurRp,
+        apexAvgRp,
+        cayoPrimary: cayoPrimaryVal,
+        cayoSecondary: cayoSecondaryVal,
+        cayoPlayers,
+        cayoHostPct,
+        cayoHard: cayoHardMode,
+        cayoElite: cayoEliteBonus,
+      },
+      origin,
+      rawPathname
+    );
   }, [
     game.id,
     weaponAId,
@@ -465,15 +626,30 @@ export default function MultiGameToolDeck({
     codHp,
     codHeadshots,
     codOpenBolt,
+    useCustomStats,
+    customDmg,
+    customRpm,
+    camoClassCount,
+    camoMatchesPerGun,
     fnCurLvl,
     fnTargetLvl,
     fnDaysLeft,
+    fnIncludeDailies,
     fnIncludeCreative,
     fnIncludeLego,
     mcDir,
     mcX,
     mcY,
     mcZ,
+    portalBX,
+    portalBY,
+    portalBZ,
+    throw1X,
+    throw1Z,
+    throw1Deg,
+    throw2X,
+    throw2Z,
+    throw2Deg,
     eaBuyCoins,
     eaSellCoins,
     eaQty,
@@ -486,6 +662,7 @@ export default function MultiGameToolDeck({
     csCash,
     csLossLevel,
     csBombPlanted,
+    csTeamCash,
     valCreds,
     valWeaponCost,
     valArmorCost,
@@ -493,6 +670,8 @@ export default function MultiGameToolDeck({
     valLossStreak,
     valCurRr,
     valWr,
+    valWinRr,
+    valLossRr,
     apexLevel,
     apexPrestige,
     apexBpPacks,
@@ -505,6 +684,7 @@ export default function MultiGameToolDeck({
     cayoPlayers,
     cayoHostPct,
     cayoHardMode,
+    cayoEliteBonus,
   ]);
 
   const currentShareSpec = useMemo(() => {
@@ -652,6 +832,20 @@ export default function MultiGameToolDeck({
 
   return (
     <div className="mg-workspace" style={{ '--game-accent': game.accentColor, '--game-accent-soft': game.accentSoft }}>
+      {isEmbed && (
+        <section className="deck-panel" aria-label="Calculator overview">
+          <div className="studio-hero-band">
+            <div>
+              <div className="panel-eyebrow">
+                <IconComp size={13} aria-hidden="true" />
+                <span>{game.shortTitle} · UNPAUSE EMBED CALCULATOR</span>
+              </div>
+              <h1 className="panel-title">{game.fullTitle || game.shortTitle}</h1>
+              {game.tagline && <p className="panel-subtitle">{game.tagline}</p>}
+            </div>
+          </div>
+        </section>
+      )}
       {/* MAIN CALCULATOR + UNBLURRED SIDE META STACK */}
       <div className="mg-split-grid">
         <div className="mg-stack-cards">
@@ -667,6 +861,7 @@ export default function MultiGameToolDeck({
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
+                      aria-pressed={codOpenBolt}
                       className={`filter-pill ${codOpenBolt ? 'active' : ''}`}
                       onClick={() => setCodOpenBolt((v) => !v)}
                     >
@@ -838,26 +1033,26 @@ export default function MultiGameToolDeck({
                 <div className="mg-field-grid">
                   <div className="mg-field">
                     <label htmlFor="camo-done">Weapons Finished (0–33)</label>
-                    <input
+                    <NumericField
                       id="camo-done"
-                      type="number"
                       min={0}
                       max={33}
+                      fallback={21}
                       className="deck-input no-icon mono"
                       value={camoClassCount}
-                      onChange={(e) => setCamoClassCount(Math.max(0, Math.min(33, Number(e.target.value) || 0)))}
+                      onCommit={setCamoClassCount}
                     />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="camo-pace">Avg Matches / Weapon</label>
-                    <input
+                    <NumericField
                       id="camo-pace"
-                      type="number"
                       min={1}
                       max={30}
+                      fallback={6}
                       className="deck-input no-icon mono"
                       value={camoMatchesPerGun}
-                      onChange={(e) => setCamoMatchesPerGun(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                      onCommit={setCamoMatchesPerGun}
                     />
                   </div>
                   <div className="mg-field">
@@ -929,26 +1124,26 @@ export default function MultiGameToolDeck({
               <div className="mg-field-grid">
                 <div className="mg-field">
                   <label htmlFor="fn-cur">Current Level</label>
-                  <input
+                  <NumericField
                     id="fn-cur"
-                    type="number"
                     min={1}
                     max={200}
+                    fallback={44}
                     className="deck-input no-icon mono"
                     value={fnCurLvl}
-                    onChange={(e) => setFnCurLvl(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+                    onCommit={setFnCurLvl}
                   />
                 </div>
                 <div className="mg-field">
                   <label htmlFor="fn-days">Days Left in Season</label>
-                  <input
+                  <NumericField
                     id="fn-days"
-                    type="number"
                     min={1}
                     max={120}
+                    fallback={28}
                     className="deck-input no-icon mono"
                     value={fnDaysLeft}
-                    onChange={(e) => setFnDaysLeft(Math.max(1, Math.min(120, Number(e.target.value) || 1)))}
+                    onCommit={setFnDaysLeft}
                   />
                 </div>
               </div>
@@ -956,6 +1151,7 @@ export default function MultiGameToolDeck({
               <div className="filter-row" style={{ marginTop: '14px', marginBottom: 0 }}>
                 <button
                   type="button"
+                  aria-pressed={fnIncludeDailies}
                   className={`filter-pill ${fnIncludeDailies ? 'active' : ''}`}
                   onClick={() => setFnIncludeDailies((v) => !v)}
                 >
@@ -963,6 +1159,7 @@ export default function MultiGameToolDeck({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={fnIncludeCreative}
                   className={`filter-pill ${fnIncludeCreative ? 'active' : ''}`}
                   onClick={() => setFnIncludeCreative((v) => !v)}
                 >
@@ -970,6 +1167,7 @@ export default function MultiGameToolDeck({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={fnIncludeLego}
                   className={`filter-pill ${fnIncludeLego ? 'active' : ''}`}
                   onClick={() => setFnIncludeLego((v) => !v)}
                 >
@@ -997,15 +1195,6 @@ export default function MultiGameToolDeck({
           {/* ==================== MINECRAFT ==================== */}
           {game.id === 'minecraft' && (
             <>
-              <div
-                className="hardware-slim-bar"
-                role="note"
-                style={{ marginTop: 0, marginBottom: '12px', fontSize: '0.76rem', color: 'var(--ink-secondary)' }}
-              >
-                <span>
-                  <strong>Unofficial Fan Utility:</strong> NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG AB OR MICROSOFT.
-                </span>
-              </div>
               <div className="mg-subcard">
                 <div className="mg-subcard-head">
                   <h2 className="mg-subcard-title">
@@ -1116,6 +1305,16 @@ export default function MultiGameToolDeck({
                 </div>
               </div>
 
+              <div
+                className="hardware-slim-bar"
+                role="note"
+                style={{ marginTop: 0, marginBottom: 0, fontSize: '0.76rem', color: 'var(--ink-secondary)' }}
+              >
+                <span>
+                  <strong>Unofficial Fan Utility:</strong> NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG AB OR MICROSOFT.
+                </span>
+              </div>
+
               <div className="mg-subcard">
                 <div className="mg-subcard-head">
                   <h2 className="mg-subcard-title">2nd-Portal 3D Collision &amp; 2-Throw Stronghold Locator</h2>
@@ -1221,42 +1420,56 @@ export default function MultiGameToolDeck({
                 <div className="mg-field-grid">
                   <div className="mg-field">
                     <label htmlFor="ea-buy">Buy Price (Coins)</label>
-                    <input
+                    <NumericField
                       id="ea-buy"
-                      type="number"
-                      min={200}
+                      min={0}
                       step={500}
+                      fallback={185000}
                       className="deck-input no-icon mono"
                       value={eaBuyCoins}
-                      onChange={(e) => setEaBuyCoins(Math.max(0, Number(e.target.value) || 0))}
+                      onCommit={setEaBuyCoins}
                     />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="ea-sell">Planned List Price</label>
-                    <input
+                    <NumericField
                       id="ea-sell"
-                      type="number"
-                      min={200}
+                      min={0}
                       step={500}
+                      fallback={215000}
                       className="deck-input no-icon mono"
                       value={eaSellCoins}
-                      onChange={(e) => setEaSellCoins(Math.max(0, Number(e.target.value) || 0))}
+                      onCommit={setEaSellCoins}
                     />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="ea-qty">Batch Qty</label>
                     <div className="stepper-input-row">
-                      <button type="button" className="calc-stepper-btn" onClick={() => setEaQty((q) => Math.max(1, q - 1))}>−</button>
-                      <input
+                      <button
+                        type="button"
+                        className="calc-stepper-btn"
+                        aria-label="Decrease batch quantity"
+                        onClick={() => setEaQty((q) => Math.max(1, q - 1))}
+                      >
+                        −
+                      </button>
+                      <NumericField
                         id="ea-qty"
-                        type="number"
                         min={1}
                         max={100}
+                        fallback={1}
                         className="deck-input no-icon mono"
                         value={eaQty}
-                        onChange={(e) => setEaQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                        onCommit={setEaQty}
                       />
-                      <button type="button" className="calc-stepper-btn" onClick={() => setEaQty((q) => Math.min(100, q + 1))}>+</button>
+                      <button
+                        type="button"
+                        className="calc-stepper-btn"
+                        aria-label="Increase batch quantity"
+                        onClick={() => setEaQty((q) => Math.min(100, q + 1))}
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1288,18 +1501,15 @@ export default function MultiGameToolDeck({
                   {sbcRatings.map((val, idx) => (
                     <div key={idx} className="mg-field">
                       <label htmlFor={`sbc-slot-${idx}`}>#{idx + 1}</label>
-                      <input
+                      <NumericField
                         id={`sbc-slot-${idx}`}
-                        type="number"
                         min={45}
                         max={99}
+                        fallback={val}
                         className="deck-input no-icon mono"
                         style={{ padding: '6px 8px', textAlign: 'center' }}
                         value={val}
-                        onChange={(e) => {
-                          const v = Math.max(45, Math.min(99, Number(e.target.value) || 45));
-                          setSbcRatings((prev) => prev.map((r, i) => (i === idx ? v : r)));
-                        }}
+                        onCommit={(v) => setSbcRatings((prev) => prev.map((r, i) => (i === idx ? v : r)))}
                       />
                     </div>
                   ))}
@@ -1367,14 +1577,14 @@ export default function MultiGameToolDeck({
               <div className="mg-field-grid">
                 <div className="mg-field">
                   <label htmlFor="rbx-gross">Gross Gamepass / Item Sales (R$)</label>
-                  <input
+                  <NumericField
                     id="rbx-gross"
-                    type="number"
                     min={0}
                     step={5000}
+                    fallback={0}
                     className="deck-input no-icon mono"
                     value={rbxGross}
-                    onChange={(e) => setRbxGross(Math.max(0, Number(e.target.value) || 0))}
+                    onCommit={setRbxGross}
                   />
                 </div>
                 <div className="mg-field">
@@ -1392,26 +1602,26 @@ export default function MultiGameToolDeck({
                 </div>
                 <div className="mg-field">
                   <label htmlFor="rbx-split">Your Group Share (%)</label>
-                  <input
+                  <NumericField
                     id="rbx-split"
-                    type="number"
                     min={1}
                     max={100}
+                    fallback={100}
                     className="deck-input no-icon mono"
                     value={rbxGroupSplit}
-                    onChange={(e) => setRbxGroupSplit(Math.max(1, Math.min(100, Number(e.target.value) || 100)))}
+                    onCommit={setRbxGroupSplit}
                   />
                 </div>
                 <div className="mg-field">
                   <label htmlFor="rbx-target">Reverse Goal (Net R$ Wanted)</label>
-                  <input
+                  <NumericField
                     id="rbx-target"
-                    type="number"
                     min={1}
                     step={1000}
+                    fallback={30000}
                     className="deck-input no-icon mono"
                     value={rbxDesiredNet}
-                    onChange={(e) => setRbxDesiredNet(Math.max(1, Number(e.target.value) || 1))}
+                    onCommit={setRbxDesiredNet}
                   />
                 </div>
               </div>
@@ -1427,7 +1637,7 @@ export default function MultiGameToolDeck({
                 </div>
                 <div className="mg-stat-mini">
                   <span>Min Sales for 30K Net</span>
-                  <strong>42,858 R$</strong>
+                  <strong>{rbxResult.minSalesFor30k.toLocaleString('en-US')} R$</strong>
                 </div>
               </div>
               <p style={{ margin: '10px 0 0', fontSize: '0.76rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
@@ -1489,6 +1699,7 @@ export default function MultiGameToolDeck({
                   {csSide === 'T' && (
                     <button
                       type="button"
+                      aria-pressed={csBombPlanted}
                       className={`filter-pill ${csBombPlanted ? 'active' : ''}`}
                       onClick={() => setCsBombPlanted((v) => !v)}
                     >
@@ -1520,15 +1731,15 @@ export default function MultiGameToolDeck({
                 <div className="mg-field-grid">
                   <div className="mg-field">
                     <label htmlFor="cs-cash">Your Current Bank ($0–$16,000)</label>
-                    <input
+                    <NumericField
                       id="cs-cash"
-                      type="number"
                       min={0}
                       max={16000}
                       step={100}
+                      fallback={0}
                       className="deck-input no-icon mono"
                       value={csCash}
-                      onChange={(e) => setCsCash(Math.max(0, Math.min(16000, Number(e.target.value) || 0)))}
+                      onCommit={setCsCash}
                     />
                   </div>
                   <div className="mg-stat-mini">
@@ -1549,23 +1760,20 @@ export default function MultiGameToolDeck({
                     {csSquadStats.canBuyCount}/5 Can Core Buy · {csSquadStats.dropsAvailable} Rifle Drops
                   </span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '8px' }}>
+                <div className="cs2-round-grid">
                   {csTeamCash.map((val, i) => (
                     <div key={i} className="mg-field">
                       <label htmlFor={`cs-p-${i}`}>P{i + 1} $</label>
-                      <input
+                      <NumericField
                         id={`cs-p-${i}`}
-                        type="number"
                         step={100}
                         min={0}
                         max={16000}
+                        fallback={0}
                         className="deck-input no-icon mono"
                         style={{ padding: '7px 8px', textAlign: 'center' }}
                         value={val}
-                        onChange={(e) => {
-                          const num = Math.max(0, Math.min(16000, Number(e.target.value) || 0));
-                          setCsTeamCash((prev) => prev.map((c, idx) => (idx === i ? num : c)));
-                        }}
+                        onCommit={(num) => setCsTeamCash((prev) => prev.map((c, idx) => (idx === i ? num : c)))}
                       />
                     </div>
                   ))}
@@ -1600,32 +1808,56 @@ export default function MultiGameToolDeck({
                 <div className="mg-hero-answer mobile-answer-first">
                   <div>
                     <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
-                      NEXT ROUND FLOOR IF LOST
+                      {!valResult.canAfford
+                        ? `UNBUYABLE LOADOUT (${valResult.totalBuy.toLocaleString('en-US')} NEEDED)`
+                        : 'NEXT ROUND FLOOR IF LOST'}
                     </div>
                     <div
                       className="mg-hero-value"
-                      style={{ color: valResult.nextRoundReady ? 'var(--teal-dark)' : 'var(--gold)' }}
+                      style={{
+                        color: !valResult.canAfford
+                          ? 'var(--coral)'
+                          : valResult.nextRoundReady
+                            ? 'var(--teal-dark)'
+                            : 'var(--gold)',
+                      }}
                     >
-                      {valResult.nextRoundMinOnLoss.toLocaleString('en-US')} Creds
+                      {!valResult.canAfford
+                        ? `Short ${(valResult.totalBuy - valCreds).toLocaleString('en-US')} Creds`
+                        : `${valResult.nextRoundMinOnLoss.toLocaleString('en-US')} Creds`}
                     </div>
                   </div>
-                  <div className="mono" style={{ fontWeight: 700, color: valResult.nextRoundReady ? 'var(--teal-dark)' : 'var(--coral)' }}>
-                    {valResult.nextRoundReady ? '3,900+ Full Buy Locked' : 'Short for Rifle + Heavy Next'}
+                  <div
+                    className="mono"
+                    style={{
+                      fontWeight: 700,
+                      color: !valResult.canAfford
+                        ? 'var(--coral)'
+                        : valResult.nextRoundReady
+                          ? 'var(--teal-dark)'
+                          : 'var(--coral)',
+                    }}
+                  >
+                    {!valResult.canAfford
+                      ? `Save floor: ${valResult.nextRoundMinOnLoss.toLocaleString('en-US')} next`
+                      : valResult.nextRoundReady
+                        ? '3,900+ Full Buy Locked'
+                        : 'Short for Rifle + Heavy Next'}
                   </div>
                 </div>
 
                 <div className="mg-field-grid two-col">
                   <div className="mg-field">
                     <label htmlFor="val-creds">Current Credits</label>
-                    <input
+                    <NumericField
                       id="val-creds"
-                      type="number"
                       min={0}
                       max={9000}
                       step={50}
+                      fallback={0}
                       className="deck-input no-icon mono"
                       value={valCreds}
-                      onChange={(e) => setValCreds(Math.max(0, Math.min(9000, Number(e.target.value) || 0)))}
+                      onCommit={setValCreds}
                     />
                   </div>
                   <div className="mg-field">
@@ -1646,7 +1878,7 @@ export default function MultiGameToolDeck({
                   </div>
                   <div className="mg-field">
                     <label htmlFor="val-util">Ability / Util Spend</label>
-                    <input id="val-util" type="number" min={0} max={1200} step={50} className="deck-input no-icon mono" value={valUtilCost} onChange={(e) => setValUtilCost(Math.max(0, Number(e.target.value) || 0))} />
+                    <NumericField id="val-util" min={0} max={1200} step={50} fallback={0} className="deck-input no-icon mono" value={valUtilCost} onCommit={setValUtilCost} />
                   </div>
                 </div>
 
@@ -1680,17 +1912,17 @@ export default function MultiGameToolDeck({
                 <div className="mg-field-grid">
                   <div className="mg-field">
                     <label htmlFor="val-cur-rr">Current RR (0–99)</label>
-                    <input id="val-cur-rr" type="number" min={0} max={99} className="deck-input no-icon mono" value={valCurRr} onChange={(e) => setValCurRr(Number(e.target.value) || 0)} />
+                    <NumericField id="val-cur-rr" min={0} max={99} fallback={0} className="deck-input no-icon mono" value={valCurRr} onCommit={setValCurRr} />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="val-wr">Win Rate %</label>
-                    <input id="val-wr" type="number" min={1} max={99} className="deck-input no-icon mono" value={valWr} onChange={(e) => setValWr(Number(e.target.value) || 50)} />
+                    <NumericField id="val-wr" min={1} max={99} fallback={50} className="deck-input no-icon mono" value={valWr} onCommit={setValWr} />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="val-wrr">Avg +RR Win / -RR Loss</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                      <input type="number" aria-label="Avg win RR" className="deck-input no-icon mono" value={valWinRr} onChange={(e) => setValWinRr(Number(e.target.value) || 18)} />
-                      <input type="number" aria-label="Avg loss RR" className="deck-input no-icon mono" value={valLossRr} onChange={(e) => setValLossRr(Number(e.target.value) || 16)} />
+                      <NumericField min={5} max={50} fallback={18} aria-label="Avg win RR" className="deck-input no-icon mono" value={valWinRr} onCommit={setValWinRr} />
+                      <NumericField min={5} max={50} fallback={16} aria-label="Avg loss RR" className="deck-input no-icon mono" value={valLossRr} onCommit={setValLossRr} />
                     </div>
                   </div>
                 </div>
@@ -1747,15 +1979,15 @@ export default function MultiGameToolDeck({
                   </div>
                   <div className="mg-field">
                     <label htmlFor="apx-lvl">Level Within Tier (1–500)</label>
-                    <input id="apx-lvl" type="number" min={1} max={500} className="deck-input no-icon mono" value={apexLevel} onChange={(e) => setApexLevel(Math.max(1, Math.min(500, Number(e.target.value) || 1)))} />
+                    <NumericField id="apx-lvl" min={1} max={500} fallback={1} className="deck-input no-icon mono" value={apexLevel} onCommit={setApexLevel} />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="apx-bp">Battle Pass + Quest Packs</label>
-                    <input id="apx-bp" type="number" min={0} max={300} className="deck-input no-icon mono" value={apexBpPacks} onChange={(e) => setApexBpPacks(Math.max(0, Number(e.target.value) || 0))} />
+                    <NumericField id="apx-bp" min={0} max={300} fallback={0} className="deck-input no-icon mono" value={apexBpPacks} onCommit={setApexBpPacks} />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="apx-buy">Purchased Packs</label>
-                    <input id="apx-buy" type="number" min={0} max={500} className="deck-input no-icon mono" value={apexPurchasedPacks} onChange={(e) => setApexPurchasedPacks(Math.max(0, Number(e.target.value) || 0))} />
+                    <NumericField id="apx-buy" min={0} max={500} fallback={0} className="deck-input no-icon mono" value={apexPurchasedPacks} onCommit={setApexPurchasedPacks} />
                   </div>
                 </div>
               </div>
@@ -1774,7 +2006,7 @@ export default function MultiGameToolDeck({
                 <div className="mg-field-grid">
                   <div className="mg-field">
                     <label htmlFor="apx-rp">Current Ranked RP</label>
-                    <input id="apx-rp" type="number" min={0} step={200} className="deck-input no-icon mono" value={apexCurRp} onChange={(e) => setApexCurRp(Number(e.target.value) || 0)} />
+                    <NumericField id="apx-rp" min={0} max={40000} step={200} fallback={0} className="deck-input no-icon mono" value={apexCurRp} onCommit={setApexCurRp} />
                   </div>
                   <div className="mg-field">
                     <label htmlFor="apx-tier">Target Rank</label>
@@ -1786,7 +2018,7 @@ export default function MultiGameToolDeck({
                   </div>
                   <div className="mg-field">
                     <label htmlFor="apx-avg">Avg Net RP / Match</label>
-                    <input id="apx-avg" type="number" min={-100} max={350} step={5} className="deck-input no-icon mono" value={apexAvgRp} onChange={(e) => setApexAvgRp(Number(e.target.value) || 0)} />
+                    <NumericField id="apx-avg" min={-100} max={400} step={5} fallback={0} className="deck-input no-icon mono" value={apexAvgRp} onCommit={setApexAvgRp} />
                   </div>
                 </div>
               </div>
@@ -1830,10 +2062,20 @@ export default function MultiGameToolDeck({
               </div>
 
               <div className="filter-row">
-                <button type="button" className={`filter-pill ${cayoHardMode ? 'active' : ''}`} onClick={() => setCayoHardMode((v) => !v)}>
+                <button
+                  type="button"
+                  aria-pressed={cayoHardMode}
+                  className={`filter-pill ${cayoHardMode ? 'active' : ''}`}
+                  onClick={() => setCayoHardMode((v) => !v)}
+                >
                   Hard Mode (+10% Primary)
                 </button>
-                <button type="button" className={`filter-pill ${cayoEliteBonus ? 'active' : ''}`} onClick={() => setCayoEliteBonus((v) => !v)}>
+                <button
+                  type="button"
+                  aria-pressed={cayoEliteBonus}
+                  className={`filter-pill ${cayoEliteBonus ? 'active' : ''}`}
+                  onClick={() => setCayoEliteBonus((v) => !v)}
+                >
                   Elite Challenge (+${(cayoHardMode ? 100000 : 50000).toLocaleString('en-US')})
                 </button>
               </div>
@@ -1943,16 +2185,17 @@ export default function MultiGameToolDeck({
                       heroValue: currentShareSpec.heroValue,
                       rows: currentShareSpec.rows,
                     }),
-                    'discord-spec'
+                    'discord-spec',
+                    currentShareUrl
                   )
                 }
               >
-                {copiedKey === 'discord-spec' ? <Check size={14} /> : <Copy size={14} />}
+                {copiedKey === 'discord-spec' ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
                 <span>
                   {copiedKey === 'discord-spec'
                     ? 'Copied'
                     : copiedKey === 'blocked:discord-spec'
-                      ? 'Copy Blocked'
+                      ? 'Copy Below'
                       : 'Copy Discord'}
                 </span>
               </button>
@@ -1965,31 +2208,62 @@ export default function MultiGameToolDeck({
                   downloadStudioSpecPng(currentShareSpec);
                 }}
               >
-                <Share2 size={14} />
+                <Share2 size={14} aria-hidden="true" />
                 <span>Save PNG</span>
               </button>
               <button
                 type="button"
                 className="subtle-pill-btn share-link-wide-btn"
                 data-share-url={currentShareUrl}
-                onClick={() => copyText(currentShareUrl, 'share-url')}
+                onClick={() => copyText(currentShareUrl, 'share-url', currentShareUrl)}
               >
-                {copiedKey === 'share-url' ? <Check size={14} /> : <Link2 size={14} />}
+                {copiedKey === 'share-url' ? <Check size={14} aria-hidden="true" /> : <Link2 size={14} aria-hidden="true" />}
                 <span>
                   {copiedKey === 'share-url'
                     ? 'Share Link Copied'
-                    : copiedKey === 'blocked:share-url'
-                      ? 'Copy Blocked — Use Address Bar'
+                    : shareFallbackUrl
+                      ? 'Copy Below'
                       : 'Copy Shareable Link'}
                 </span>
               </button>
+            </div>
+
+            {shareFallbackUrl && (
+              <div className="share-fallback-box">
+                <label className="share-fallback-label" htmlFor="mg-share-fallback-input">
+                  Clipboard access blocked — copy your preset URL:
+                </label>
+                <input
+                  id="mg-share-fallback-input"
+                  type="text"
+                  readOnly
+                  className="deck-input mono"
+                  value={shareFallbackUrl}
+                  onFocus={(e) => e.target.select()}
+                  onClick={(e) => e.target.select()}
+                />
+              </div>
+            )}
+
+            <div role="status" aria-live="polite">
+              {copiedKey && (
+                <div className={`inline-status-note mono ${String(copiedKey).startsWith('blocked:') ? 'err' : 'ok'}`}>
+                  {copiedKey === 'share-url'
+                    ? 'Shareable preset URL copied.'
+                    : copiedKey === 'discord-spec'
+                      ? 'Discord summary copied.'
+                      : String(copiedKey).startsWith('blocked:')
+                        ? 'Clipboard blocked — use the URL box above or Save PNG.'
+                        : 'Pinned value copied.'}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mg-pin-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 700, fontSize: '0.9rem' }}>
-                <Compass size={15} color="var(--ocean)" />
+                <Compass size={15} color="var(--ocean)" aria-hidden="true" />
                 <span>Saved {game.shortTitle} Pins ({gamePins.length}{isPro ? '' : ' / 5 Free'})</span>
               </div>
               {!isPro && (
@@ -1999,11 +2273,22 @@ export default function MultiGameToolDeck({
               )}
             </div>
 
-            {pinNotice && (
-              <div className="mono" style={{ fontSize: '0.76rem', color: 'var(--teal-dark)', marginBottom: '8px' }}>
-                {pinNotice}
-              </div>
-            )}
+            <div role="status" aria-live="polite">
+              {pinLimitAlert && !isPro ? (
+                <div className="pin-limit-alert">
+                  <span>{pinNotice || 'Free tier saves up to 5 pins per game.'}</span>
+                  <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
+                    Unlock Pass
+                  </button>
+                </div>
+              ) : (
+                pinNotice && (
+                  <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
+                    {pinNotice}
+                  </div>
+                )
+              )}
+            </div>
 
             {gamePins.length === 0 ? (
               <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>

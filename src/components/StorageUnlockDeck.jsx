@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   HardDrive,
   Download,
@@ -20,29 +20,21 @@ import {
 } from '../utils/canvasCards.js';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import {
+  formatDurationMinutes,
+  formatCountdownMs,
+  buildStorageSharePath,
+  buildStorageShareUrl,
+} from '../utils/shareUrlHelpers.js';
 
-export function formatDurationMinutes(totalMinutes) {
-  const mins = Math.max(0, Math.round(totalMinutes));
-  const hours = Math.floor(mins / 60);
-  const rem = mins % 60;
-  if (hours === 0) return `${rem}m`;
-  return `${hours}h ${rem}m`;
-}
-
-export function formatCountdownMs(diffMs) {
-  if (diffMs <= 0) return 'Live Now (NZ Unlocked)';
-  const totalSec = Math.floor(diffMs / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const mins = Math.floor((totalSec % 3600) / 60);
-  return `${days}d ${hours}h ${mins}m`;
-}
+export { formatDurationMinutes, formatCountdownMs };
 
 export default function StorageUnlockDeck({
   gamePack,
   runtimeConfig,
   soundEnabled,
   nowMs,
+  isEmbed = false,
   onOpenProModal,
   initialPreset = null,
   presetKey = '',
@@ -57,18 +49,34 @@ export default function StorageUnlockDeck({
   const [includeDayOnePatch, setIncludeDayOnePatch] = useState(
     () => Boolean(initialPreset?.includePatch)
   );
-  const [customOffsetGb, setCustomOffsetGb] = useState(0);
+  const [customOffsetGb, setCustomOffsetGb] = useState(
+    () => initialPreset?.customOffsetGb ?? 0
+  );
   const [mbps, setMbps] = useState(() => initialPreset?.mbps ?? 120);
-  const [sacrificedIds, setSacrificedIds] = useState([]);
+  const [sacrificedIds, setSacrificedIds] = useState(
+    () => (Array.isArray(initialPreset?.sacrificedIds) ? initialPreset.sacrificedIds : [])
+  );
   const [actionToast, setActionToast] = useState('');
+  const [shareFallbackUrl, setShareFallbackUrl] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const toastTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!initialPreset) return;
     if (initialPreset.consoleId) setSelectedConsoleId(initialPreset.consoleId);
     if (initialPreset.freeGb !== undefined) setAlreadyFreeGb(initialPreset.freeGb);
     if (initialPreset.includePatch !== undefined) setIncludeDayOnePatch(Boolean(initialPreset.includePatch));
+    if (initialPreset.customOffsetGb !== undefined) setCustomOffsetGb(initialPreset.customOffsetGb);
     if (initialPreset.mbps !== undefined) setMbps(initialPreset.mbps);
+    if (Array.isArray(initialPreset.sacrificedIds)) setSacrificedIds(initialPreset.sacrificedIds);
+    setShareFallbackUrl('');
   }, [presetKey]);
 
   const selectedConsole = useMemo(
@@ -129,8 +137,23 @@ export default function StorageUnlockDeck({
 
   const flashToast = (msg) => {
     setActionToast(msg);
-    setTimeout(() => setActionToast(''), 2800);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setActionToast(''), 2800);
   };
+
+  const shareSpecState = {
+    consoleId: selectedConsoleId,
+    freeGb: clampedFreeGb,
+    includePatch: includeDayOnePatch,
+    mbps,
+    customOffsetGb,
+    sacrificedIds,
+  };
+  const sharePath = buildStorageSharePath(shareSpecState);
+  const shareFullUrl = buildStorageShareUrl(
+    shareSpecState,
+    typeof window !== 'undefined' ? window.location.origin : 'https://playunpause.com'
+  );
 
   const handleSelectConsole = (consoleObj) => {
     playSwitchTick(soundEnabled, 660);
@@ -165,6 +188,11 @@ export default function StorageUnlockDeck({
     playSwitchTick(soundEnabled, 880);
     triggerHaptic(12);
     const canvas = buildSpecCanvas();
+    if (!canvas) {
+      setIsExporting(false);
+      flashToast('Receipt export unavailable in this browser.');
+      return;
+    }
     const res = await shareOrDownloadCanvas(
       canvas,
       `unpause-preload-${selectedConsole.id}.png`,
@@ -179,6 +207,11 @@ export default function StorageUnlockDeck({
     playSwitchTick(soundEnabled, 920);
     triggerHaptic(12);
     const canvas = buildSpecCanvas();
+    if (!canvas) {
+      setIsExporting(false);
+      flashToast('Receipt export unavailable in this browser.');
+      return;
+    }
     const ok = await copyCanvasToClipboard(canvas);
     setIsExporting(false);
     flashToast(ok ? 'PNG copied to clipboard.' : 'Clipboard PNG unsupported here — use Save Spec PNG.');
@@ -199,15 +232,35 @@ export default function StorageUnlockDeck({
       `• Required Install: ${installTargetGb} GB · Status: **${statusLine}**`,
       `• Existing Free: ${clampedFreeGb} GB · Uninstalled: ${clearedList} · Total Free: ${totalClearedGb} GB`,
       `• ETA @ ${mbps} Mbps: ${downloadTimeText} · Rollout: ${selectedConsole.nzStatusShort}`,
-      `https://playunpause.com/gta-6/storage`,
+      shareFullUrl,
     ].join('\n');
     copyTextReliably(summary).then((ok) => {
-      flashToast(ok ? 'Discord summary copied.' : 'Copy blocked — copy from browser bar.');
+      if (ok) {
+        setShareFallbackUrl('');
+        flashToast('Discord summary copied.');
+      } else {
+        setShareFallbackUrl(shareFullUrl);
+        flashToast('Clipboard blocked — copy the preset URL below.');
+      }
     });
   };
 
   return (
     <section className="deck-panel" aria-label="Console SSD Preload & Launch Unlock Calculator">
+      {isEmbed && (
+        <div className="studio-hero-band">
+          <div>
+            <div className="panel-eyebrow">
+              <HardDrive size={13} aria-hidden="true" />
+              <span>CONSOLES &amp; LAUNCH SPEC · FREE STORAGE FIT PLANNER</span>
+            </div>
+            <h1 className="panel-title">GTA VI Storage &amp; Preload Unlock Planner</h1>
+            <p className="panel-subtitle">
+              Check PS5 &amp; Xbox SSD headroom, uninstall savings, and download ETA in seconds.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="deck-body-pad">
         <div
           className={fits ? 'mobile-live-verdict ok' : 'mobile-live-verdict short'}
@@ -237,6 +290,7 @@ export default function StorageUnlockDeck({
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"
+                  aria-pressed={includeDayOnePatch}
                   className={`filter-pill ${includeDayOnePatch ? 'active' : ''}`}
                   onClick={() => {
                     playSwitchTick(soundEnabled, 700);
@@ -596,21 +650,25 @@ export default function StorageUnlockDeck({
               <button
                 type="button"
                 className="stage-dark-btn"
-                data-share-url={`/gta-6/storage?c=${encodeURIComponent(selectedConsoleId)}&free=${clampedFreeGb}&patch=${includeDayOnePatch ? 1 : 0}&mbps=${mbps}`}
+                data-share-url={sharePath}
                 onClick={async () => {
-                  const shareUrl = `${window.location.origin}/gta-6/storage?c=${encodeURIComponent(selectedConsoleId)}&free=${clampedFreeGb}&patch=${includeDayOnePatch ? 1 : 0}&mbps=${mbps}`;
                   playSwitchTick(soundEnabled, 820);
-                  const ok = await copyTextReliably(shareUrl);
-                  setActionToast(ok ? 'Shareable link copied to clipboard.' : 'Clipboard blocked — copy URL from address bar.');
-                  setTimeout(() => setActionToast(''), 2200);
+                  const ok = await copyTextReliably(shareFullUrl);
+                  if (ok) {
+                    setShareFallbackUrl('');
+                    flashToast('Shareable link copied to clipboard.');
+                  } else {
+                    setShareFallbackUrl(shareFullUrl);
+                    flashToast('Clipboard blocked — copy the link below.');
+                  }
                 }}
               >
-                {actionToast.includes('Shareable') ? <Check size={15} /> : <Link2 size={15} />}
+                {actionToast.includes('Shareable') ? <Check size={15} aria-hidden="true" /> : <Link2 size={15} aria-hidden="true" />}
                 <span>
                   {actionToast.includes('Shareable')
                     ? 'Copied Link'
-                    : actionToast.includes('Clipboard blocked')
-                      ? 'Copy Blocked'
+                    : shareFallbackUrl
+                      ? 'Copy Below'
                       : 'Share Link'}
                 </span>
               </button>
@@ -620,10 +678,27 @@ export default function StorageUnlockDeck({
                 onClick={handleSaveCard}
                 disabled={isExporting}
               >
-                <Share2 size={15} />
+                <Share2 size={15} aria-hidden="true" />
                 <span>{isExporting ? 'Rendering…' : 'Save Spec PNG'}</span>
               </button>
             </div>
+
+            {shareFallbackUrl && (
+              <div className="share-fallback-box">
+                <label className="share-fallback-label" htmlFor="storage-share-fallback-input">
+                  Clipboard access blocked — copy your preset URL:
+                </label>
+                <input
+                  id="storage-share-fallback-input"
+                  type="text"
+                  readOnly
+                  className="deck-input mono"
+                  value={shareFallbackUrl}
+                  onFocus={(e) => e.target.select()}
+                  onClick={(e) => e.target.select()}
+                />
+              </div>
+            )}
 
             {onOpenProModal && (
               <div className="sync-quiet-note">
@@ -638,21 +713,13 @@ export default function StorageUnlockDeck({
               </div>
             )}
 
-            {actionToast && (
-              <div
-                className="mono"
-                style={{
-                  marginTop: '8px',
-                  fontSize: '0.79rem',
-                  fontWeight: 600,
-                  color: 'var(--teal-dark)',
-                  textAlign: 'center',
-                }}
-                role="status"
-              >
-                {actionToast}
-              </div>
-            )}
+            <div role="status" aria-live="polite">
+              {actionToast && (
+                <div className="inline-status-note ok mono" style={{ textAlign: 'center' }}>
+                  {actionToast}
+                </div>
+              )}
+            </div>
 
             <div className="nz-compact-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', fontWeight: 700, fontSize: '0.84rem' }}>

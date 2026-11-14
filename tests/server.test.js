@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createApp, sanitizeSyncState } from '../server/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { computeHeistSplit, normalizePercentages } from '../server/splitMath.js';
 import {
   isSafePublicHttpsUrl,
@@ -589,6 +596,113 @@ test('Express mirror enforces security headers, webhook replay guard, SSRF block
     assert.ok(mcHtml.includes('NOT AN OFFICIAL MINECRAFT PRODUCT'));
     assert.ok(mcHtml.includes('BreadcrumbList'));
     assert.ok(mcHtml.includes('FAQPage'));
+  } finally {
+    server.close();
+    db.close();
+  }
+});
+
+test('Express parity: 1-hop www redirects, non-poisoning static 404s, explicit cache headers, HEAD API, and JSON error handling', async () => {
+  const { app, db } = createApp({
+    dbPath: ':memory:',
+    env: { NODE_ENV: 'test', ALLOW_DEMO_UNLOCK: 'false' },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  const { port } = server.address();
+
+  const rawRequest = (method, reqPath, headers = {}, body = null) =>
+    new Promise((resolve, reject) => {
+      const req = http.request(
+        { host: '127.0.0.1', port, method, path: reqPath, headers },
+        (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () =>
+            resolve({
+              status: res.statusCode,
+              headers: res.headers,
+              body: Buffer.concat(chunks).toString('utf8'),
+            })
+          );
+        }
+      );
+      req.on('error', reject);
+      if (body !== null) req.write(body);
+      req.end();
+    });
+
+  try {
+    // 1. HEAD /api/config & JSON 400 errors (URIError on :code + malformed JSON)
+    const headCfg = await rawRequest('HEAD', '/api/config');
+    assert.equal(headCfg.status, 200);
+    assert.equal(headCfg.headers['cache-control'], 'no-store');
+    assert.equal(headCfg.headers['x-robots-tag'], 'noindex, nofollow');
+    assert.equal(headCfg.body, '');
+
+    const badPctSync = await rawRequest('GET', '/api/sync/%E0%A4%A');
+    assert.equal(badPctSync.status, 400);
+    assert.match(badPctSync.headers['content-type'], /^application\/json/i);
+    assert.equal(badPctSync.headers['cache-control'], 'no-store');
+    assert.equal(badPctSync.headers['x-robots-tag'], 'noindex, nofollow');
+    assert.deepEqual(JSON.parse(badPctSync.body), { error: 'Invalid sync code format' });
+
+    const badJson = await rawRequest(
+      'POST',
+      '/api/pass/activate',
+      { 'content-type': 'application/json' },
+      '{malformed-json'
+    );
+    assert.equal(badJson.status, 400);
+    assert.match(badJson.headers['content-type'], /^application\/json/i);
+    assert.equal(badJson.headers['cache-control'], 'no-store');
+    assert.equal(badJson.headers['x-robots-tag'], 'noindex, nofollow');
+    assert.deepEqual(JSON.parse(badJson.body), { error: 'Malformed JSON body' });
+
+    const distDir = path.join(__dirname, '..', 'dist');
+    if (fs.existsSync(distDir)) {
+      // 2. 1-hop www.playunpause.com redirects while preserving local relative Location
+      const wwwSlash = await rawRequest('GET', '/minecraft/', { host: 'www.playunpause.com' });
+      assert.equal(wwwSlash.status, 301);
+      assert.equal(wwwSlash.headers.location, 'https://playunpause.com/minecraft');
+
+      const wwwLegacy = await rawRequest('GET', '/?game=minecraft', { host: 'www.playunpause.com' });
+      assert.equal(wwwLegacy.status, 301);
+      assert.equal(wwwLegacy.headers.location, 'https://playunpause.com/minecraft');
+
+      const localLegacy = await rawRequest('GET', '/?game=cod-warzone');
+      assert.equal(localLegacy.status, 301);
+      assert.equal(localLegacy.headers.location, '/cod-warzone');
+
+      // 3. Static misses (including /assets/* via fallthrough: true) emit no-store + noindex + plain text
+      const missingAsset = await rawRequest('GET', '/assets/missing-chunk.js');
+      assert.equal(missingAsset.status, 404);
+      assert.match(missingAsset.headers['content-type'], /^text\/plain/i);
+      assert.equal(missingAsset.headers['cache-control'], 'no-store');
+      assert.equal(missingAsset.headers['x-robots-tag'], 'noindex, nofollow');
+      assert.equal(missingAsset.body, 'Not found');
+
+      const missingAssetHead = await rawRequest('HEAD', '/assets/missing-chunk.js');
+      assert.equal(missingAssetHead.status, 404);
+      assert.equal(missingAssetHead.headers['cache-control'], 'no-store');
+      assert.equal(missingAssetHead.headers['x-robots-tag'], 'noindex, nofollow');
+      assert.equal(missingAssetHead.body, '');
+
+      // 4. Explicit static cache headers for existing dist assets + /EMBED/minecraft 200 parity
+      if (fs.existsSync(path.join(distDir, 'og-cover.png'))) {
+        const ogCover = await rawRequest('GET', '/og-cover.png');
+        assert.equal(ogCover.status, 200);
+        assert.equal(ogCover.headers['cache-control'], 'public, max-age=86400');
+      }
+      if (fs.existsSync(path.join(distDir, 'manifest.webmanifest'))) {
+        const manifest = await rawRequest('GET', '/manifest.webmanifest');
+        assert.equal(manifest.status, 200);
+        assert.equal(manifest.headers['cache-control'], 'public, max-age=3600');
+      }
+      const upperEmbed = await rawRequest('GET', '/EMBED/minecraft');
+      assert.equal(upperEmbed.status, 200);
+      assert.equal(upperEmbed.headers['x-robots-tag'], 'noindex, follow');
+    }
   } finally {
     server.close();
     db.close();

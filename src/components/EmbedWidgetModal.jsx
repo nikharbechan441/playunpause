@@ -14,15 +14,22 @@ export default function EmbedWidgetModal({
   const [selectedEmbedPath, setSelectedEmbedPath] = useState(initialEmbedPath);
   const [embedHeight, setEmbedHeight] = useState(620);
   const [copiedMode, setCopiedMode] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState('');
   const cardRef = useRef(null);
+  const copyTimerRef = useRef(null);
 
   useModalFocusTrap(isOpen, cardRef, onClose);
+
+  useEffect(() => {
+    return () => clearTimeout(copyTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       const valid = EMBED_ROUTES.some((r) => r.path === initialEmbedPath);
       setSelectedEmbedPath(valid ? initialEmbedPath : EMBED_ROUTES[0]?.path || '/embed/gta-6/storage');
       setCopiedMode('');
+      setCopyFeedback('');
     }
   }, [isOpen, initialEmbedPath]);
 
@@ -50,10 +57,28 @@ export default function EmbedWidgetModal({
 
   const copySnippet = async (text, mode) => {
     playSwitchTick(soundEnabled, 820);
+    clearTimeout(copyTimerRef.current);
     const ok = await copyTextReliably(text);
-    setCopiedMode(ok ? mode : `blocked-${mode}`);
-    setTimeout(() => setCopiedMode(''), 2200);
+    const nextMode = ok ? mode : `blocked-${mode}`;
+    setCopiedMode(nextMode);
+    if (ok) {
+      setCopyFeedback(
+        mode === 'md'
+          ? 'Markdown attribution citation copied to clipboard.'
+          : 'HTML iframe embed snippet copied to clipboard.'
+      );
+      copyTimerRef.current = setTimeout(() => {
+        setCopiedMode('');
+        setCopyFeedback('');
+      }, 2400);
+    } else {
+      setCopyFeedback(
+        'Clipboard access was blocked. Select and copy the fallback text field below.'
+      );
+    }
   };
+
+  const blockedText = copiedMode === 'blocked-md' ? markdownSnippet : htmlSnippet;
 
   return (
     <div
@@ -71,7 +96,7 @@ export default function EmbedWidgetModal({
       >
         <div className="selector-modal-header">
           <div className="embed-title-row">
-            <div className="selector-icon-badge">
+            <div className="selector-icon-badge" aria-hidden="true">
               <Code2 size={18} />
             </div>
             <div>
@@ -89,7 +114,7 @@ export default function EmbedWidgetModal({
             aria-label="Close embed widget modal"
             onClick={onClose}
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 
@@ -116,12 +141,15 @@ export default function EmbedWidgetModal({
           </div>
 
           <div>
-            <span className="section-label">Frame Height</span>
-            <div className="embed-size-toggle" role="group" aria-label="Iframe height">
+            <span className="section-label" id="embed-height-label">
+              Frame Height
+            </span>
+            <div className="embed-size-toggle" role="group" aria-labelledby="embed-height-label">
               {[580, 620, 680].map((h) => (
                 <button
                   key={h}
                   type="button"
+                  aria-pressed={embedHeight === h}
                   className={`filter-pill ${embedHeight === h ? 'active' : ''}`}
                   onClick={() => {
                     playSwitchTick(soundEnabled, 700);
@@ -153,12 +181,12 @@ export default function EmbedWidgetModal({
             className="primary-coral-btn"
             onClick={() => copySnippet(htmlSnippet, 'html')}
           >
-            {copiedMode === 'html' ? <Check size={15} /> : <Copy size={15} />}
+            {copiedMode === 'html' ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
             <span>
               {copiedMode === 'html'
                 ? 'HTML Snippet Copied'
                 : copiedMode === 'blocked-html'
-                  ? 'Select Box & Press Ctrl+C'
+                  ? 'Select Box & Copy'
                   : 'Copy HTML Embed'}
             </span>
           </button>
@@ -167,12 +195,12 @@ export default function EmbedWidgetModal({
             className="secondary-key-btn"
             onClick={() => copySnippet(markdownSnippet, 'md')}
           >
-            {copiedMode === 'md' ? <Check size={15} /> : <Copy size={15} />}
+            {copiedMode === 'md' ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
             <span>
               {copiedMode === 'md'
                 ? 'Markdown Copied'
                 : copiedMode === 'blocked-md'
-                  ? 'Copy Blocked — Use Permalink'
+                  ? 'Copy Markdown Below'
                   : 'Copy Markdown Citation'}
             </span>
           </button>
@@ -183,9 +211,29 @@ export default function EmbedWidgetModal({
             className="subtle-pill-btn embed-preview-link"
           >
             <span>Preview Frame</span>
-            <ExternalLink size={13} />
+            <ExternalLink size={13} aria-hidden="true" />
           </a>
         </div>
+
+        <div role="status" aria-live="polite" className={copyFeedback ? 'inline-status-note ok' : 'sr-only'}>
+          {copyFeedback}
+        </div>
+
+        {copiedMode.startsWith('blocked-') && (
+          <div className="share-fallback-box">
+            <label htmlFor="embed-fallback-input" className="share-fallback-label">
+              Copy manually ({copiedMode === 'blocked-md' ? 'Markdown citation' : 'HTML embed'}):
+            </label>
+            <input
+              id="embed-fallback-input"
+              type="text"
+              readOnly
+              className="deck-input no-icon mono"
+              value={blockedText}
+              onFocus={(e) => e.target.select()}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

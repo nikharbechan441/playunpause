@@ -14,6 +14,13 @@ import {
   getSitemapRoutes,
   parseSafeStatefulQuery,
 } from '../src/data/seoRoutes.js';
+import {
+  buildStorageSharePath,
+  buildSafeCodesSharePath,
+  buildHeistMarketSharePath,
+  buildNightRunSharePath,
+  buildMultiGameSharePath,
+} from '../src/utils/shareUrlHelpers.js';
 import { buildIndexNowPayload } from '../tools/indexnow_ping.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -310,4 +317,55 @@ test('Generated PNG OG assets, sitemap.xml, robots.txt, llms*.txt, IndexNow, and
   assert.deepEqual(fuzzed.cuts, [40, 30, 15, 15]);
   assert.equal(fuzzed.query.includes('<'), false);
   assert.equal(fuzzed.query.includes('>'), false);
+
+  // Stateful Share URL round-trips across all 10 games & sub-tabs
+  const roundTrip = (sharePath, base = {}) => {
+    const [, qs = ''] = sharePath.split('?');
+    return parseSafeStatefulQuery(new URLSearchParams(qs), base);
+  };
+
+  const storageState = {
+    consoleId: 'ps5-pro',
+    freeGb: 420,
+    includePatch: true,
+    mbps: 350,
+    customOffsetGb: -15,
+    sacrificedIds: ['cod-hq', 'nba-2k'],
+  };
+  const parsedStorage = roundTrip(buildStorageSharePath(storageState, '/gta-6/storage/ps5-pro'));
+  assert.equal(parsedStorage.consoleId, 'ps5-pro');
+  assert.equal(parsedStorage.customOffsetGb, -15);
+  assert.deepEqual(parsedStorage.sacrificedIds, ['cod-hq', 'nba-2k']);
+
+  const parsedSafe = roundTrip(buildSafeCodesSharePath({ district: 'Port Gellhorn', safeId: 'pg-pawn-backroom', query: 'pawn' }));
+  assert.equal(parsedSafe.safeId, 'pg-pawn-backroom');
+  assert.equal(parsedSafe.district, 'Port Gellhorn');
+  assert.equal(parsedSafe.query, 'pawn');
+
+  const parsedHeist = roundTrip(buildHeistMarketSharePath({ subTab: 'market', gross: 3100000, fee: 10, cuts: [55, 45], seedCash: 4250000 }));
+  assert.equal(parsedHeist.subTab, 'market');
+  assert.deepEqual(parsedHeist.cuts, [55, 45]);
+  assert.equal(parsedHeist.seedCash, 4250000);
+
+  const parsedNight = roundTrip(buildNightRunSharePath({ mins: 90, waypointId: 'wp-vb' }));
+  assert.equal(parsedNight.mins, 90);
+  assert.equal(parsedNight.waypointId, 'wp-vb');
+
+  const gameChecks = [
+    ['cod-warzone', { weaponAId: 'raal-mg', weaponBId: 'c9-smg', codHp: 250, codHeadshots: 2, codOpenBolt: false, codUseCustom: true, codCustomDmg: 42, codCustomRpm: 720, camoClassCount: 15, camoMatchesPerGun: 8 }],
+    ['fortnite', { fnLevel: 120, fnTarget: 100, fnDays: 14, fnDailies: false, fnCreative: false, fnLego: true }],
+    ['minecraft', { mcDir: 'toOverworld', netherX: -20, netherY: 64, netherZ: 1023, portalBX: 140, portalBY: 72, portalBZ: 880, throw1X: 12, throw1Z: -34, throw1Deg: -45.5, throw2X: 220, throw2Z: 18, throw2Deg: 41.25 }],
+    ['ea-fc-27', { buyPrice: 95000, sellPrice: 112000, quantity: 3, sbcRatings: [88, 87, 86, 86, 85, 85, 84, 84, 84, 84, 83] }],
+    ['roblox', { robux: 120000, devexRate: 'us-direct', groupSplit: 50, desiredNet: 45000 }],
+    ['cs2', { cs2Side: 'T', cs2Cash: 2800, cs2Loss: 2, cs2Plant: true, csTeamCash: [4800, 2800, 1900, 5200, 3400] }],
+    ['valorant', { valCreds: 4200, valWeapon: 2900, valArmor: 1000, valUtil: 300, valLoss: 2, valRr: 78, valWr: 5, valWinRr: 28, valLossRr: 12 }],
+    ['apex-legends', { apexLevel: 180, apexPrestige: 2, apexBp: 260, apexBought: 40, apexTier: 'master', apexRp: 38000, apexAvgRp: -15 }],
+    ['gta-v', { cayoPrimary: 1900000, cayoSecondary: 400000, cayoPlayers: 3, cayoHostPct: 60, cayoHard: false, cayoElite: false }],
+  ];
+  for (const [gameId, state] of gameChecks) {
+    const parsed = roundTrip(buildMultiGameSharePath(gameId, state));
+    for (const [key, expected] of Object.entries(state)) {
+      assert.deepEqual(parsed[key], expected, `${gameId} share round-trip mismatch for ${key}`);
+    }
+  }
 });

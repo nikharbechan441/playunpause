@@ -26,14 +26,22 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 }
 
 export function computeStorageDiagnosis(consoleId, deletedGames, fitsDrive) {
-  const ids = new Set(deletedGames.map((g) => g.id));
+  const list = Array.isArray(deletedGames) ? deletedGames : [];
+  const ids = new Set(list.map((g) => g.id));
+  const freedGb = list.reduce((sum, g) => sum + (Number(g.sizeGb) || 0), 0);
   if (!fitsDrive) return 'STATUS: INSUFFICIENT HEADROOM — CLEAR MORE OR EXPAND';
-  if (deletedGames.length === 0) return 'STATUS: PASS READY — NO UNINSTALLS REQUIRED';
-  if (ids.has('cod-hq') && ids.has('nba-2k')) return 'STATUS: HEAVY CLEAR (+290 GB RECLAIMED)';
-  if (ids.has('cod-hq')) return 'STATUS: CALL OF DUTY HQ CLEARED (+148 GB)';
-  if (ids.has('media-gallery') && deletedGames.length === 1) return 'STATUS: CAPTURE CLIPS PURGED (+45 GB)';
+  if (list.length === 0) return 'STATUS: PASS READY — NO UNINSTALLS REQUIRED';
+  if (ids.has('cod-hq') && ids.has('nba-2k')) return `STATUS: HEAVY CLEAR (+${freedGb} GB RECLAIMED)`;
+  if (ids.has('cod-hq')) {
+    const codSize = list.find((g) => g.id === 'cod-hq')?.sizeGb ?? 148;
+    return `STATUS: CALL OF DUTY HQ CLEARED (+${codSize} GB)`;
+  }
+  if (ids.has('media-gallery') && list.length === 1) {
+    const clipsSize = list.find((g) => g.id === 'media-gallery')?.sizeGb ?? 45;
+    return `STATUS: CAPTURE CLIPS PURGED (+${clipsSize} GB)`;
+  }
   if (consoleId === 'xss-512') return 'STATUS: 364 GB SERIES S ESTIMATED FIT';
-  if (deletedGames.length >= 4) return `STATUS: FULL QUEUE CLEARED (${deletedGames.length} ITEMS)`;
+  if (list.length >= 4) return `STATUS: FULL QUEUE CLEARED (${list.length} ITEMS · +${freedGb} GB)`;
   return 'STATUS: PRELOAD ESTIMATE · SUBJECT TO LAUNCH PATCHES';
 }
 
@@ -53,20 +61,23 @@ export function renderStorageReceiptCanvas({
   consoleId,
   usableGb,
   installSizeGb,
-  deletedGames,
+  deletedGames = [],
   alreadyFreeGb,
   mbps,
   downloadTimeText,
   nzStatusLabel,
 }) {
+  if (typeof document === 'undefined') return null;
+  const rows = Array.isArray(deletedGames) ? deletedGames : [];
   const width = 900;
-  const visibleRows = Math.max(1, deletedGames.length);
-  const height = 760 + visibleRows * 48;
+  const visibleRows = Math.max(1, rows.length);
+  const height = 604 + visibleRows * 48;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
 
   // Obsidian studio backdrop
   ctx.fillStyle = '#0B0E14';
@@ -83,11 +94,11 @@ export function renderStorageReceiptCanvas({
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  const freedGb = deletedGames.reduce((sum, g) => sum + g.sizeGb, 0);
+  const freedGb = rows.reduce((sum, g) => sum + (Number(g.sizeGb) || 0), 0);
   const totalAvailable = Math.min(usableGb, alreadyFreeGb + freedGb);
   const fits = totalAvailable >= installSizeGb;
-  const accent = fits ? '#2CE5B5' : '#FF4D2E';
-  const diagnosis = computeStorageDiagnosis(consoleId, deletedGames, fits);
+  const accent = fits ? '#2CE5B5' : '#FF755C';
+  const diagnosis = computeStorageDiagnosis(consoleId, rows, fits);
 
   // Scoped 4px top telemetry hairline
   ctx.fillStyle = accent;
@@ -100,7 +111,7 @@ export function renderStorageReceiptCanvas({
   // Eyebrow header
   ctx.textAlign = 'left';
   ctx.font = '600 16px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#8F9BB0';
+  ctx.fillStyle = '#9CA8BC';
   ctx.fillText('UNPAUSE // GTA VI PRELOAD SPEC CARD', left, y);
   ctx.textAlign = 'right';
   ctx.fillStyle = accent;
@@ -130,10 +141,10 @@ export function renderStorageReceiptCanvas({
   const specCols = [
     { label: 'CLEARED / TARGET', val: `${totalAvailable} / ${installSizeGb} GB`, color: '#F2F5FA' },
     { label: `ETA @ ${mbps} MBPS`, val: String(downloadTimeText).toUpperCase(), color: '#38BDF8' },
-    { label: 'NZ UNLOCK (NOV 18)', val: String(nzStatusLabel).toUpperCase(), color: '#A1ACBF' },
+    { label: 'NZ UNLOCK (NOV 18)', val: String(nzStatusLabel).toUpperCase(), color: '#CBD5E1' },
   ];
   specCols.forEach((col, i) => {
-    const cx = left + 22 + colW * i;
+    const cx = left + 18 + colW * i;
     if (i > 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.08)';
       ctx.beginPath();
@@ -142,19 +153,19 @@ export function renderStorageReceiptCanvas({
       ctx.stroke();
     }
     ctx.textAlign = 'left';
-    ctx.font = '600 14px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#6C778D';
-    ctx.fillText(col.label, cx, y + 36);
-    ctx.font = '700 20px "JetBrains Mono", monospace';
+    ctx.font = '600 13px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText(fitCanvasText(ctx, col.label, colW - 32), cx, y + 36);
+    ctx.font = '700 18px "JetBrains Mono", monospace';
     ctx.fillStyle = col.color;
-    ctx.fillText(fitCanvasText(ctx, col.val, colW - 34), cx, y + 72);
+    ctx.fillText(fitCanvasText(ctx, col.val, colW - 32), cx, y + 72);
   });
 
   y += 142;
   ctx.textAlign = 'left';
   ctx.font = '600 15px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#6C778D';
-  ctx.fillText(`QUEUED UNINSTALLS (${deletedGames.length})`, left, y);
+  ctx.fillStyle = '#94A3B8';
+  ctx.fillText(`QUEUED UNINSTALLS (${rows.length})`, left, y);
   ctx.textAlign = 'right';
   ctx.fillText(`EXISTING FREE: ${alreadyFreeGb} GB`, right, y);
 
@@ -166,14 +177,14 @@ export function renderStorageReceiptCanvas({
   ctx.stroke();
 
   y += 40;
-  if (deletedGames.length === 0) {
+  if (rows.length === 0) {
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#A1ACBF';
+    ctx.fillStyle = '#CBD5E1';
     ctx.font = '600 20px "JetBrains Mono", monospace';
-    ctx.fillText('No uninstalls queued — checking existing free SSD space', left, y);
+    ctx.fillText(fitCanvasText(ctx, 'No uninstalls queued — checking existing free SSD space', right - left), left, y);
     y += 48;
   } else {
-    deletedGames.forEach((g) => {
+    rows.forEach((g) => {
       drawRoundedRect(ctx, left, y - 30, right - left, 40, 6);
       ctx.fillStyle = 'rgba(255,255,255,0.03)';
       ctx.fill();
@@ -192,7 +203,7 @@ export function renderStorageReceiptCanvas({
 
   y += 16;
   drawRoundedRect(ctx, left, y, right - left, 64, 8);
-  ctx.fillStyle = fits ? 'rgba(44, 229, 181, 0.10)' : 'rgba(255, 77, 46, 0.12)';
+  ctx.fillStyle = fits ? 'rgba(44, 229, 181, 0.10)' : 'rgba(255, 77, 46, 0.14)';
   ctx.fill();
   ctx.strokeStyle = accent;
   ctx.lineWidth = 1.5;
@@ -200,22 +211,19 @@ export function renderStorageReceiptCanvas({
 
   ctx.textAlign = 'center';
   ctx.fillStyle = accent;
-  ctx.font = '700 22px "Space Grotesk", sans-serif';
-  ctx.fillText(
-    fits
-      ? `DRIVE READY · +${totalAvailable - installSizeGb} GB HEADROOM POST-INSTALL`
-      : `CLEAR ${installSizeGb - totalAvailable} GB MORE (OR UPGRADE INTERNAL NVME)`,
-    width / 2,
-    y + 40
-  );
+  ctx.font = '700 21px "Space Grotesk", sans-serif';
+  const bannerText = fits
+    ? `DRIVE READY · +${totalAvailable - installSizeGb} GB HEADROOM POST-INSTALL`
+    : `CLEAR ${installSizeGb - totalAvailable} GB MORE (OR UPGRADE INTERNAL NVME)`;
+  ctx.fillText(fitCanvasText(ctx, bannerText, right - left - 36), width / 2, y + 40);
 
   y += 102;
-  ctx.fillStyle = '#8F9BB0';
+  ctx.fillStyle = '#9CA8BC';
   ctx.font = '600 16px "JetBrains Mono", monospace';
   ctx.fillText(fitCanvasText(ctx, diagnosis, right - left), width / 2, y);
 
   y += 32;
-  ctx.fillStyle = '#6C778D';
+  ctx.fillStyle = '#94A3B8';
   ctx.font = '500 15px "JetBrains Mono", monospace';
   ctx.fillText('NOV 19 GLOBAL · NOV 18 @ 11:00 UTC NZ · PLAYUNPAUSE.COM', width / 2, y);
 
@@ -228,14 +236,17 @@ export function renderSquadSplitCanvas({
   supportFeePct,
   supportFeeDollars,
   netPoolDollars,
-  crewRows,
+  crewRows = [],
 }) {
+  if (typeof document === 'undefined') return null;
+  const rows = Array.isArray(crewRows) ? crewRows : [];
   const width = 900;
-  const height = 670 + crewRows.length * 78;
+  const height = 436 + rows.length * 76;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
 
   ctx.fillStyle = '#0B0E14';
   ctx.fillRect(0, 0, width, height);
@@ -256,7 +267,7 @@ export function renderSquadSplitCanvas({
   let y = pad + 56;
 
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#8F9BB0';
+  ctx.fillStyle = '#9CA8BC';
   ctx.font = '600 16px "JetBrains Mono", monospace';
   ctx.fillText('UNPAUSE // SQUAD PAYOUT LEDGER', left, y);
 
@@ -279,23 +290,32 @@ export function renderSquadSplitCanvas({
   ctx.stroke();
 
   const fmt = (n) => `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
-
-  ctx.fillStyle = '#6C778D';
-  ctx.font = '600 14px "JetBrains Mono", monospace';
-  ctx.fillText('GROSS VAULT', left + 22, y + 32);
-  ctx.fillText(`NPC CREW FEE (${supportFeePct}%)`, left + 270, y + 32);
-  ctx.fillText('NET SQUAD POOL', left + 535, y + 32);
-
-  ctx.font = '700 23px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#F2F5FA';
-  ctx.fillText(fitCanvasText(ctx, fmt(grossDollars), 230), left + 22, y + 68);
-  ctx.fillStyle = '#F5B731';
-  ctx.fillText(fitCanvasText(ctx, `-${fmt(supportFeeDollars)}`, 245), left + 270, y + 68);
-  ctx.fillStyle = '#2CE5B5';
-  ctx.fillText(fitCanvasText(ctx, fmt(netPoolDollars), 235), left + 535, y + 68);
+  const colW = (right - left) / 3;
+  const summaryCols = [
+    { label: 'GROSS VAULT', value: fmt(grossDollars), color: '#F2F5FA' },
+    { label: `NPC CREW FEE (${supportFeePct}%)`, value: `-${fmt(supportFeeDollars)}`, color: '#F5B731' },
+    { label: 'NET SQUAD POOL', value: fmt(netPoolDollars), color: '#2CE5B5' },
+  ];
+  summaryCols.forEach((col, i) => {
+    const cx = left + 18 + colW * i;
+    if (i > 0) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath();
+      ctx.moveTo(left + colW * i, y + 18);
+      ctx.lineTo(left + colW * i, y + 76);
+      ctx.stroke();
+    }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '600 14px "JetBrains Mono", monospace';
+    ctx.fillText(fitCanvasText(ctx, col.label, colW - 36), cx, y + 32);
+    ctx.font = '700 22px "JetBrains Mono", monospace';
+    ctx.fillStyle = col.color;
+    ctx.fillText(fitCanvasText(ctx, col.value, colW - 36), cx, y + 68);
+  });
 
   y += 136;
-  crewRows.forEach((member, idx) => {
+  rows.forEach((member, idx) => {
     drawRoundedRect(ctx, left, y - 36, right - left, 60, 8);
     ctx.fillStyle = '#090B0E';
     ctx.fill();
@@ -316,20 +336,20 @@ export function renderSquadSplitCanvas({
     ctx.textAlign = 'right';
     ctx.fillStyle = '#2CE5B5';
     ctx.font = '700 21px "JetBrains Mono", monospace';
-    ctx.fillText(`${member.pct}%  →  ${fmt(member.payout)}`, right - 18, y + 2);
+    ctx.fillText(fitCanvasText(ctx, `${member.pct}%  →  ${fmt(member.payout)}`, 290), right - 18, y + 2);
 
     y += 76;
   });
 
   y += 14;
-  const greed = computeHostGreedLabel(crewRows);
+  const greed = computeHostGreedLabel(rows);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#F5B731';
   ctx.font = '700 18px "JetBrains Mono", monospace';
-  ctx.fillText(greed, width / 2, y);
+  ctx.fillText(fitCanvasText(ctx, greed, right - left), width / 2, y);
 
   y += 32;
-  ctx.fillStyle = '#6C778D';
+  ctx.fillStyle = '#94A3B8';
   ctx.font = '500 15px "JetBrains Mono", monospace';
   ctx.fillText('UNOFFICIAL PLAYER UTILITY · PLAYUNPAUSE.COM', width / 2, y);
 

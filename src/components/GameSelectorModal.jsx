@@ -76,12 +76,18 @@ export default function GameSelectorModal({
 
   if (!isOpen) return null;
 
+  const activeDescendantId = filteredGames[focusedIdx]
+    ? `game-option-${filteredGames[focusedIdx].id}`
+    : undefined;
+
   const handleKeyDown = (e) => {
     if (!filteredGames.length) return;
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    const isInputFocused = document.activeElement === inputRef.current;
+
+    if (e.key === 'ArrowDown' || (!isInputFocused && e.key === 'ArrowRight')) {
       e.preventDefault();
       setFocusedIdx((prev) => (prev + 1) % filteredGames.length);
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    } else if (e.key === 'ArrowUp' || (!isInputFocused && e.key === 'ArrowLeft')) {
       e.preventDefault();
       setFocusedIdx((prev) => (prev - 1 + filteredGames.length) % filteredGames.length);
     } else if (e.key === 'Enter') {
@@ -111,8 +117,8 @@ export default function GameSelectorModal({
         onKeyDown={handleKeyDown}
       >
         <div className="selector-modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="selector-icon-badge">
+          <div className="selector-title-wrap">
+            <div className="selector-icon-badge" aria-hidden="true">
               <Gamepad2 size={18} color="var(--game-accent)" />
             </div>
             <div>
@@ -120,7 +126,7 @@ export default function GameSelectorModal({
                 Switch Game Calculator Suite
               </h2>
               <p className="selector-modal-sub">
-                Top 10 global titles — arrow keys or type a game name, press Enter to launch
+                Top 10 global titles — up/down arrows or type a game name, press Enter to launch
               </p>
             </div>
           </div>
@@ -131,7 +137,7 @@ export default function GameSelectorModal({
             aria-label="Close game selector"
             onClick={onClose}
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 
@@ -139,21 +145,31 @@ export default function GameSelectorModal({
           <Search size={16} className="search-icon-pos" aria-hidden="true" />
           <input
             ref={inputRef}
+            id="game-selector-search"
             type="search"
-            className="deck-input"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="game-selector-listbox"
+            aria-expanded={filteredGames.length > 0}
+            aria-activedescendant={activeDescendantId}
             aria-label="Search supported games"
+            className="deck-input"
             placeholder="Filter games: GTA VI, CoD: MW4, Minecraft, EA FC 27, Valorant, CS2..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
+        <div className="selector-result-count" role="status" aria-live="polite">
+          {filteredGames.length} of {TOP_GAMES.length} suites available
+        </div>
+
         {filteredGames.length === 0 ? (
-          <div className="nz-compact-card" style={{ textAlign: 'center', padding: '24px 16px' }}>
+          <div className="nz-compact-card selector-empty-box" role="status">
             No games match &ldquo;{search}&rdquo;. Try &ldquo;GTA VI&rdquo;, &ldquo;MW4&rdquo;, &ldquo;EA FC 27&rdquo;, &ldquo;Minecraft&rdquo;, or &ldquo;Valorant&rdquo;.
           </div>
         ) : (
-          <div className="game-grid-selector" role="listbox" aria-label="Supported Games">
+          <div id="game-selector-listbox" className="game-grid-selector" role="listbox" aria-label="Supported Games">
             {filteredGames.map((game, idx) => {
               const isSelected = game.id === activeGameId;
               const isFocused = idx === focusedIdx;
@@ -161,6 +177,7 @@ export default function GameSelectorModal({
               return (
                 <button
                   key={game.id}
+                  id={`game-option-${game.id}`}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
@@ -175,7 +192,7 @@ export default function GameSelectorModal({
                 >
                   <div className="game-item-top">
                     <span className="game-item-genre">
-                      <IconComp size={13} color={game.accentColor} />
+                      <IconComp size={13} color={game.accentColor} aria-hidden="true" />
                       <span>{game.genre}</span>
                     </span>
                     <span className="district-pill">{game.audienceBadge}</span>
@@ -183,7 +200,7 @@ export default function GameSelectorModal({
                   <div className="game-item-title-row">
                     <span className="game-item-title">{game.shortTitle}</span>
                     {isSelected && (
-                      <span className="mono" style={{ fontSize: '0.77rem', color: 'var(--select-accent)', fontWeight: 700 }}>
+                      <span className="mono selector-active-tag">
                         ACTIVE
                       </span>
                     )}

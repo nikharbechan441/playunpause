@@ -8,8 +8,11 @@ import {
 import { resolveSeoRequest } from '../src/data/seoRoutes.js';
 import {
   applyHttpSecurityHeaders,
+  getStaticAssetCacheControl,
   isPublicCrossOriginAssetPath,
+  isStaticAssetPath,
   renderSeoHtmlDocument,
+  resolveWwwRedirectLocation,
 } from '../src/data/ssrHtml.js';
 
 const DECK_CODE_REGEX = /^UP-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8,12}$/;
@@ -306,11 +309,10 @@ async function readJsonBody(request, env, maxBytes = 65_536) {
   }
 }
 
-export default {
-  async fetch(request, env = {}) {
-    const url = new URL(request.url);
-    const { pathname } = url;
-    const method = request.method.toUpperCase();
+async function handleWorkerRequest(request, env = {}) {
+  const url = new URL(request.url);
+  const { pathname } = url;
+  const method = request.method.toUpperCase();
 
     // 1. Whop Webhook Endpoints (/api/webhooks/whop)
     if (pathname === '/api/webhooks/whop') {
@@ -651,7 +653,7 @@ export default {
     }
 
     // 2. Public Runtime Config & Active Sponsor Slot (/api/config)
-    if (pathname === '/api/config' && method === 'GET') {
+    if (pathname === '/api/config' && (method === 'GET' || method === 'HEAD')) {
       const limited = checkRateLimit(request, 120, 'config', env);
       if (limited) return limited;
 
@@ -962,7 +964,12 @@ export default {
 
     // 4. Read & Save Cloud Sync State (/api/sync/:code)
     if (pathname.startsWith('/api/sync/')) {
-      const code = decodeURIComponent(pathname.slice('/api/sync/'.length)).trim().toUpperCase();
+      let code = '';
+      try {
+        code = decodeURIComponent(pathname.slice('/api/sync/'.length)).trim().toUpperCase();
+      } catch {
+        return jsonResponse({ error: 'Invalid sync code format' }, 400, env);
+      }
       if (!DECK_CODE_REGEX.test(code)) {
         return jsonResponse({ error: 'Invalid sync code format' }, 400, env);
       }
@@ -972,7 +979,7 @@ export default {
       }
       await ensureSchema(env.DB);
 
-      if (method === 'GET') {
+      if (method === 'GET' || method === 'HEAD') {
         const limited = checkRateLimit(request, 60, 'sync_read', env);
         if (limited) return limited;
 
@@ -1161,7 +1168,7 @@ export default {
     }
 
     // Unknown /api/* route
-    if (pathname.startsWith('/api')) {
+    if (pathname === '/api' || pathname.startsWith('/api/')) {
       return jsonResponse({ error: 'API route not found' }, 404, env);
     }
 
@@ -1172,7 +1179,7 @@ export default {
 
     const host = url.hostname.toLowerCase();
     if (host === 'www.playunpause.com') {
-      const target = `https://playunpause.com${pathname}${url.search}`;
+      const target = resolveWwwRedirectLocation(pathname, url.searchParams, url.search);
       const redirHeaders = new Headers({
         Location: target,
         'Cache-Control': 'public, max-age=3600',
@@ -1185,33 +1192,16 @@ export default {
       return new Response('Static assets binding missing', { status: 503 });
     }
 
-    const isStaticFileRequest =
-      pathname.startsWith('/assets/') ||
-      pathname.startsWith('/fonts/') ||
-      pathname.startsWith('/og/') ||
-      (/\.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|eot|css|js|mjs|map|txt|xml|webmanifest|json)$/i.test(
-        pathname
-      ) &&
-        pathname !== '/index.html');
-
-    if (isStaticFileRequest) {
+    if (isStaticAssetPath(pathname)) {
       const assetResp = await env.ASSETS.fetch(request);
       if (assetResp.status !== 404) {
         const headers = new Headers(assetResp.headers);
         applySecurityHeaders(headers, env, {
           isPublicAsset: isPublicCrossOriginAssetPath(pathname),
         });
-        if (pathname.startsWith('/assets/') || pathname.startsWith('/fonts/')) {
-          headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-        } else if (pathname.startsWith('/og/')) {
-          headers.set('Cache-Control', 'public, max-age=86400');
-        } else if (
-          pathname === '/sitemap.xml' ||
-          pathname === '/robots.txt' ||
-          pathname === '/llms.txt' ||
-          pathname === '/llms-full.txt'
-        ) {
-          headers.set('Cache-Control', 'public, max-age=3600');
+        const cacheControl = getStaticAssetCacheControl(pathname);
+        if (cacheControl) {
+          headers.set('Cache-Control', cacheControl);
         }
         return new Response(method === 'HEAD' ? null : assetResp.body, {
           status: assetResp.status,
@@ -1220,10 +1210,14 @@ export default {
       }
       const missHeaders = new Headers({
         'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex, nofollow',
       });
       applySecurityHeaders(missHeaders, env);
-      return new Response('Not found', { status: 404, headers: missHeaders });
+      return new Response(method === 'HEAD' ? null : 'Not found', {
+        status: 404,
+        headers: missHeaders,
+      });
     }
 
     const seoRes = resolveSeoRequest(pathname, url.searchParams);
@@ -1260,5 +1254,19 @@ export default {
       status: seoRes.notFound ? 404 : 200,
       headers,
     });
+}
+
+export default {
+  async fetch(request, env = {}) {
+    const method = request.method.toUpperCase();
+    const resp = await handleWorkerRequest(request, env);
+    if (method === 'HEAD' && resp.body !== null) {
+      return new Response(null, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: resp.headers,
+      });
+    }
+    return resp;
   },
 };

@@ -1,8 +1,63 @@
 import {
   CANONICAL_ORIGIN,
   CORE_ROUTES,
+  INDEXNOW_KEY,
   getRelatedRoutesFor,
+  resolveSeoRequest,
 } from './seoRoutes.js';
+
+const INDEXNOW_KEY_PATH = `/${INDEXNOW_KEY}.txt`;
+
+export function isStaticAssetPath(pathname) {
+  const p = String(pathname || '');
+  return (
+    p.startsWith('/assets/') ||
+    p.startsWith('/fonts/') ||
+    p.startsWith('/og/') ||
+    (/\.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|eot|css|js|mjs|map|txt|xml|webmanifest|json)$/i.test(
+      p
+    ) &&
+      p !== '/index.html')
+  );
+}
+
+export function getStaticAssetCacheControl(pathname) {
+  const p = String(pathname || '');
+  if (p.startsWith('/assets/') || p.startsWith('/fonts/')) {
+    return 'public, max-age=31536000, immutable';
+  }
+  if (
+    p.startsWith('/og/') ||
+    p === '/og-cover.png' ||
+    p === '/og-image.png' ||
+    p === '/apple-touch-icon.png' ||
+    /^\/icon-[^/]+\.png$/i.test(p) ||
+    /^\/favicon\.[^/]+$/i.test(p)
+  ) {
+    return 'public, max-age=86400';
+  }
+  if (
+    p === INDEXNOW_KEY_PATH ||
+    p === '/manifest.webmanifest' ||
+    p === '/sitemap.xml' ||
+    p === '/robots.txt' ||
+    p === '/llms.txt' ||
+    p === '/llms-full.txt'
+  ) {
+    return 'public, max-age=3600';
+  }
+  return 'public, max-age=3600';
+}
+
+export function resolveWwwRedirectLocation(pathname, searchParams, search = '') {
+  if (!isStaticAssetPath(pathname)) {
+    const seoRes = resolveSeoRequest(pathname, searchParams);
+    if (seoRes.status === 301 && seoRes.redirectTo) {
+      return seoRes.redirectTo;
+    }
+  }
+  return `${CANONICAL_ORIGIN}${pathname}${search || ''}`;
+}
 
 export function escapeHtml(str) {
   return String(str || '')
@@ -233,6 +288,11 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
     html,
     /<meta\s+name="twitter:image"\s+content="[^"]*"\s*\/?>/,
     `<meta name="twitter:image" content="${escapeHtml(ogImageUrl)}" />`
+  );
+  html = upsertMetaTag(
+    html,
+    /<meta\s+name="twitter:image:alt"\s+content="[^"]*"\s*\/?>/,
+    `<meta name="twitter:image:alt" content="${escapeHtml(ogAlt)}" />`
   );
 
   if (isEmbed) {

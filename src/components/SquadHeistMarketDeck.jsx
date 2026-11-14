@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Users,
   TrendingUp,
@@ -19,16 +19,17 @@ import {
 } from '../utils/canvasCards.js';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import {
+  DEFAULT_HEIST_CREW,
+  normalizeHeistSubTab,
+  buildCrewFromCuts,
+  buildHeistMarketSharePath,
+  buildHeistMarketShareUrl,
+} from '../utils/shareUrlHelpers.js';
 
 const PLAYER_COLORS = ['#FF5964', '#2CE5B5', '#38BDF8', '#F59E0B'];
+const PLAYER_TEXT_COLORS = ['var(--coral)', 'var(--teal-dark)', 'var(--ocean)', 'var(--gold)'];
 const NPC_FEE_COLOR = '#64748B';
-
-const DEFAULT_CREW = [
-  { id: 'p1', name: 'Host / Lead', role: 'HOST', pct: 40, locked: false },
-  { id: 'p2', name: 'Co-Lead', role: 'CREW #2', pct: 30, locked: false },
-  { id: 'p3', name: 'Wheelman', role: 'DRIVER', pct: 15, locked: false },
-  { id: 'p4', name: 'Tech', role: 'HACKER', pct: 15, locked: false },
-];
 
 export function rebalanceCrewShares(crewList, changedId, requestedVal) {
   const lockedTotal = crewList
@@ -71,25 +72,6 @@ export function rebalanceCrewShares(crewList, changedId, requestedVal) {
   });
 }
 
-function buildCrewFromCuts(cutsArr) {
-  if (
-    !Array.isArray(cutsArr) ||
-    cutsArr.length < 2 ||
-    cutsArr.length > 4 ||
-    cutsArr.reduce((a, b) => a + Number(b || 0), 0) !== 100
-  ) {
-    return DEFAULT_CREW;
-  }
-  return DEFAULT_CREW.map((m, idx) => ({
-    ...m,
-    pct: idx < cutsArr.length ? Number(cutsArr[idx]) : 0,
-  }));
-}
-
-function normalizeSubTab(raw) {
-  return raw === 'market' || raw === 'stocks' ? 'market' : 'heist';
-}
-
 export default function SquadHeistMarketDeck({
   gamePack,
   soundEnabled,
@@ -100,26 +82,48 @@ export default function SquadHeistMarketDeck({
 }) {
   const presets = gamePack.heistPresets || [];
   const marketFlips = gamePack.marketFlips || [];
+  const defaultGross = presets[0]?.grossDollars ?? 2_450_000;
 
-  const [subTab, setSubTab] = useState(() => normalizeSubTab(initialPreset?.subTab));
+  const [subTab, setSubTab] = useState(() => normalizeHeistSubTab(initialPreset?.subTab));
   const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id || 'ocean-vault');
   const [grossDollars, setGrossDollars] = useState(
-    () => initialPreset?.gross ?? presets[0]?.grossDollars ?? 2_450_000
+    () => initialPreset?.gross ?? defaultGross
+  );
+  const [grossInput, setGrossInput] = useState(
+    () => String(initialPreset?.gross ?? defaultGross)
   );
   const [supportFeePct, setSupportFeePct] = useState(
     () => initialPreset?.fee ?? presets[0]?.supportFeePct ?? 12
   );
-  const [crew, setCrew] = useState(() => buildCrewFromCuts(initialPreset?.cuts));
-  const [seedCash, setSeedCash] = useState(1_600_000);
+  const [crew, setCrew] = useState(() => buildCrewFromCuts(initialPreset?.cuts, DEFAULT_HEIST_CREW));
+  const [seedCash, setSeedCash] = useState(() => initialPreset?.seedCash ?? 1_600_000);
+  const [seedInput, setSeedInput] = useState(() => String(initialPreset?.seedCash ?? 1_600_000));
   const [slipToast, setSlipToast] = useState('');
+  const [shareFallbackUrl, setShareFallbackUrl] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const toastTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!initialPreset) return;
-    if (initialPreset.subTab) setSubTab(normalizeSubTab(initialPreset.subTab));
-    if (initialPreset.gross !== undefined) setGrossDollars(initialPreset.gross);
+    if (initialPreset.subTab) setSubTab(normalizeHeistSubTab(initialPreset.subTab));
+    if (initialPreset.gross !== undefined) {
+      setGrossDollars(initialPreset.gross);
+      setGrossInput(String(initialPreset.gross));
+    }
     if (initialPreset.fee !== undefined) setSupportFeePct(initialPreset.fee);
-    if (initialPreset.cuts) setCrew(buildCrewFromCuts(initialPreset.cuts));
+    if (initialPreset.cuts) setCrew(buildCrewFromCuts(initialPreset.cuts, DEFAULT_HEIST_CREW));
+    if (initialPreset.seedCash !== undefined) {
+      setSeedCash(initialPreset.seedCash);
+      setSeedInput(String(initialPreset.seedCash));
+    }
+    setShareFallbackUrl('');
   }, [presetKey]);
 
   const selectedPreset = useMemo(
@@ -141,6 +145,7 @@ export default function SquadHeistMarketDeck({
       return {
         ...member,
         color: PLAYER_COLORS[idx % PLAYER_COLORS.length],
+        textColor: PLAYER_TEXT_COLORS[idx % PLAYER_TEXT_COLORS.length],
         payout,
         grossSharePct: Math.round((member.pct * (100 - supportFeePct)) / 100),
       };
@@ -169,6 +174,7 @@ export default function SquadHeistMarketDeck({
     playSwitchTick(soundEnabled, 660);
     setSelectedPresetId(preset.id);
     setGrossDollars(preset.grossDollars);
+    setGrossInput(String(preset.grossDollars));
     setSupportFeePct(preset.supportFeePct);
   };
 
@@ -223,7 +229,33 @@ export default function SquadHeistMarketDeck({
 
   const flashToast = (msg) => {
     setSlipToast(msg);
-    setTimeout(() => setSlipToast(''), 2600);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setSlipToast(''), 2600);
+  };
+
+  const shareSpecState = {
+    subTab,
+    gross: grossDollars,
+    fee: supportFeePct,
+    cuts: crew.map((m) => m.pct),
+    seedCash,
+  };
+  const sharePath = buildHeistMarketSharePath(shareSpecState);
+  const shareFullUrl = buildHeistMarketShareUrl(
+    shareSpecState,
+    typeof window !== 'undefined' ? window.location.origin : 'https://playunpause.com'
+  );
+
+  const handleCopyShareLink = async () => {
+    playSwitchTick(soundEnabled, 820);
+    const ok = await copyTextReliably(shareFullUrl);
+    if (ok) {
+      setShareFallbackUrl('');
+      flashToast('Share link copied to clipboard.');
+    } else {
+      setShareFallbackUrl(shareFullUrl);
+      flashToast('Clipboard blocked — copy the preset URL below.');
+    }
   };
 
   const buildSlipCanvas = () =>
@@ -240,8 +272,14 @@ export default function SquadHeistMarketDeck({
     setIsExporting(true);
     playSwitchTick(soundEnabled, 880);
     triggerHaptic(12);
+    const canvas = buildSlipCanvas();
+    if (!canvas) {
+      setIsExporting(false);
+      flashToast('Slip export unavailable in this browser.');
+      return;
+    }
     const res = await shareOrDownloadCanvas(
-      buildSlipCanvas(),
+      canvas,
       'unpause-squad-payout.png',
       'Squad Heist Payout Ledger'
     );
@@ -253,68 +291,116 @@ export default function SquadHeistMarketDeck({
     setIsExporting(true);
     playSwitchTick(soundEnabled, 920);
     triggerHaptic(12);
-    const ok = await copyCanvasToClipboard(buildSlipCanvas());
+    const canvas = buildSlipCanvas();
+    if (!canvas) {
+      setIsExporting(false);
+      flashToast('Slip export unavailable in this browser.');
+      return;
+    }
+    const ok = await copyCanvasToClipboard(canvas);
     setIsExporting(false);
-    flashToast(ok ? 'Payout image copied!' : 'Clipboard PNG unsupported — saved instead via Save PNG.');
+    flashToast(ok ? 'Payout image copied!' : 'Clipboard PNG unsupported — use Save Slip PNG.');
   };
+
+  const handleSubTabKeyDown = (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      const next =
+        e.key === 'Home'
+          ? 'heist'
+          : e.key === 'End'
+            ? 'market'
+            : subTab === 'heist'
+              ? 'market'
+              : 'heist';
+      playSwitchTick(soundEnabled, 660);
+      setSubTab(next);
+      const buttons = e.currentTarget.parentElement?.querySelectorAll('[role="tab"]');
+      const nextBtn = buttons?.[next === 'heist' ? 0 : 1];
+      nextBtn?.focus();
+    }
+  };
+
+  const subTabBarNode = (
+    <div className="subtab-bar" role="tablist" aria-label="Squad planner sub-modes">
+      <button
+        id="squad-tab-heist"
+        type="button"
+        role="tab"
+        tabIndex={subTab === 'heist' ? 0 : -1}
+        aria-selected={subTab === 'heist'}
+        aria-controls="squad-panel-heist"
+        className={`subtab-btn ${subTab === 'heist' ? 'active' : ''}`}
+        onKeyDown={handleSubTabKeyDown}
+        onClick={() => {
+          playSwitchTick(soundEnabled, 660);
+          setSubTab('heist');
+        }}
+      >
+        Heist Cut Splitter
+      </button>
+      <button
+        id="squad-tab-market"
+        type="button"
+        role="tab"
+        tabIndex={subTab === 'market' ? 0 : -1}
+        aria-selected={subTab === 'market'}
+        aria-controls="squad-panel-market"
+        className={`subtab-btn ${subTab === 'market' ? 'active' : ''}`}
+        onKeyDown={handleSubTabKeyDown}
+        onClick={() => {
+          playSwitchTick(soundEnabled, 660);
+          setSubTab('market');
+        }}
+      >
+        2-Lead Stock Flip
+      </button>
+    </div>
+  );
 
   return (
     <section className="deck-panel" aria-label="Squad Heist Cut & Two-Character Stock Planner">
-      <div className="studio-hero-band">
-        <div>
-          <div className="panel-eyebrow">
-            <Users size={13} />
-            <span>
-              {isPreLaunch
-                ? 'INTEGER-EXACT 100% LOCK SPLITTER · UI ESTIMATE / PREVIEW SAMPLES'
-                : 'INTEGER-EXACT 100% LOCK SPLITTER · NPC FEE DEDUCTION'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {isEmbed ? (
+      {isEmbed ? (
+        <div className="studio-hero-band">
+          <div>
+            <div className="panel-eyebrow">
+              <Users size={13} aria-hidden="true" />
+              <span>
+                {isPreLaunch
+                  ? 'INTEGER-EXACT 100% LOCK SPLITTER · UI ESTIMATE / PREVIEW SAMPLES'
+                  : 'INTEGER-EXACT 100% LOCK SPLITTER · NPC FEE DEDUCTION'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <h1 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h1>
-            ) : (
-              <h2 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h2>
-            )}
+              <span className="district-pill">Gameplay Math Only</span>
+            </div>
+            <p className="panel-subtitle">
+              Lock individual player cuts without rounding drift, settle lobby arguments cleanly with
+              a shareable Payout PNG, or plan post-heist dual-character stock rebounds.
+            </p>
+          </div>
+          {subTabBarNode}
+        </div>
+      ) : (
+        <div className="studio-compact-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Users size={15} color="var(--coral)" aria-hidden="true" />
+            <h2 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h2>
             <span className="district-pill">Gameplay Math Only</span>
           </div>
-          <p className="panel-subtitle">
-            Lock individual player cuts without rounding drift, settle lobby arguments cleanly with
-            a shareable Payout PNG, or plan post-heist dual-character stock rebounds.
-          </p>
+          {subTabBarNode}
         </div>
-
-        <div className="subtab-bar" role="tablist" aria-label="Squad planner sub-modes">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subTab === 'heist'}
-            className={`subtab-btn ${subTab === 'heist' ? 'active' : ''}`}
-            onClick={() => {
-              playSwitchTick(soundEnabled, 660);
-              setSubTab('heist');
-            }}
-          >
-            Heist Cut Splitter
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subTab === 'market'}
-            className={`subtab-btn ${subTab === 'market' ? 'active' : ''}`}
-            onClick={() => {
-              playSwitchTick(soundEnabled, 660);
-              setSubTab('market');
-            }}
-          >
-            2-Lead Stock Flip
-          </button>
-        </div>
-      </div>
+      )}
 
       <div className="deck-body-pad">
         {subTab === 'heist' ? (
-          <div className="squad-stage-grid">
+          <div
+            id="squad-panel-heist"
+            role="tabpanel"
+            aria-labelledby="squad-tab-heist"
+            className="squad-stage-grid"
+          >
             {/* LEFT CONTROLS */}
             <div>
               <div className="meter-labels" style={{ marginBottom: '8px' }}>
@@ -365,11 +451,25 @@ export default function SquadHeistMarketDeck({
                       id="gross-vault-input"
                       type="number"
                       min={10000}
-                      max={15000000}
+                      max={25000000}
                       step={50000}
                       className="deck-input no-icon mono"
-                      value={grossDollars}
-                      onChange={(e) => setGrossDollars(Math.max(0, Number(e.target.value) || 0))}
+                      value={grossInput}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setGrossInput(raw);
+                        if (raw.trim() !== '') {
+                          const parsed = Number(raw);
+                          if (Number.isFinite(parsed)) {
+                            setGrossDollars(Math.max(0, Math.min(25000000, Math.round(parsed))));
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        const clamped = Math.max(10000, Math.min(25000000, Math.round(Number(grossInput) || defaultGross)));
+                        setGrossDollars(clamped);
+                        setGrossInput(String(clamped));
+                      }}
                     />
                   </div>
                 </div>
@@ -381,16 +481,42 @@ export default function SquadHeistMarketDeck({
                     </label>
                     <strong className="mono">{supportFeePct}% (-${supportFeeDollars.toLocaleString('en-US')})</strong>
                   </div>
-                  <input
-                    id="npc-fee-slider"
-                    type="range"
-                    min={0}
-                    max={30}
-                    step={1}
-                    value={supportFeePct}
-                    style={{ width: '100%', '--pct': `${Math.round((supportFeePct / 30) * 100)}%` }}
-                    onChange={(e) => setSupportFeePct(Number(e.target.value))}
-                  />
+                  <div className="slider-stepper-row">
+                    <button
+                      type="button"
+                      className="calc-stepper-btn"
+                      aria-label="Decrease NPC cut by 1%"
+                      disabled={supportFeePct <= 0}
+                      onClick={() => {
+                        playSwitchTick(soundEnabled, 600);
+                        setSupportFeePct((v) => Math.max(0, v - 1));
+                      }}
+                    >
+                      −
+                    </button>
+                    <input
+                      id="npc-fee-slider"
+                      type="range"
+                      min={0}
+                      max={30}
+                      step={1}
+                      value={supportFeePct}
+                      style={{ '--pct': `${Math.round((supportFeePct / 30) * 100)}%` }}
+                      onChange={(e) => setSupportFeePct(Number(e.target.value))}
+                    />
+                    <button
+                      type="button"
+                      className="calc-stepper-btn"
+                      aria-label="Increase NPC cut by 1%"
+                      disabled={supportFeePct >= 30}
+                      onClick={() => {
+                        playSwitchTick(soundEnabled, 660);
+                        setSupportFeePct((v) => Math.min(30, v + 1));
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -422,7 +548,21 @@ export default function SquadHeistMarketDeck({
                       />
                     </div>
 
-                    <div className="crew-row-slider">
+                    <div className="slider-stepper-row">
+                      <button
+                        type="button"
+                        className="calc-stepper-btn"
+                        aria-label={`Decrease ${member.name} cut by 5%`}
+                        disabled={member.locked || member.pct <= 0}
+                        onClick={() => {
+                          playSwitchTick(soundEnabled, 600);
+                          setCrew((prev) =>
+                            rebalanceCrewShares(prev, member.id, Math.max(0, member.pct - 5))
+                          );
+                        }}
+                      >
+                        −
+                      </button>
                       <input
                         type="range"
                         aria-label={`${member.name} cut percentage`}
@@ -431,7 +571,7 @@ export default function SquadHeistMarketDeck({
                         step={5}
                         disabled={member.locked}
                         value={member.pct}
-                        style={{ flex: 1, '--pct': `${member.pct}%` }}
+                        style={{ '--pct': `${member.pct}%` }}
                         onChange={(e) => {
                           playSwitchTick(soundEnabled, 640);
                           setCrew((prev) =>
@@ -439,11 +579,25 @@ export default function SquadHeistMarketDeck({
                           );
                         }}
                       />
+                      <button
+                        type="button"
+                        className="calc-stepper-btn"
+                        aria-label={`Increase ${member.name} cut by 5%`}
+                        disabled={member.locked || member.pct >= 100}
+                        onClick={() => {
+                          playSwitchTick(soundEnabled, 680);
+                          setCrew((prev) =>
+                            rebalanceCrewShares(prev, member.id, Math.min(100, member.pct + 5))
+                          );
+                        }}
+                      >
+                        +
+                      </button>
                     </div>
 
                     <div className="crew-row-payout">
                       <div style={{ textAlign: 'right', minWidth: '88px' }}>
-                        <div className="mono" style={{ fontWeight: 700, fontSize: '0.94rem', color: member.color }}>
+                        <div className="mono" style={{ fontWeight: 700, fontSize: '0.94rem', color: member.textColor }}>
                           {member.pct}%
                         </div>
                         <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--ink-secondary)' }}>
@@ -548,7 +702,7 @@ export default function SquadHeistMarketDeck({
                       {m.name}{' '}
                       <span style={{ color: 'var(--ink-muted)', fontSize: '0.73rem' }}>({m.role})</span>
                     </div>
-                    <div className="mono" style={{ position: 'relative', fontWeight: 700, fontSize: '0.88rem', color: m.color }}>
+                    <div className="mono" style={{ position: 'relative', fontWeight: 700, fontSize: '0.88rem', color: m.textColor }}>
                       {m.pct}% · ${m.payout.toLocaleString('en-US')}
                     </div>
                   </div>
@@ -565,7 +719,7 @@ export default function SquadHeistMarketDeck({
                     onClick={handleSaveSlip}
                     disabled={isExporting}
                   >
-                    <Share2 size={15} />
+                    <Share2 size={15} aria-hidden="true" />
                     <span>{isExporting ? 'Rendering…' : 'Save Slip PNG'}</span>
                   </button>
                   <button
@@ -574,42 +728,58 @@ export default function SquadHeistMarketDeck({
                     onClick={handleCopySlip}
                     disabled={isExporting}
                   >
-                    {slipToast.includes('copied') ? <Check size={15} /> : <Copy size={15} />}
+                    {slipToast.includes('copied') ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
                     <span>Copy Slip</span>
                   </button>
                   <button
                     type="button"
                     className="stage-dark-btn"
-                    data-share-url={`/gta-6/heist-split?sub=${subTab}&gross=${grossDollars}&fee=${supportFeePct}&cuts=${crew.map((m) => m.pct).join(',')}`}
-                    onClick={async () => {
-                      const shareUrl = `${window.location.origin}/gta-6/heist-split?sub=${subTab}&gross=${grossDollars}&fee=${supportFeePct}&cuts=${crew.map((m) => m.pct).join(',')}`;
-                      playSwitchTick(soundEnabled, 820);
-                      const ok = await copyTextReliably(shareUrl);
-                      setSlipToast(ok ? 'Share link copied to clipboard.' : 'Clipboard blocked — copy URL from bar.');
-                      setTimeout(() => setSlipToast(''), 2000);
-                    }}
+                    data-share-url={sharePath}
+                    onClick={handleCopyShareLink}
                   >
-                    {slipToast.includes('Share link') ? <Check size={15} /> : <Link2 size={15} />}
+                    {slipToast.includes('Share link') ? <Check size={15} aria-hidden="true" /> : <Link2 size={15} aria-hidden="true" />}
                     <span>
                       {slipToast.includes('Share link')
                         ? 'Copied Link'
-                        : slipToast.includes('Clipboard blocked')
-                          ? 'Copy Blocked'
+                        : shareFallbackUrl
+                          ? 'Copy Below'
                           : 'Share Link'}
                     </span>
                   </button>
                 </div>
 
-                {slipToast && (
-                  <div className="mono" style={{ marginTop: '8px', fontSize: '0.76rem', color: 'var(--teal-dark)', textAlign: 'center' }}>
-                    {slipToast}
+                {shareFallbackUrl && (
+                  <div className="share-fallback-box">
+                    <label className="share-fallback-label" htmlFor="heist-share-fallback-input">
+                      Clipboard access blocked — copy your preset URL:
+                    </label>
+                    <input
+                      id="heist-share-fallback-input"
+                      type="text"
+                      readOnly
+                      className="deck-input mono"
+                      value={shareFallbackUrl}
+                      onFocus={(e) => e.target.select()}
+                      onClick={(e) => e.target.select()}
+                    />
                   </div>
                 )}
+
+                <div role="status" aria-live="polite">
+                  {slipToast && (
+                    <div
+                      className={`inline-status-note mono ${slipToast.includes('blocked') ? 'err' : 'ok'}`}
+                      style={{ textAlign: 'center' }}
+                    >
+                      {slipToast}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div>
+          <div id="squad-panel-market" role="tabpanel" aria-labelledby="squad-tab-market">
             <div className="meter-box" style={{ maxWidth: '520px' }}>
               <div className="meter-labels">
                 <label htmlFor="seed-cash-input" className="section-label">
@@ -622,14 +792,62 @@ export default function SquadHeistMarketDeck({
               <input
                 id="seed-cash-input"
                 type="number"
-                min={50000}
+                min={0}
                 max={50000000}
                 step={100000}
                 className="deck-input no-icon mono"
                 style={{ marginTop: '10px' }}
-                value={seedCash}
-                onChange={(e) => setSeedCash(Math.max(0, Number(e.target.value) || 0))}
+                value={seedInput}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setSeedInput(raw);
+                  if (raw.trim() !== '') {
+                    const parsed = Number(raw);
+                    if (Number.isFinite(parsed)) {
+                      setSeedCash(Math.max(0, Math.min(50000000, Math.round(parsed))));
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  const clamped = Math.max(0, Math.min(50000000, Math.round(Number(seedInput) || 0)));
+                  setSeedCash(clamped);
+                  setSeedInput(String(clamped));
+                }}
               />
+              <div className="stage-action-row" style={{ marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="stage-dark-btn"
+                  data-share-url={sharePath}
+                  onClick={handleCopyShareLink}
+                >
+                  {slipToast.includes('Share link') ? <Check size={15} aria-hidden="true" /> : <Link2 size={15} aria-hidden="true" />}
+                  <span>{slipToast.includes('Share link') ? 'Copied Link' : 'Share Market Plan'}</span>
+                </button>
+              </div>
+              {shareFallbackUrl && (
+                <div className="share-fallback-box">
+                  <label className="share-fallback-label" htmlFor="market-share-fallback-input">
+                    Clipboard access blocked — copy your preset URL:
+                  </label>
+                  <input
+                    id="market-share-fallback-input"
+                    type="text"
+                    readOnly
+                    className="deck-input mono"
+                    value={shareFallbackUrl}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
+                  />
+                </div>
+              )}
+              <div role="status" aria-live="polite">
+                {slipToast && (
+                  <div className={`inline-status-note mono ${slipToast.includes('blocked') ? 'err' : 'ok'}`}>
+                    {slipToast}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mg-stack-cards">

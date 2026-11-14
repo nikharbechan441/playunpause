@@ -76,7 +76,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 | 3 | $2,900 |
 | 4 | $3,400 |
 
-- Sample CT state at $3,200 with 1 loss: next-round worst-case bank if saving = $5,100 (ECO / SAVE).
+- Sample CT state at $3,200 with 1 loss: next-round worst-case bank if saving = $5,600 (ECO / SAVE).
 
 ## 7. Fortnite Level 200 Pace & Apex Free Pack Totals
 - Battle Pass math uses 80,000 XP per level. From level 44 to 200 with 28 days remaining requires 5.6 levels/day (445,715 XP/day).

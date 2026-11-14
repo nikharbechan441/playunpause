@@ -136,6 +136,10 @@ export function triangulateStronghold(x1Val, z1Val, deg1Val, x2Val, z2Val, deg2V
   }
 
   const t1 = ((x2 - x1) * dz2 - (z2 - z1) * dx2) / denom;
+  const t2 = ((x2 - x1) * dz1 - (z2 - z1) * dx1) / denom;
+  if (!(t1 > 0 && t2 > 0)) {
+    return { valid: false, reason: 'Rays diverge behind throw points — stand sideways and throw facing forward' };
+  }
   const ix = Math.round(x1 + t1 * dx1);
   const iz = Math.round(z1 + t1 * dz1);
   const distFromThrow2 = Math.round(Math.hypot(ix - x2, iz - z2));
@@ -166,9 +170,10 @@ export function calcCodTtk({ hp = 300, damage = 34, rpm = 820, headshots = 0, he
   const safeDmg = clampNum(parseSafeNum(damage, 34), 1, 500);
   const safeRpm = clampNum(parseSafeNum(rpm, 820), 60, 2000);
   const hsCount = clampNum(parseSafeNum(headshots, 0), 0, 20);
+  const safeHeadMult = clampNum(parseSafeNum(headMult, 1.32), 1, 10);
   const boltDelay = Math.max(0, parseSafeNum(openBoltMs, 0));
 
-  const headDmg = Math.round(safeDmg * headMult);
+  const headDmg = Math.round(safeDmg * safeHeadMult);
   let remainingHp = safeHp;
   let totalShots = 0;
 
@@ -212,7 +217,7 @@ export function calcCs2Economy({ cash = 3200, lossLevel = 1, side = 'CT', bombPl
   const coreBuyNeed = side === 'CT' ? 4300 : 3700; // Rifle + Armor (+Kit CT)
 
   const cashAfterCore = curCash - coreBuyNeed;
-  const cashIfSaveAll = Math.min(16000, curCash + currentBonus);
+  const cashIfSaveAll = Math.min(16000, curCash + nextBonusOnLoss);
   const maxSafeSpendForNextFullBuy = Math.max(0, curCash + nextBonusOnLoss - fullBuyNeed);
 
   let callout = 'ECO / SAVE';
@@ -259,10 +264,14 @@ export const VAL_ARMOR = [
 
 export function calcValorantEconomy({ credits = 3600, weaponCost = 2900, armorCost = 1000, utilCost = 600, lossStreak = 1 }) {
   const safeCreds = clampNum(parseSafeNum(credits, 3600), 0, 9000);
-  const totalBuy = Math.max(0, weaponCost) + Math.max(0, armorCost) + Math.max(0, utilCost);
+  const safeWeapon = Math.max(0, Math.round(parseSafeNum(weaponCost, 0)));
+  const safeArmor = Math.max(0, Math.round(parseSafeNum(armorCost, 0)));
+  const safeUtil = Math.max(0, Math.round(parseSafeNum(utilCost, 0)));
+  const safeLoss = clampNum(Math.round(parseSafeNum(lossStreak, 1)), 0, 2);
+  const totalBuy = safeWeapon + safeArmor + safeUtil;
   const canAfford = safeCreds >= totalBuy;
   const leftover = canAfford ? safeCreds - totalBuy : safeCreds;
-  const nextLossCredit = lossStreak <= 0 ? 1900 : lossStreak === 1 ? 2400 : 2900;
+  const nextLossCredit = safeLoss <= 0 ? 1900 : safeLoss === 1 ? 2400 : 2900;
   const nextRoundMinOnLoss = Math.min(9000, leftover + nextLossCredit);
   const nextRoundMinOnWin = Math.min(9000, leftover + 3000);
   const fullBuyNextTarget = 3900; // Vandal 2900 + Heavy 1000
@@ -342,6 +351,11 @@ export const ROBLOX_RATES = [
   { id: 'us-direct', label: 'US 18+ Direct Store ($0.0054 / R$)', usdPerRobux: 0.0054 },
 ];
 
+export function calcRobloxMinSalesFor30k(groupSplitPct = 100) {
+  const split = clampNum(parseSafeNum(groupSplitPct, 100), 1, 100) / 100;
+  return Math.ceil(30000 / (0.7 * split));
+}
+
 export function calcRobloxDevEx({ grossRobux = 50000, rateId = 'std-2025', groupSplitPct = 100, targetUsd = 100 }) {
   const gross = Math.max(0, Math.round(parseSafeNum(grossRobux, 0)));
   const split = clampNum(parseSafeNum(groupSplitPct, 100), 1, 100) / 100;
@@ -351,6 +365,7 @@ export function calcRobloxDevEx({ grossRobux = 50000, rateId = 'std-2025', group
   const creatorNetRobux = Math.round(afterMarketFee * split);
   const usdPayout = creatorNetRobux * rateObj.usdPerRobux;
   const eligible = creatorNetRobux >= 30000;
+  const minSalesFor30k = calcRobloxMinSalesFor30k(groupSplitPct);
   const robuxNeededForTargetUsd = Math.ceil(Math.max(0, parseSafeNum(targetUsd, 100)) / rateObj.usdPerRobux);
   const grossSalesNeededForTargetUsd = Math.ceil(robuxNeededForTargetUsd / (0.7 * split));
 
@@ -360,6 +375,7 @@ export function calcRobloxDevEx({ grossRobux = 50000, rateId = 'std-2025', group
     creatorNetRobux,
     usdPayout,
     eligible,
+    minSalesFor30k,
     shortfallForMin: Math.max(0, 30000 - creatorNetRobux),
     robuxNeededForTargetUsd,
     grossSalesNeededForTargetUsd,
@@ -409,9 +425,8 @@ export function getFreeApexLevelPacks(level = 1, prestige = 0) {
   const lvl = clampNum(Math.round(parseSafeNum(level, 1)), 1, 500);
   const pTier = clampNum(Math.round(parseSafeNum(prestige, 0)), 0, 3);
 
-  // Per 500-level tier: L2-20 = 19, L22-300 step 2 = 140, L305-500 step 5 = 40 -> 199 packs per tier (1-500)
-  // Prestige tiers give slightly higher cumulative cadence (~544 across all 4 tiers), using standard ~115/prestige tier + 199 base
-  const countTierPacks = (l) => {
+  // Base Tier 0 (1-500): L2-20 = 19, L22-300 step 2 = 140, L305-500 step 5 = 40 -> 199 packs
+  const countBaseTierPacks = (l) => {
     if (l <= 1) return 0;
     const band1 = Math.min(20, l) - 1;
     const band2 = l > 20 ? Math.floor((Math.min(300, l) - 20) / 2) : 0;
@@ -419,9 +434,23 @@ export function getFreeApexLevelPacks(level = 1, prestige = 0) {
     return band1 + band2 + band3;
   };
 
-  const completedTierPacks = pTier === 0 ? 0 : pTier * 115 + 84; // Accurate total scaling toward 544 at Prestige 3 L500
-  const currentTierPacks = countTierPacks(lvl);
-  return Math.min(544, completedTierPacks + currentTierPacks);
+  // Prestige Tiers 1-3 (500 levels each): 115 packs per tier (199 + 3*115 = 544 total)
+  // Monotonic cadence: L10..100 (+10 -> 10), L108..196 (+8 -> 22), L202..298 (+6 -> 39),
+  // L302..398 (+4 -> 64), L400..500 (+2 -> 115) with zero backward drops across Prestige transitions.
+  const countPrestigeTierPacks = (l) => {
+    if (l <= 1) return 0;
+    if (l <= 100) return Math.floor(l / 10);
+    if (l <= 200) return 10 + Math.floor((l - 100) / 8);
+    if (l <= 300) return 22 + Math.floor((l - 196) / 6);
+    if (l < 400) return 39 + Math.floor((l - 298) / 4);
+    return 64 + Math.floor((l - 398) / 2);
+  };
+
+  if (pTier === 0) {
+    return countBaseTierPacks(lvl);
+  }
+  const completedTierPacks = 199 + (pTier - 1) * 115;
+  return Math.min(544, completedTierPacks + countPrestigeTierPacks(lvl));
 }
 
 /**

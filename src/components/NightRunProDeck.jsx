@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Clock,
   ShieldAlert,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import { buildNightRunSharePath, buildNightRunShareUrl } from '../utils/shareUrlHelpers.js';
 
 const SESSION_DURATIONS = [
   { mins: 45, label: '45m Express (Free)', free: true },
@@ -36,15 +37,39 @@ export default function NightRunProDeck({
   presetKey = '',
 }) {
   const [sessionMins, setSessionMins] = useState(() => initialPreset?.mins ?? 45);
-  const [activeWaypointId, setActiveWaypointId] = useState(null);
-  const [copiedCode, setCopiedCode] = useState(false);
-  const [copiedRouteLink, setCopiedRouteLink] = useState(false);
+  const [activeWaypointId, setActiveWaypointId] = useState(() => initialPreset?.waypointId || null);
+  const [copiedCode, setCopiedCode] = useState('');
+  const [copiedRouteLink, setCopiedRouteLink] = useState('');
+  const [shareFallbackUrl, setShareFallbackUrl] = useState('');
+  const [liveStatus, setLiveStatus] = useState('');
+  const toastTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     if (initialPreset?.mins && [45, 90, 120].includes(initialPreset.mins)) {
       setSessionMins(initialPreset.mins);
     }
+    if (initialPreset?.waypointId !== undefined) {
+      setActiveWaypointId(initialPreset.waypointId || null);
+    }
+    setShareFallbackUrl('');
   }, [presetKey]);
+
+  const setTimedToast = (setter, value, announcement) => {
+    setter(value);
+    if (announcement) setLiveStatus(announcement);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setter('');
+      setLiveStatus('');
+    }, 2400);
+  };
 
   const waypoints = gamePack.routeWaypoints || [];
   const missables = gamePack.missablesShield || [];
@@ -74,76 +99,159 @@ export default function NightRunProDeck({
     if (!deckCode) return;
     playSwitchTick(soundEnabled, 880);
     const ok = await copyTextReliably(deckCode);
-    setCopiedCode(ok ? 'ok' : 'blocked');
-    setTimeout(() => setCopiedCode(''), 2000);
+    setTimedToast(
+      setCopiedCode,
+      ok ? 'ok' : 'blocked',
+      ok ? `Sync Pass code ${deckCode} copied.` : 'Clipboard blocked — copy Sync Pass code manually.'
+    );
+  };
+
+  const shareSpecState = {
+    mins: sessionMins,
+    waypointId: activeWaypointId || '',
+  };
+  const sharePath = buildNightRunSharePath(shareSpecState);
+  const shareFullUrl = buildNightRunShareUrl(
+    shareSpecState,
+    typeof window !== 'undefined' ? window.location.origin : 'https://playunpause.com'
+  );
+
+  const handleDurationKeyDown = (e, idx) => {
+    let nextIdx = null;
+    if (e.key === 'ArrowRight') nextIdx = (idx + 1) % SESSION_DURATIONS.length;
+    else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + SESSION_DURATIONS.length) % SESSION_DURATIONS.length;
+    else if (e.key === 'Home') nextIdx = 0;
+    else if (e.key === 'End') nextIdx = SESSION_DURATIONS.length - 1;
+    if (nextIdx === null) return;
+    e.preventDefault();
+    const nextOpt = SESSION_DURATIONS[nextIdx];
+    playSwitchTick(soundEnabled, 660);
+    setSessionMins(nextOpt.mins);
+    const tabs = e.currentTarget.parentElement?.querySelectorAll('[role="tab"]');
+    tabs?.[nextIdx]?.focus();
   };
 
   const TitleTag = isEmbed ? 'h1' : 'h2';
 
-  return (
-    <section className="deck-panel" aria-label="Weeknight Route Planner & Missables Shield">
-      <div className="studio-hero-band">
-        <div>
-          <div className="panel-eyebrow">
-            <Clock size={13} />
-            <span>
-              {isPreLaunch
-                ? 'PRE-LAUNCH UI PREVIEW · UPDATES LIVE NOV 18–19'
-                : 'WEEKNIGHT TIME-BOXED CHECKLIST · ZERO SPOILERS'}
-            </span>
-          </div>
-          <TitleTag className="panel-title">GTA VI Weeknight Route &amp; Missables Shield</TitleTag>
-          <p className="panel-subtitle">
-            Finish a productive Leonida circuit inside 45 minutes on a weeknight, inspect coastal
-            waypoints, and keep story missables protected before crossing Act gates.
-          </p>
-        </div>
-
-        <div className="subtab-bar" role="tablist" aria-label="Session length selector">
-          {SESSION_DURATIONS.map((opt) => (
-            <button
-              key={opt.mins}
-              type="button"
-              role="tab"
-              aria-selected={sessionMins === opt.mins}
-              className={`subtab-btn ${sessionMins === opt.mins ? 'active' : ''}`}
-              onClick={() => {
-                playSwitchTick(soundEnabled, 660);
-                setSessionMins(opt.mins);
-              }}
-            >
-              {!isPro && !opt.free && <Lock size={12} style={{ marginRight: '5px', verticalAlign: '-1px' }} />}
-              {opt.label}
-            </button>
-          ))}
+  const toolbarNode = (
+    <div className="subtab-toolbar">
+      <div className="subtab-bar" role="tablist" aria-label="Session length selector">
+        {SESSION_DURATIONS.map((opt, idx) => (
           <button
+            key={opt.mins}
+            id={`night-tab-${opt.mins}`}
             type="button"
-            className="subtab-btn"
-            data-share-url={`/gta-6/night-run?mins=${sessionMins}`}
-            onClick={async () => {
-              const shareUrl = `${window.location.origin}/gta-6/night-run?mins=${sessionMins}`;
-              playSwitchTick(soundEnabled, 820);
-              const ok = await copyTextReliably(shareUrl);
-              setCopiedRouteLink(ok ? 'ok' : 'blocked');
-              setTimeout(() => setCopiedRouteLink(''), 2000);
+            role="tab"
+            tabIndex={sessionMins === opt.mins ? 0 : -1}
+            aria-selected={sessionMins === opt.mins}
+            aria-controls="night-route-panel"
+            className={`subtab-btn ${sessionMins === opt.mins ? 'active' : ''}`}
+            onKeyDown={(e) => handleDurationKeyDown(e, idx)}
+            onClick={() => {
+              playSwitchTick(soundEnabled, 660);
+              setSessionMins(opt.mins);
             }}
           >
-            {copiedRouteLink === 'ok' ? <Check size={13} /> : <Link2 size={13} />}
-            <span>
-              {copiedRouteLink === 'ok'
-                ? 'Copied'
-                : copiedRouteLink === 'blocked'
-                  ? 'Copy Blocked'
-                  : 'Share Link'}
-            </span>
+            {!isPro && !opt.free && (
+              <Lock size={12} aria-hidden="true" style={{ marginRight: '5px', verticalAlign: '-1px' }} />
+            )}
+            {opt.label}
           </button>
-        </div>
+        ))}
       </div>
 
+      <button
+        type="button"
+        className="subtle-pill-btn"
+        data-share-url={sharePath}
+        onClick={async () => {
+          playSwitchTick(soundEnabled, 820);
+          const ok = await copyTextReliably(shareFullUrl);
+          if (ok) {
+            setShareFallbackUrl('');
+            setTimedToast(setCopiedRouteLink, 'ok', 'Night Run preset link copied.');
+          } else {
+            setShareFallbackUrl(shareFullUrl);
+            setTimedToast(setCopiedRouteLink, 'blocked', 'Clipboard blocked — copy preset URL below.');
+          }
+        }}
+      >
+        {copiedRouteLink === 'ok' ? <Check size={13} aria-hidden="true" /> : <Link2 size={13} aria-hidden="true" />}
+        <span>
+          {copiedRouteLink === 'ok'
+            ? 'Copied Link'
+            : shareFallbackUrl
+              ? 'Copy Below'
+              : 'Share Link'}
+        </span>
+      </button>
+    </div>
+  );
+
+  return (
+    <section className="deck-panel" aria-label="Weeknight Route Planner & Missables Shield">
+      {isEmbed ? (
+        <div className="studio-hero-band">
+          <div>
+            <div className="panel-eyebrow">
+              <Clock size={13} aria-hidden="true" />
+              <span>
+                {isPreLaunch
+                  ? 'PRE-LAUNCH UI PREVIEW · UPDATES LIVE NOV 18–19'
+                  : 'WEEKNIGHT TIME-BOXED CHECKLIST · ZERO SPOILERS'}
+              </span>
+            </div>
+            <TitleTag className="panel-title">GTA VI Weeknight Route &amp; Missables Shield</TitleTag>
+            <p className="panel-subtitle">
+              Finish a productive Leonida circuit inside 45 minutes on a weeknight, inspect coastal
+              waypoints, and keep story missables protected before crossing Act gates.
+            </p>
+          </div>
+          {toolbarNode}
+        </div>
+      ) : (
+        <div className="studio-compact-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Clock size={15} color="var(--coral)" aria-hidden="true" />
+            <TitleTag className="panel-title">GTA VI Weeknight Route &amp; Missables Shield</TitleTag>
+            <span className="district-pill">
+              {isPreLaunch ? 'Launch UI Preview' : 'Zero Spoilers'}
+            </span>
+          </div>
+          {toolbarNode}
+        </div>
+      )}
+
       <div className="deck-body-pad">
+        {shareFallbackUrl && (
+          <div className="share-fallback-box" style={{ marginTop: 0, marginBottom: '12px' }}>
+            <label className="share-fallback-label" htmlFor="night-share-fallback-input">
+              Clipboard access blocked — copy your Night Run preset URL:
+            </label>
+            <input
+              id="night-share-fallback-input"
+              type="text"
+              readOnly
+              className="deck-input mono"
+              value={shareFallbackUrl}
+              onFocus={(e) => e.target.select()}
+              onClick={(e) => e.target.select()}
+            />
+          </div>
+        )}
+        <div role="status" aria-live="polite">
+          {liveStatus && (
+            <div
+              className={`inline-status-note mono ${copiedRouteLink === 'blocked' || copiedCode === 'blocked' ? 'err' : 'ok'}`}
+              style={{ marginTop: 0, marginBottom: '10px' }}
+            >
+              {liveStatus}
+            </div>
+          )}
+        </div>
         <div className="night-stage-grid">
           {/* LEFT: INTERACTIVE LEONIDA ROUTE MAP + TIME-BOXED STOPS */}
-          <div>
+          <div id="night-route-panel" role="tabpanel" aria-labelledby={`night-tab-${sessionMins}`}>
             <div className="coastal-map-card">
               <div
                 style={{
@@ -185,7 +293,7 @@ export default function NightRunProDeck({
                     <path
                       d="M 24 0 L 0 0 0 24"
                       fill="none"
-                      stroke="rgba(255,255,255,0.04)"
+                      stroke="var(--border-subtle)"
                       strokeWidth="1"
                     />
                   </pattern>
@@ -195,8 +303,8 @@ export default function NightRunProDeck({
                 {/* Coastline & wetlands subtle terrain polygon */}
                 <path
                   d="M 28 148 L 64 78 L 134 52 L 245 48 L 352 60 L 382 96 L 348 136 L 306 176 L 266 184 L 222 150 L 142 142 Z"
-                  fill="rgba(255,255,255,0.025)"
-                  stroke="rgba(255,255,255,0.12)"
+                  fill="var(--surface-tint)"
+                  stroke="var(--border-strong)"
                   strokeWidth="1.5"
                 />
 
@@ -205,7 +313,8 @@ export default function NightRunProDeck({
                   <polyline
                     points={waypoints.map((w) => `${w.x},${w.y}`).join(' ')}
                     fill="none"
-                    stroke="rgba(56,189,248,0.45)"
+                    stroke="var(--ocean)"
+                    strokeOpacity={0.55}
                     strokeWidth="2"
                     strokeDasharray="5 4"
                   />
@@ -232,6 +341,15 @@ export default function NightRunProDeck({
                         }
                       }}
                     >
+                      <circle
+                        className="map-node-visual"
+                        cx={wp.x}
+                        cy={wp.y}
+                        r={13}
+                        fill={active ? wp.color : 'var(--bg-surface)'}
+                        stroke={wp.color}
+                        strokeWidth="2"
+                      />
                       {active && (
                         <circle
                           cx={wp.x}
@@ -243,14 +361,6 @@ export default function NightRunProDeck({
                           opacity="0.7"
                         />
                       )}
-                      <circle
-                        cx={wp.x}
-                        cy={wp.y}
-                        r={13}
-                        fill={active ? wp.color : '#121722'}
-                        stroke={wp.color}
-                        strokeWidth="2"
-                      />
                       <text
                         x={wp.x}
                         y={wp.y + 4}
@@ -258,7 +368,7 @@ export default function NightRunProDeck({
                         fontSize="10"
                         fontWeight="700"
                         fontFamily="JetBrains Mono, monospace"
-                        fill={active ? '#0B0E14' : '#F3F6FA'}
+                        fill={active ? '#0B0E14' : 'var(--ink-primary)'}
                       >
                         {wp.num}
                       </text>
@@ -269,10 +379,16 @@ export default function NightRunProDeck({
                         fontSize="10.5"
                         fontWeight="600"
                         fontFamily="Inter, sans-serif"
-                        fill={matchingDone ? '#2CE5B5' : '#A2AEC2'}
+                        fill={matchingDone ? 'var(--teal-dark)' : 'var(--ink-secondary)'}
                       >
                         {wp.name}
                       </text>
+                      <circle
+                        className="map-node-hit"
+                        cx={wp.x}
+                        cy={wp.y}
+                        r={36}
+                      />
                     </g>
                   );
                 })}
@@ -430,7 +546,7 @@ export default function NightRunProDeck({
                 </div>
                 {isPro && deckCode && (
                   <button type="button" className="subtle-pill-btn" onClick={handleCopyDeckCode}>
-                    {copiedCode ? <Check size={13} /> : <Copy size={13} />}
+                    {copiedCode === 'ok' ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
                     <span className="mono">{deckCode}</span>
                   </button>
                 )}
@@ -459,8 +575,7 @@ export default function NightRunProDeck({
                 <div style={{ marginTop: '12px' }}>
                   <button
                     type="button"
-                    className="primary-coral-btn"
-                    style={{ width: '100%' }}
+                    className="primary-coral-btn full-width-btn"
                     onClick={onOpenProModal}
                   >
                     Unlock Sync Pass · ${passPrice} (One-Time)

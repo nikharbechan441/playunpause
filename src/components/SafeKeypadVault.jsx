@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { playKeypadBeep, playSwitchTick, playUnlockChime, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import { buildSafeCodesSharePath, buildSafeCodesShareUrl } from '../utils/shareUrlHelpers.js';
 
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '#'];
 
@@ -42,9 +43,11 @@ export default function SafeKeypadVault({
   const [activeStepIdx, setActiveStepIdx] = useState(-1);
   const [litDigit, setLitDigit] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
+  const [shareFallbackUrl, setShareFallbackUrl] = useState('');
   const [isPlayingSeq, setIsPlayingSeq] = useState(false);
 
   const timersRef = useRef([]);
+  const copyTimerRef = useRef(null);
 
   useEffect(() => {
     const nextDist = initialPreset?.district || 'All Districts';
@@ -56,6 +59,7 @@ export default function SafeKeypadVault({
       const firstMatch = safes.find((s) => s.district === nextDist);
       if (firstMatch) setSelectedSafeId(firstMatch.id);
     }
+    setShareFallbackUrl('');
   }, [initialQuery, presetKey]);
 
   const clearTimers = () => {
@@ -63,7 +67,13 @@ export default function SafeKeypadVault({
     timersRef.current = [];
   };
 
-  useEffect(() => () => clearTimers(), []);
+  useEffect(
+    () => () => {
+      clearTimers();
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    },
+    []
+  );
 
   const filteredSafes = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -105,12 +115,18 @@ export default function SafeKeypadVault({
     triggerHaptic(8);
   };
 
+  const setTimedCopiedState = (nextState, delay = 2200) => {
+    setCopiedCode(nextState);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopiedCode(null), delay);
+  };
+
   const copyCode = async (code) => {
     playSwitchTick(soundEnabled, 880);
     triggerHaptic(10);
     const ok = await copyTextReliably(code);
-    setCopiedCode(ok ? code : 'blocked');
-    setTimeout(() => setCopiedCode(null), 1800);
+    if (ok) setShareFallbackUrl('');
+    setTimedCopiedState(ok ? code : 'blocked', 1800);
   };
 
   const handlePlaySequence = () => {
@@ -159,39 +175,90 @@ export default function SafeKeypadVault({
     timersRef.current.push(t);
   };
 
+  const shareSpecState = {
+    district: selectedDistrict,
+    safeId: selectedSafe?.id || '',
+    query,
+  };
+  const sharePath = buildSafeCodesSharePath(shareSpecState);
+  const shareFullUrl = buildSafeCodesShareUrl(
+    shareSpecState,
+    typeof window !== 'undefined' ? window.location.origin : 'https://playunpause.com'
+  );
+
+  const handleDistrictTabKeyDown = (e, idx) => {
+    if (!districts.length) return;
+    let nextIdx = null;
+    if (e.key === 'ArrowRight') nextIdx = (idx + 1) % districts.length;
+    else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + districts.length) % districts.length;
+    else if (e.key === 'Home') nextIdx = 0;
+    else if (e.key === 'End') nextIdx = districts.length - 1;
+    if (nextIdx === null) return;
+    e.preventDefault();
+    const nextDist = districts[nextIdx];
+    playSwitchTick(soundEnabled, 640);
+    setSelectedDistrict(nextDist);
+    const tabs = e.currentTarget.parentElement?.querySelectorAll('[role="tab"]');
+    tabs?.[nextIdx]?.focus();
+  };
+
+  const statusAnnouncement =
+    copiedCode === 'share-link'
+      ? 'Shareable link copied to clipboard.'
+      : copiedCode === 'share-blocked'
+        ? 'Clipboard blocked — copy preset URL below.'
+        : copiedCode === 'blocked'
+          ? 'Clipboard blocked — tap Copy PIN or read the digits above.'
+          : copiedCode && selectedSafe && copiedCode === selectedSafe.code
+            ? `Copied PIN ${selectedSafe.code} for ${selectedSafe.title}.`
+            : '';
+
   return (
     <section className="deck-panel" aria-label="Safe & Door Keypad Combination Vault">
-      <div className="studio-hero-band">
-        <div>
-          <div className="panel-eyebrow">
-            <KeyRound size={13} />
-            <span>
+      {isEmbed ? (
+        <div className="studio-hero-band">
+          <div>
+            <div className="panel-eyebrow">
+              <KeyRound size={13} aria-hidden="true" />
+              <span>
+                {isPreLaunch
+                  ? 'PRE-LAUNCH VAULT ENGINE · UI PREVIEW DEMO · VERIFIES LIVE NOV 18 (11:00 UTC)'
+                  : 'LIVE SAFE COMBINATION VAULT · INSTANT KEYPAD PLAYBACK'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <h1 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h1>
+              <span className="district-pill">Unofficial Companion</span>
+            </div>
+            <p className="panel-subtitle">
               {isPreLaunch
-                ? 'PRE-LAUNCH VAULT ENGINE · UI PREVIEW DEMO · VERIFIES LIVE NOV 18 (11:00 UTC)'
-                : 'LIVE SAFE COMBINATION VAULT · INSTANT KEYPAD PLAYBACK'}
+                ? 'Interactive UI preview with fictional placeholder codes ahead of launch — verified live on Nov 18 as safe combos are confirmed in-game.'
+                : 'Search any Leonida district while paused, copy the 4-digit pin in one tap, or step through the tone sequence on the tactile 10-key pad.'}
+            </p>
+          </div>
+
+          <div className="hud-readout" aria-live="polite">
+            <span>
+              Cleared: <strong className="mono">{crackedCount}</strong> / {safes.length}
             </span>
           </div>
+        </div>
+      ) : (
+        <div className="studio-compact-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {isEmbed ? (
-              <h1 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h1>
-            ) : (
-              <h2 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h2>
-            )}
-            <span className="district-pill">Unofficial Companion</span>
+            <KeyRound size={15} color="var(--coral)" aria-hidden="true" />
+            <h2 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h2>
+            <span className="district-pill">
+              {isPreLaunch ? 'Launch UI Preview' : 'Unofficial Companion'}
+            </span>
           </div>
-          <p className="panel-subtitle">
-            {isPreLaunch
-              ? 'Interactive UI preview with fictional placeholder codes ahead of launch — verified live on Nov 18 as safe combos are confirmed in-game.'
-              : 'Search any Leonida district while paused, copy the 4-digit pin in one tap, or step through the tone sequence on the tactile 10-key pad.'}
-          </p>
+          <div className="hud-readout" aria-live="polite">
+            <span>
+              Cleared: <strong className="mono">{crackedCount}</strong> / {safes.length}
+            </span>
+          </div>
         </div>
-
-        <div className="hud-readout" aria-live="polite">
-          <span>
-            Cleared: <strong className="mono">{crackedCount}</strong> / {safes.length}
-          </span>
-        </div>
-      </div>
+      )}
 
       <div className="deck-body-pad">
         {selectedSafe && (
@@ -242,13 +309,15 @@ export default function SafeKeypadVault({
             </div>
 
             <div className="filter-row" role="tablist" aria-label="Filter safes by district">
-              {districts.map((dist) => (
+              {districts.map((dist, idx) => (
                 <button
                   key={dist}
                   type="button"
                   role="tab"
+                  tabIndex={selectedDistrict === dist ? 0 : -1}
                   aria-selected={selectedDistrict === dist}
                   className={`filter-pill ${selectedDistrict === dist ? 'active' : ''}`}
+                  onKeyDown={(e) => handleDistrictTabKeyDown(e, idx)}
                   onClick={() => {
                     playSwitchTick(soundEnabled, 640);
                     setSelectedDistrict(dist);
@@ -364,15 +433,7 @@ export default function SafeKeypadVault({
           {/* RIGHT: HARDWARE 10-KEY PAD */}
           <div>
             <div className="keypad-box" aria-label="Interactive Safe Keypad">
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  marginBottom: '12px',
-                }}
-              >
+              <div className="keypad-box-header">
                 <div style={{ minWidth: 0 }}>
                   <div className="mono" style={{ fontSize: '0.71rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
                     ACTIVE KEYPAD TARGET
@@ -447,24 +508,56 @@ export default function SafeKeypadVault({
                 <button
                   type="button"
                   className="stage-dark-btn"
-                  data-share-url={`/gta-6/safe-codes?dist=${encodeURIComponent(selectedDistrict)}${selectedSafe ? `&safe=${encodeURIComponent(selectedSafe.id)}` : ''}${query ? `&q=${encodeURIComponent(query)}` : ''}`}
+                  data-share-url={sharePath}
                   onClick={async () => {
-                    const shareUrl = `${window.location.origin}/gta-6/safe-codes?dist=${encodeURIComponent(selectedDistrict)}${selectedSafe ? `&safe=${encodeURIComponent(selectedSafe.id)}` : ''}${query ? `&q=${encodeURIComponent(query)}` : ''}`;
                     playSwitchTick(soundEnabled, 820);
-                    const ok = await copyTextReliably(shareUrl);
-                    setCopiedCode(ok ? 'share-link' : 'share-blocked');
-                    setTimeout(() => setCopiedCode(null), 2000);
+                    const ok = await copyTextReliably(shareFullUrl);
+                    if (ok) {
+                      setShareFallbackUrl('');
+                      setTimedCopiedState('share-link', 2200);
+                    } else {
+                      setShareFallbackUrl(shareFullUrl);
+                      setTimedCopiedState('share-blocked', 2600);
+                    }
                   }}
                 >
-                  {copiedCode === 'share-link' ? <Check size={15} /> : <Link2 size={15} />}
+                  {copiedCode === 'share-link' ? <Check size={15} aria-hidden="true" /> : <Link2 size={15} aria-hidden="true" />}
                   <span>
                     {copiedCode === 'share-link'
                       ? 'Copied Link'
-                      : copiedCode === 'share-blocked'
-                        ? 'Copy Blocked'
+                      : shareFallbackUrl
+                        ? 'Copy Below'
                         : 'Share Link'}
                   </span>
                 </button>
+              </div>
+
+              {shareFallbackUrl && (
+                <div className="share-fallback-box">
+                  <label className="share-fallback-label" htmlFor="safe-share-fallback-input">
+                    Clipboard access blocked — copy your preset URL:
+                  </label>
+                  <input
+                    id="safe-share-fallback-input"
+                    type="text"
+                    readOnly
+                    className="deck-input mono"
+                    value={shareFallbackUrl}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
+                  />
+                </div>
+              )}
+
+              <div role="status" aria-live="polite">
+                {statusAnnouncement && (
+                  <div
+                    className={`inline-status-note mono ${copiedCode?.includes('blocked') ? 'err' : 'ok'}`}
+                    style={{ textAlign: 'center' }}
+                  >
+                    {statusAnnouncement}
+                  </div>
+                )}
               </div>
 
               {isPreLaunch && (

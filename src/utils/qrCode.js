@@ -60,8 +60,9 @@ const VERSIONS_L = [
   { version: 4, size: 33, totalDataCw: 80, ecCw: 20, alignCenters: [6, 26] },
 ];
 
-function encodeBytePayload(text, spec) {
-  const bytes = new TextEncoder().encode(text);
+export const MAX_QR_UTF8_BYTES = VERSIONS_L[VERSIONS_L.length - 1].totalDataCw - 2;
+
+function encodeBytePayload(bytes, spec) {
   const bits = [];
   const pushBits = (val, len) => {
     for (let i = len - 1; i >= 0; i -= 1) {
@@ -146,22 +147,22 @@ function writeFormatInfo(grid, isFunc, maskId) {
   const bits = computeFormatBitsL(maskId);
   for (let i = 0; i < 15; i += 1) {
     const bit = (bits >>> i) & 1;
-    // Strip A around top-left finder
+    // Strip A around top-left finder (ISO/IEC 18004: bits 0..5 at col 8 rows 0..5, bit 6 at (7,8), bit 7 at (8,8), bit 8 at (8,7), bits 9..14 at row 8 cols 5..0)
     if (i < 6) {
-      grid[8][i] = bit;
-      isFunc[8][i] = true;
+      grid[i][8] = bit;
+      isFunc[i][8] = true;
     } else if (i === 6) {
-      grid[8][7] = bit;
-      isFunc[8][7] = true;
+      grid[7][8] = bit;
+      isFunc[7][8] = true;
     } else if (i === 7) {
       grid[8][8] = bit;
       isFunc[8][8] = true;
     } else if (i === 8) {
-      grid[7][8] = bit;
-      isFunc[7][8] = true;
+      grid[8][7] = bit;
+      isFunc[8][7] = true;
     } else {
-      grid[14 - i][8] = bit;
-      isFunc[14 - i][8] = true;
+      grid[8][14 - i] = bit;
+      isFunc[8][14 - i] = true;
     }
 
     // Strip B around bottom-left & top-right finders
@@ -242,10 +243,13 @@ const MASK_FNS = [
 ];
 
 export function generateQrMatrix(text) {
-  const bytes = new TextEncoder().encode(String(text || ''));
-  const spec = VERSIONS_L.find((v) => bytes.length <= v.totalDataCw - 2) || VERSIONS_L[2];
+  const bytes = new TextEncoder().encode(String(text ?? ''));
+  const spec = VERSIONS_L.find((v) => bytes.length <= v.totalDataCw - 2);
+  if (!spec) {
+    throw new RangeError(`QR payload exceeds maximum ${MAX_QR_UTF8_BYTES} UTF-8 bytes (got ${bytes.length})`);
+  }
   const size = spec.size;
-  const codeBits = encodeBytePayload(String(text || '').slice(0, spec.totalDataCw - 2), spec);
+  const codeBits = encodeBytePayload(bytes, spec);
 
   const baseGrid = createEmptyGrid(size);
   const isFunc = Array.from({ length: size }, () => Array(size).fill(false));

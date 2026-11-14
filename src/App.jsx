@@ -31,12 +31,12 @@ import {
   getRelatedRoutesFor,
   getGroupedDirectoryLinks,
 } from './data/seoRoutes.js';
-import StorageUnlockDeck, { formatCountdownMs } from './components/StorageUnlockDeck.jsx';
-import { generateQrMatrix } from './utils/qrCode.js';
+import { formatCountdownMs } from './utils/shareUrlHelpers.js';
 import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
 import { copyTextReliably } from './utils/clipboard.js';
 import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
 
+const StorageUnlockDeck = lazy(() => import('./components/StorageUnlockDeck.jsx'));
 const SafeKeypadVault = lazy(() => import('./components/SafeKeypadVault.jsx'));
 const SquadHeistMarketDeck = lazy(() => import('./components/SquadHeistMarketDeck.jsx'));
 const NightRunProDeck = lazy(() => import('./components/NightRunProDeck.jsx'));
@@ -235,15 +235,26 @@ export default function App() {
   const [claimError, setClaimError] = useState('');
   const [localDataCleared, setLocalDataCleared] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
-  const [copiedSyncLink, setCopiedSyncLink] = useState(false);
+  const [copiedSyncLink, setCopiedSyncLink] = useState('');
+  const [qrMatrix, setQrMatrix] = useState(null);
+  const [qrError, setQrError] = useState('');
+  const [syncToast, setSyncToast] = useState(null);
 
   const gameModalRef = useRef(null);
   const proModalRef = useRef(null);
   const sponsorModalRef = useRef(null);
   const legalModalRef = useRef(null);
   const syncTimerRef = useRef(null);
+  const uiTimerRef = useRef(null);
   const skipNextPersistRef = useRef(false);
   const lastToolPathRef = useRef('/');
+
+  useEffect(
+    () => () => {
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+    },
+    []
+  );
 
   useModalFocusTrap(showProModal, proModalRef, () => setShowProModal(false));
   useModalFocusTrap(showSponsorModal, sponsorModalRef, () => setShowSponsorModal(false));
@@ -424,20 +435,23 @@ export default function App() {
               ? { ...prev, isPro: false, deckCode: null }
               : prev
           );
-          setClaimError(data?.error || 'This Sync Pass was refunded or deactivated.');
-          setShowProModal(true);
+          const errText = data?.error || 'This Sync Pass was refunded or deactivated.';
+          setClaimError(errText);
+          setSyncToast({ tone: 'err', text: errText });
           return;
         }
         if (res.ok && data?.ok && data?.state) {
+          const nextCode = data.deckCode || syncCode;
           setDeckState((prev) => ({
             ...prev,
             isPro: true,
-            deckCode: data.deckCode || syncCode,
+            deckCode: nextCode,
             crackedSafeIds: Array.isArray(data.state.crackedSafeIds) ? data.state.crackedSafeIds : prev.crackedSafeIds,
             checkedRouteIds: Array.isArray(data.state.checkedRouteIds) ? data.state.checkedRouteIds : prev.checkedRouteIds,
             savedPins: Array.isArray(data.state.savedPins) ? data.state.savedPins : prev.savedPins,
           }));
-          setShowProModal(true);
+          setClaimStatus(`Synced to ${nextCode}`);
+          setSyncToast({ tone: 'ok', text: `Sync Pass ${nextCode} restored to this device.` });
         }
       })
       .catch(() => {})
@@ -479,11 +493,12 @@ export default function App() {
     return () => clearTimeout(syncTimerRef.current);
   }, [deckState.isPro, deckState.deckCode, deckState.crackedSafeIds, deckState.checkedRouteIds, deckState.savedPins]);
 
-  // Keyboard shortcuts: Ctrl/Cmd + K opens Game Selector, Escape closes active modal
+  // Keyboard shortcuts: Ctrl/Cmd + K opens Game Selector (unless another modal is active), Escape closes active modal
   useEffect(() => {
     const onKeyDown = (e) => {
       if (isEmbed) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        if (showProModal || showSponsorModal || showEmbedModal || legalSection) return;
         e.preventDefault();
         setShowGameModal((open) => !open);
       } else if (e.key === 'Escape') {
@@ -496,7 +511,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEmbed, legalSection]);
+  }, [isEmbed, legalSection, showProModal, showSponsorModal, showEmbedModal]);
 
   // Browser back/forward URL navigation support
   useEffect(() => {
@@ -647,7 +662,8 @@ export default function App() {
           savedPins: data.state.savedPins || [],
         }));
         setClaimStatus('Synced latest state from cloud.');
-        setTimeout(() => setClaimStatus(''), 2000);
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        uiTimerRef.current = setTimeout(() => setClaimStatus(''), 2000);
       }
     } catch {
       // Ignore
@@ -681,8 +697,10 @@ export default function App() {
     setClaimReceiptInput('');
     setClaimError('');
     setClaimStatus('');
+    setSyncToast(null);
     setLocalDataCleared(true);
-    setTimeout(() => setLocalDataCleared(false), 3000);
+    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+    uiTimerRef.current = setTimeout(() => setLocalDataCleared(false), 3000);
   };
 
   const syncShareUrl = useMemo(() => {
@@ -694,14 +712,55 @@ export default function App() {
     return `${origin}/#sync=${deckState.deckCode}`;
   }, [deckState.deckCode]);
 
-  const qrMatrix = useMemo(() => {
-    if (!syncShareUrl) return null;
-    try {
-      return generateQrMatrix(syncShareUrl);
-    } catch {
-      return null;
+  useEffect(() => {
+    let cancelled = false;
+    if (!showProModal || !deckState.isPro || !syncShareUrl) {
+      setQrMatrix(null);
+      setQrError('');
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [syncShareUrl]);
+
+    import('./utils/qrCode.js')
+      .then(({ generateQrMatrix }) => {
+        if (cancelled) return;
+        const matrix = generateQrMatrix(syncShareUrl);
+        setQrMatrix(matrix);
+        setQrError('');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setQrMatrix(null);
+        setQrError(
+          err?.message || 'Sync link exceeds QR capacity — copy the sync link or UP- code instead.',
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showProModal, deckState.isPro, syncShareUrl]);
+
+  const handleGtaTabKeyDown = (event, currentIndex) => {
+    let nextIndex = null;
+    if (event.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % GTA_MODES.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + GTA_MODES.length) % GTA_MODES.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = GTA_MODES.length - 1;
+    }
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const nextMode = GTA_MODES[nextIndex];
+    handleSelectTab(nextMode.id);
+    if (typeof document !== 'undefined') {
+      document.getElementById(`gta-tab-${nextMode.id}`)?.focus();
+    }
+  };
 
   const accentStyle = useMemo(
     () => ({
@@ -797,6 +856,7 @@ export default function App() {
                     runtimeConfig={runtimeConfig}
                     soundEnabled={deckState.soundEnabled}
                     nowMs={nowMs}
+                    isEmbed
                     onOpenProModal={handleOpenProTarget}
                     initialPreset={routeState.preset}
                     presetKey={routeState.presetKey}
@@ -849,6 +909,7 @@ export default function App() {
                 <MultiGameToolDeck
                   game={activeGamePack}
                   isPro={deckState.isPro}
+                  isEmbed
                   onOpenProModal={handleOpenProTarget}
                   soundEnabled={deckState.soundEnabled}
                   savedPins={deckState.savedPins}
@@ -890,6 +951,9 @@ export default function App() {
       </div>
     );
   }
+
+  const showMobileBottomRail =
+    !isNotFound && !isEmbed && !legalSection && activeGamePack.isGta6Suite;
 
   return (
     <div style={accentStyle}>
@@ -979,7 +1043,11 @@ export default function App() {
               }
               title={deckState.theme === 'paper' ? 'Obsidian Dark Mode' : 'Paper Light Mode'}
             >
-              {deckState.theme === 'paper' ? <Moon size={15} /> : <Sun size={15} />}
+              {deckState.theme === 'paper' ? (
+                <Moon size={15} aria-hidden="true" />
+              ) : (
+                <Sun size={15} aria-hidden="true" />
+              )}
             </button>
 
             <button
@@ -992,7 +1060,7 @@ export default function App() {
               aria-label="Embed free calculator widget"
               title="Embed calculator widget"
             >
-              <Code2 size={15} />
+              <Code2 size={15} aria-hidden="true" />
               <span className="embed-btn-label">Embed</span>
             </button>
 
@@ -1004,7 +1072,7 @@ export default function App() {
                 setShowProModal(true);
               }}
             >
-              <QrCode size={14} />
+              <QrCode size={14} aria-hidden="true" />
               <span className="pass-full-label">
                 {deckState.isPro ? `Synced · ${deckState.deckCode}` : 'Phone ↔ PC Sync'}
               </span>
@@ -1046,7 +1114,36 @@ export default function App() {
       </header>
 
       {/* MAIN STUDIO WORKBENCH */}
-      <main className="app-shell">
+      <main className={`app-shell ${showMobileBottomRail ? 'has-mobile-bottom-rail' : ''}`}>
+        {syncToast && (
+          <div
+            className={`sync-toast-banner ${syncToast.tone === 'err' ? 'err' : 'ok'}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span>{syncToast.text}</span>
+            <div className="sync-toast-actions">
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => {
+                  setSyncToast(null);
+                  setShowProModal(true);
+                }}
+              >
+                View Sync Pass
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                aria-label="Dismiss sync notification"
+                onClick={() => setSyncToast(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
         {isNotFound ? (
           <section className="deck-panel notfound-card" aria-label="Page not found">
             <div className="deck-body-pad">
@@ -1176,79 +1273,91 @@ export default function App() {
           }
         >
         {activeGamePack.isGta6Suite ? (
-          <div className="deck-stage-transition" key={`gta-${activeTab}`}>
+          <div>
             <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Tools">
-              {GTA_MODES.map((m) => {
+              {GTA_MODES.map((m, idx) => {
                 const IconM = m.icon;
                 const active = activeTab === m.id;
                 return (
                   <button
                     key={m.id}
+                    id={`gta-tab-${m.id}`}
                     type="button"
                     role="tab"
+                    tabIndex={active ? 0 : -1}
                     aria-selected={active}
+                    aria-controls="gta-tabpanel"
                     className={`mode-tab ${active ? 'active' : ''}`}
                     onClick={() => handleSelectTab(m.id)}
+                    onKeyDown={(e) => handleGtaTabKeyDown(e, idx)}
                   >
-                    <IconM size={15} className="mode-tab-icon" />
+                    <IconM size={15} className="mode-tab-icon" aria-hidden="true" />
                     <span>{m.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            {activeTab === 'storage' && (
-              <StorageUnlockDeck
-                gamePack={activeGamePack}
-                runtimeConfig={runtimeConfig}
-                soundEnabled={deckState.soundEnabled}
-                nowMs={nowMs}
-                onOpenProModal={() => setShowProModal(true)}
-                initialPreset={routeState.preset}
-                presetKey={routeState.presetKey}
-              />
-            )}
+            <div
+              id="gta-tabpanel"
+              role="tabpanel"
+              aria-labelledby={`gta-tab-${activeTab}`}
+              className="deck-stage-transition"
+              key={`gta-${activeTab}`}
+            >
+              {activeTab === 'storage' && (
+                <StorageUnlockDeck
+                  gamePack={activeGamePack}
+                  runtimeConfig={runtimeConfig}
+                  soundEnabled={deckState.soundEnabled}
+                  nowMs={nowMs}
+                  onOpenProModal={() => setShowProModal(true)}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                />
+              )}
 
-            {activeTab === 'safes' && (
-              <SafeKeypadVault
-                gamePack={activeGamePack}
-                crackedSafeIds={deckState.crackedSafeIds}
-                onToggleSafe={handleToggleSafe}
-                soundEnabled={deckState.soundEnabled}
-                isPro={deckState.isPro}
-                isPreLaunch={isPreLaunch}
-                initialQuery={routeState.preset?.query ?? ''}
-                initialPreset={routeState.preset}
-                presetKey={routeState.presetKey}
-                onOpenProModal={() => setShowProModal(true)}
-              />
-            )}
+              {activeTab === 'safes' && (
+                <SafeKeypadVault
+                  gamePack={activeGamePack}
+                  crackedSafeIds={deckState.crackedSafeIds}
+                  onToggleSafe={handleToggleSafe}
+                  soundEnabled={deckState.soundEnabled}
+                  isPro={deckState.isPro}
+                  isPreLaunch={isPreLaunch}
+                  initialQuery={routeState.preset?.query ?? ''}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                  onOpenProModal={() => setShowProModal(true)}
+                />
+              )}
 
-            {activeTab === 'squad' && (
-              <SquadHeistMarketDeck
-                gamePack={activeGamePack}
-                soundEnabled={deckState.soundEnabled}
-                isPreLaunch={isPreLaunch}
-                initialPreset={routeState.preset}
-                presetKey={routeState.presetKey}
-              />
-            )}
+              {activeTab === 'squad' && (
+                <SquadHeistMarketDeck
+                  gamePack={activeGamePack}
+                  soundEnabled={deckState.soundEnabled}
+                  isPreLaunch={isPreLaunch}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                />
+              )}
 
-            {activeTab === 'nightrun' && (
-              <NightRunProDeck
-                gamePack={activeGamePack}
-                isPro={deckState.isPro}
-                isPreLaunch={isPreLaunch}
-                deckCode={deckState.deckCode}
-                checkedRouteIds={deckState.checkedRouteIds}
-                onToggleRouteStop={handleToggleRouteStop}
-                onOpenProModal={() => setShowProModal(true)}
-                runtimeConfig={runtimeConfig}
-                soundEnabled={deckState.soundEnabled}
-                initialPreset={routeState.preset}
-                presetKey={routeState.presetKey}
-              />
-            )}
+              {activeTab === 'nightrun' && (
+                <NightRunProDeck
+                  gamePack={activeGamePack}
+                  isPro={deckState.isPro}
+                  isPreLaunch={isPreLaunch}
+                  deckCode={deckState.deckCode}
+                  checkedRouteIds={deckState.checkedRouteIds}
+                  onToggleRouteStop={handleToggleRouteStop}
+                  onOpenProModal={() => setShowProModal(true)}
+                  runtimeConfig={runtimeConfig}
+                  soundEnabled={deckState.soundEnabled}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                />
+              )}
+            </div>
           </div>
         ) : (
           <div className="deck-stage-transition" key={`mg-${activeGamePack.id}`}>
@@ -1324,25 +1433,18 @@ export default function App() {
 
         {/* TRANSPARENT STUDIO FOOTER */}
         <footer className="studio-footer">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', columnGap: '14px', rowGap: '4px', flexWrap: 'wrap' }}>
+          <div className="footer-main-row">
+            <div className="footer-brand-row">
               <span>Unpause (playunpause.com) · Independent Player Companion</span>
               <a
                 href={`mailto:${runtimeConfig.supportEmail}`}
-                style={{
-                  color: 'var(--ink-secondary)',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  minHeight: '44px',
-                  padding: '0 8px 0 0',
-                }}
+                className="footer-support-link"
               >
                 {runtimeConfig.supportEmail}
               </a>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="footer-actions-row">
               <button
                 type="button"
                 className="subtle-pill-btn"
@@ -1351,7 +1453,7 @@ export default function App() {
                   setShowEmbedModal(true);
                 }}
               >
-                <Code2 size={13} />
+                <Code2 size={13} aria-hidden="true" />
                 <span>Embed Widget</span>
               </button>
               <a
@@ -1406,13 +1508,21 @@ export default function App() {
                 className="subtle-pill-btn"
                 onClick={() => setShowSponsorModal(true)}
               >
-                <Megaphone size={13} />
+                <Megaphone size={13} aria-hidden="true" />
                 <span>Sponsor Slot</span>
               </button>
             </div>
           </div>
 
-          <p style={{ margin: '10px 0 0', fontSize: '0.78rem', lineHeight: 1.55, color: 'var(--ink-muted)' }}>
+          <div role="status" aria-live="polite">
+            {localDataCleared && (
+              <div className="inline-status-note ok">
+                Saved progress and sync pass data cleared from this browser.
+              </div>
+            )}
+          </div>
+
+          <p className="footer-disclaimer">
             Unofficial Player Companion &amp; Non-Affiliation Notice: Unpause is an independent utility
             built cleanly for second-screen speed. Not affiliated with, endorsed by, or sponsored by
             Rockstar Games, Take-Two Interactive, Activision, Epic Games, Mojang AB, Microsoft,
@@ -1424,7 +1534,7 @@ export default function App() {
       </main>
 
       {/* MOBILE BOTTOM NAVIGATION RAIL FOR GTA VI MODES */}
-      {!isNotFound && activeGamePack.isGta6Suite && (
+      {showMobileBottomRail && (
         <nav className="mobile-bottom-rail" aria-label="Mobile GTA VI Modes">
           {GTA_MODES.map((m) => {
             const IconM = m.icon;
@@ -1437,7 +1547,7 @@ export default function App() {
                 aria-current={active ? 'page' : undefined}
                 onClick={() => handleSelectTab(m.id)}
               >
-                <IconM size={16} className="mode-tab-icon" />
+                <IconM size={16} className="mode-tab-icon" aria-hidden="true" />
                 <span>{m.mobileLabel}</span>
               </button>
             );
@@ -1492,31 +1602,29 @@ export default function App() {
                 aria-label="Close Sync Pass modal"
                 onClick={() => setShowProModal(false)}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
             {deckState.isPro && deckState.deckCode ? (
-              <div className="mg-subcard" style={{ marginBottom: '16px', textAlign: 'center' }}>
+              <div className="mg-subcard">
                 {qrMatrix && (
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      padding: '12px',
-                      background: '#FFFFFF',
-                      borderRadius: '12px',
-                      marginBottom: '12px',
-                    }}
-                  >
+                  <div className="sync-qr-frame">
                     <svg
                       width="148"
                       height="148"
-                      viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
+                      viewBox={`-4 -4 ${qrMatrix.length + 8} ${qrMatrix.length + 8}`}
                       role="img"
                       aria-label={`QR sync code for ${deckState.deckCode}`}
                       shapeRendering="crispEdges"
                     >
-                      <rect width={qrMatrix.length} height={qrMatrix.length} fill="#FFFFFF" />
+                      <rect
+                        x={-4}
+                        y={-4}
+                        width={qrMatrix.length + 8}
+                        height={qrMatrix.length + 8}
+                        fill="#FFFFFF"
+                      />
                       {qrMatrix.map((row, y) =>
                         row.map((cell, x) =>
                           cell ? <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#0B0E14" /> : null
@@ -1526,17 +1634,23 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '6px' }}>
+                {qrError && (
+                  <div className="inline-status-note err" role="alert">
+                    {qrError}
+                  </div>
+                )}
+
+                <div className="mono sync-code-readout">
                   {deckState.deckCode}
                 </div>
-                <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: 'var(--ink-secondary)' }}>
+                <p className="sync-sub-copy">
                   Scan on your phone while playing on console or PC — safes, routes &amp; pinned calcs sync automatically.
                 </p>
-                <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+                <p className="sync-bearer-note">
                   Security notice: Your <code>UP-</code> code and QR link act as a bearer sync key. Keep screenshots private.
                 </p>
 
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <div className="sync-actions-row">
                   <button
                     type="button"
                     className="secondary-key-btn"
@@ -1544,63 +1658,87 @@ export default function App() {
                       if (!syncShareUrl) return;
                       const ok = await copyTextReliably(syncShareUrl);
                       setCopiedSyncLink(ok ? 'ok' : 'blocked');
-                      setTimeout(() => setCopiedSyncLink(''), 2000);
+                      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+                      uiTimerRef.current = setTimeout(() => setCopiedSyncLink(''), 4000);
                     }}
                   >
-                    {copiedSyncLink === 'ok' ? <Check size={14} /> : <Copy size={14} />}
-                    <span>
-                      {copiedSyncLink === 'ok'
-                        ? 'Sync Link Copied'
-                        : copiedSyncLink === 'blocked'
-                          ? 'Copy Blocked — Copy From QR'
-                          : 'Copy Sync Link'}
-                    </span>
+                    {copiedSyncLink === 'ok' ? (
+                      <Check size={14} aria-hidden="true" />
+                    ) : (
+                      <Copy size={14} aria-hidden="true" />
+                    )}
+                    <span>{copiedSyncLink === 'ok' ? 'Sync Link Copied' : 'Copy Sync Link'}</span>
                   </button>
                   <button type="button" className="subtle-pill-btn" onClick={handlePullCloudNow}>
-                    <RefreshCw size={13} /> Refresh Cloud
+                    <RefreshCw size={13} aria-hidden="true" /> Refresh Cloud
                   </button>
+                </div>
+
+                {copiedSyncLink === 'blocked' && syncShareUrl && (
+                  <div className="share-fallback-box">
+                    <label htmlFor="sync-share-fallback-input" className="share-fallback-label">
+                      Clipboard blocked — select and copy your sync link below:
+                    </label>
+                    <input
+                      id="sync-share-fallback-input"
+                      type="text"
+                      readOnly
+                      className="deck-input no-icon mono"
+                      value={syncShareUrl}
+                      onFocus={(e) => e.target.select()}
+                    />
+                  </div>
+                )}
+
+                <div role="status" aria-live="polite">
+                  {copiedSyncLink === 'ok' ? (
+                    <div className="inline-status-note ok">Sync link copied to clipboard.</div>
+                  ) : copiedSyncLink === 'blocked' ? (
+                    <div className="inline-status-note err">
+                      Clipboard blocked — select and copy your sync link above.
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : (
               <div className="pass-value-bento">
                 <div className="pass-feature-grid">
                   <div className="pass-feature-item">
-                    <QrCode size={14} color="var(--ocean)" />
+                    <QrCode size={14} color="var(--ocean)" aria-hidden="true" />
                     <span>Phone ↔ PC QR Sync</span>
                   </div>
                   <div className="pass-feature-item">
-                    <Clock size={14} color="var(--teal-dark)" />
+                    <Clock size={14} color="var(--teal-dark)" aria-hidden="true" />
                     <span>90m &amp; 120m Weeknight Routes</span>
                   </div>
                   <div className="pass-feature-item">
-                    <Sparkles size={14} color="var(--gold)" />
+                    <Sparkles size={14} color="var(--gold)" aria-hidden="true" />
                     <span>Acts II–III Missables Shield</span>
                   </div>
                   <div className="pass-feature-item">
-                    <Check size={14} color="var(--game-accent)" />
+                    <Check size={14} color="var(--game-accent)" aria-hidden="true" />
                     <span>Unlimited Pins &amp; No Sponsor Bar</span>
                   </div>
                 </div>
 
-                <div style={{ marginTop: '14px' }}>
+                <div className="sync-actions-row">
                   <a
                     href={passCheckoutHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="primary-coral-btn"
-                    style={{ width: '100%' }}
+                    className="primary-coral-btn full-width-btn"
                   >
                     <span>Unlock Sync Pass · ${runtimeConfig.passPriceUsd} One-Time</span>
-                    <ExternalLink size={14} />
+                    <ExternalLink size={14} aria-hidden="true" />
                   </a>
                 </div>
-                <p style={{ margin: '10px 0 0', fontSize: '0.78rem', color: 'var(--ink-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+                <p className="sync-legal-fineprint">
                   18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery; GTA VI modules remain pre-launch previews until Nov 19, 2026. Includes 14-day hassle-free refunds.
                 </p>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.78rem' }}>
+                <div className="sync-legal-links-row">
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                    className="inline-legal-link-btn"
                     onClick={() => {
                       setShowProModal(false);
                       setLegalSection('terms');
@@ -1610,7 +1748,7 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                    className="inline-legal-link-btn"
                     onClick={() => {
                       setShowProModal(false);
                       setLegalSection('privacy');
@@ -1620,7 +1758,7 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ink-secondary)', textDecoration: 'underline', font: 'inherit' }}
+                    className="inline-legal-link-btn"
                     onClick={() => {
                       setShowProModal(false);
                       setLegalSection('refunds');
@@ -1630,7 +1768,7 @@ export default function App() {
                   </button>
                   <a
                     href={`mailto:${runtimeConfig.supportEmail}`}
-                    style={{ color: 'var(--ink-secondary)', textDecoration: 'underline' }}
+                    className="legal-contact-link"
                   >
                     {runtimeConfig.supportEmail}
                   </a>
@@ -1642,7 +1780,7 @@ export default function App() {
               <label htmlFor="claim-code-input" className="section-label">
                 Already purchased? Restore via Sync Code, Whop ID, or Email + Receipt
               </label>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '7px' }}>
+              <div className="sync-restore-row">
                 <input
                   id="claim-code-input"
                   type="text"
@@ -1656,31 +1794,34 @@ export default function App() {
                 </button>
               </div>
               {claimInput.includes('@') && (
-                <div style={{ marginTop: '8px' }}>
+                <div>
                   <label htmlFor="claim-receipt-input" className="section-label">
                     Whop Receipt ID (required with email for account security)
                   </label>
-                  <input
-                    id="claim-receipt-input"
-                    type="text"
-                    className="deck-input no-icon mono"
-                    style={{ marginTop: '5px' }}
-                    placeholder="mem_... or pay_..."
-                    value={claimReceiptInput}
-                    onChange={(e) => setClaimReceiptInput(e.target.value)}
-                  />
+                  <div className="sync-restore-row">
+                    <input
+                      id="claim-receipt-input"
+                      type="text"
+                      className="deck-input no-icon mono"
+                      placeholder="mem_... or pay_..."
+                      value={claimReceiptInput}
+                      onChange={(e) => setClaimReceiptInput(e.target.value)}
+                    />
+                  </div>
                 </div>
               )}
               {claimError && (
-                <div style={{ marginTop: '7px', fontSize: '0.79rem', color: 'var(--coral)', fontWeight: 600 }}>
+                <div className="inline-status-note err" role="alert">
                   {claimError}
                 </div>
               )}
-              {claimStatus && (
-                <div style={{ marginTop: '7px', fontSize: '0.79rem', color: 'var(--teal-dark)', fontWeight: 600 }}>
-                  {claimStatus}
-                </div>
-              )}
+              <div role="status" aria-live="polite">
+                {claimStatus && (
+                  <div className="inline-status-note ok">
+                    {claimStatus}
+                  </div>
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -1716,17 +1857,17 @@ export default function App() {
                 aria-label="Close sponsor modal"
                 onClick={() => setShowSponsorModal(false)}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
-            <div className="mg-subcard" style={{ marginBottom: '14px' }}>
-              <p style={{ margin: '0 0 8px', fontSize: '0.83rem', color: 'var(--ink-secondary)', lineHeight: 1.55 }}>
+            <div className="mg-subcard">
+              <p className="sync-sub-copy">
                 Reserve a clean 24-hour hardware, peripheral, or creator header pill labeled{' '}
                 <strong>Sponsored:</strong>. Strictly HTTPS-verified destinations only. Questions?
                 Email <strong>{runtimeConfig.sponsorEmail}</strong>.
               </p>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+              <p className="sync-bearer-note">
                 <strong>Pre-Checkout Ad Rules:</strong> 18+ / business buyers only; no gambling, real-money
                 trading (RMT), malware, NSFW, deceptive urgency, or Punycode domains. Subject to
                 moderation review before publishing; tax calculated by Whop. See{' '}
@@ -1748,11 +1889,10 @@ export default function App() {
               href={sponsorCheckoutHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="primary-coral-btn"
-              style={{ width: '100%' }}
+              className="primary-coral-btn full-width-btn"
             >
               <span>Reserve 24h Slot via Whop · ${runtimeConfig.sponsorPriceUsd}</span>
-              <ExternalLink size={14} />
+              <ExternalLink size={14} aria-hidden="true" />
             </a>
           </div>
         </div>

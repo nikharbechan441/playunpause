@@ -10,6 +10,7 @@ import {
   calcFc27Tax,
   calcSbcSquadRating,
   calcRobloxDevEx,
+  calcRobloxMinSalesFor30k,
   calcFortniteXp,
   getFreeApexLevelPacks,
   calcGtaOnlineHeist,
@@ -95,4 +96,52 @@ test('GTA Online enforces mandatory 15% crew share floor', () => {
   assert.equal(duo.maxHostPct, 85);
   assert.equal(duo.hostPct, 85);
   assert.equal(duo.crewPayouts[0].pct, 15);
+});
+
+test('Regression: Stronghold divergent rays, CoD headMult, CS2 cashIfSaveAll, Valorant/Roblox, & Apex Prestige monotonicity', () => {
+  // Divergent Stronghold rays (intersecting behind throw points) must be rejected
+  const behind = triangulateStronghold(0, 0, 135, 200, 0, -135);
+  assert.equal(behind.valid, false);
+
+  // CoD headMult invalid/non-positive values sanitize safely without NaN or 0 head damage
+  const badMult = calcCodTtk({ hp: 300, damage: 30, rpm: 600, headshots: 2, headMult: 'NaN' });
+  assert.equal(Number.isFinite(badMult.ttkMs), true);
+  assert.equal(badMult.headDmg, Math.round(30 * 1.32));
+  const zeroMult = calcCodTtk({ hp: 300, damage: 30, rpm: 600, headshots: 1, headMult: -2 });
+  assert.equal(zeroMult.headDmg, 30);
+
+  // CS2 cashIfSaveAll reflects nextBonusOnLoss (+1 loss tier & T-side plant)
+  const ctDefault = calcCs2Economy({ cash: 3200, lossLevel: 1, side: 'CT', bombPlanted: false });
+  assert.equal(ctDefault.cashIfSaveAll, 5600);
+  const tPlant = calcCs2Economy({ cash: 3200, lossLevel: 1, side: 'T', bombPlanted: true });
+  assert.equal(tPlant.cashIfSaveAll, 6400);
+
+  // Valorant economy rejects NaN gear cost & tracks !canAfford cleanly
+  const opNoBuy = calcValorantEconomy({ credits: 3900, weaponCost: 4700, armorCost: 1000, utilCost: 0, lossStreak: 1 });
+  assert.equal(opNoBuy.canAfford, false);
+  assert.equal(opNoBuy.leftover, 3900);
+  const nanVal = calcValorantEconomy({ credits: 3600, weaponCost: NaN, armorCost: 0, utilCost: 0, lossStreak: NaN });
+  assert.equal(Number.isFinite(nanVal.totalBuy), true);
+
+  // Roblox 30K sales requirement scales inversely with group split
+  assert.equal(calcRobloxMinSalesFor30k(100), 42858);
+  assert.equal(calcRobloxMinSalesFor30k(50), 85715);
+  assert.equal(calcRobloxDevEx({ grossRobux: 50000, groupSplitPct: 50 }).minSalesFor30k, 85715);
+
+  // Apex Prestige 0-3 packs must be monotonically non-decreasing with zero drops across rollovers
+  let prev = -1;
+  for (let prestige = 0; prestige <= 3; prestige += 1) {
+    for (let level = 1; level <= 500; level += 1) {
+      const packs = getFreeApexLevelPacks(level, prestige);
+      assert.ok(packs >= prev, `Apex pack drop at prestige=${prestige} level=${level}: ${prev} -> ${packs}`);
+      prev = packs;
+    }
+  }
+  assert.equal(getFreeApexLevelPacks(500, 0), 199);
+  assert.equal(getFreeApexLevelPacks(1, 1), 199);
+  assert.equal(getFreeApexLevelPacks(500, 1), 314);
+  assert.equal(getFreeApexLevelPacks(1, 2), 314);
+  assert.equal(getFreeApexLevelPacks(500, 2), 429);
+  assert.equal(getFreeApexLevelPacks(1, 3), 429);
+  assert.equal(getFreeApexLevelPacks(500, 3), 544);
 });

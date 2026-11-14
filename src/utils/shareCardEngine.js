@@ -4,6 +4,17 @@
  * plus plain-text Discord/party-chat summaries.
  */
 
+function fitCardText(ctx, text, maxWidthPx) {
+  const str = String(text ?? '').trim().slice(0, 120);
+  if (!str) return '';
+  if (ctx.measureText(str).width <= maxWidthPx) return str;
+  let cut = str;
+  while (cut.length > 1 && ctx.measureText(`${cut}…`).width > maxWidthPx) {
+    cut = cut.slice(0, -1);
+  }
+  return `${cut.trimEnd()}…`;
+}
+
 function roundRectPath(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -37,6 +48,7 @@ export function renderStudioSpecCardCanvas({
   accentColor = '#FF5964',
   rows = [],
 }) {
+  if (typeof document === 'undefined') return null;
   const width = 960;
   const height = 540;
   const canvas = document.createElement('canvas');
@@ -85,7 +97,7 @@ export function renderStudioSpecCardCanvas({
 
   ctx.fillStyle = '#F3F6FA';
   ctx.font = '700 32px "Space Grotesk", "Inter", sans-serif';
-  ctx.fillText(`${gameTitle} · ${toolTitle}`.slice(0, 56), 60, 120);
+  ctx.fillText(fitCardText(ctx, `${gameTitle} · ${toolTitle}`, width - 120), 60, 120);
 
   // Primary Hero Readout Block
   roundRectPath(ctx, 60, 148, width - 120, 136, 14);
@@ -95,21 +107,27 @@ export function renderStudioSpecCardCanvas({
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
+  const heroInnerW = width - 172;
   ctx.fillStyle = '#9CA8BC';
   ctx.font = '600 14px "JetBrains Mono", monospace';
-  ctx.fillText(String(heroLabel).toUpperCase(), 86, 184);
-
-  ctx.fillStyle = '#F3F6FA';
-  ctx.font = '700 54px "JetBrains Mono", monospace';
-  ctx.fillText(String(heroValue).slice(0, 22), 86, 248);
+  ctx.fillText(fitCardText(ctx, String(heroLabel).toUpperCase(), heroSub ? heroInnerW - 350 : heroInnerW), 86, 184);
 
   if (heroSub) {
     ctx.fillStyle = accentColor;
     ctx.textAlign = 'right';
-    ctx.font = '600 17px "Inter", sans-serif';
-    ctx.fillText(String(heroSub).slice(0, 38), width - 86, 244);
+    ctx.font = '600 16px "Inter", sans-serif';
+    ctx.fillText(fitCardText(ctx, String(heroSub), 330), width - 86, 184);
     ctx.textAlign = 'left';
   }
+
+  ctx.fillStyle = '#F3F6FA';
+  let heroFontSize = 54;
+  ctx.font = `700 ${heroFontSize}px "JetBrains Mono", monospace`;
+  while (heroFontSize > 34 && ctx.measureText(String(heroValue || '')).width > heroInnerW) {
+    heroFontSize -= 6;
+    ctx.font = `700 ${heroFontSize}px "JetBrains Mono", monospace`;
+  }
+  ctx.fillText(fitCardText(ctx, String(heroValue), heroInnerW), 86, 248);
 
   // Secondary Spec Grid
   const cleanRows = rows.slice(0, 4);
@@ -128,17 +146,17 @@ export function renderStudioSpecCardCanvas({
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    ctx.fillStyle = '#8F9CB3';
+    ctx.fillStyle = '#9CA8BC';
     ctx.font = '500 14px "Inter", sans-serif';
-    ctx.fillText(String(row.label).slice(0, 34), x + 18, y + 28);
+    ctx.fillText(fitCardText(ctx, row.label, cellW - 36), x + 18, y + 28);
 
     ctx.fillStyle = '#F3F6FA';
     ctx.font = '700 22px "JetBrains Mono", monospace';
-    ctx.fillText(String(row.value).slice(0, 26), x + 18, y + 58);
+    ctx.fillText(fitCardText(ctx, row.value, cellW - 36), x + 18, y + 58);
   });
 
   // Bottom bar
-  ctx.fillStyle = '#6E7B91';
+  ctx.fillStyle = '#94A3B8';
   ctx.font = '500 12px "Inter", sans-serif';
   const bottomLine = String(gameTitle).toLowerCase().includes('minecraft')
     ? 'NOT AN OFFICIAL MINECRAFT PRODUCT · NOT ASSOCIATED WITH MOJANG OR MICROSOFT · No pop-up ads'
@@ -152,6 +170,12 @@ export async function downloadStudioSpecPng(spec) {
   const canvas = renderStudioSpecCardCanvas(spec);
   if (!canvas) return false;
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  try {
+    canvas.width = 0;
+    canvas.height = 0;
+  } catch {
+    // Ignore cleanup errors
+  }
   if (!blob) return false;
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
