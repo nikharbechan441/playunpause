@@ -100,9 +100,14 @@ export default function SafeKeypadVault({
     [selectedSafe]
   );
 
+  const safeCrackedIds = useMemo(
+    () => (Array.isArray(crackedSafeIds) ? crackedSafeIds.filter((id) => typeof id === 'string') : []),
+    [crackedSafeIds]
+  );
+
   const crackedCount = useMemo(
-    () => safes.filter((s) => crackedSafeIds.includes(s.id)).length,
-    [safes, crackedSafeIds]
+    () => safes.filter((s) => safeCrackedIds.includes(s.id)).length,
+    [safes, safeCrackedIds]
   );
 
   const handleSelectSafe = (safe) => {
@@ -140,7 +145,7 @@ export default function SafeKeypadVault({
       const t1 = setTimeout(() => {
         setActiveStepIdx(idx);
         setLitDigit(digit);
-        playKeypadBeep(digit, soundEnabled);
+        playKeypadBeep(soundEnabled, digit);
         triggerHaptic(8);
       }, startDelay);
       timersRef.current.push(t1);
@@ -168,7 +173,7 @@ export default function SafeKeypadVault({
       handlePlaySequence();
       return;
     }
-    playKeypadBeep(key, soundEnabled);
+    playKeypadBeep(soundEnabled, key);
     triggerHaptic(8);
     setLitDigit(key);
     const t = setTimeout(() => setLitDigit(null), 220);
@@ -339,7 +344,7 @@ export default function SafeKeypadVault({
               <div>
                 {filteredSafes.map((safe) => {
                   const isSelected = selectedSafe?.id === safe.id;
-                  const isCracked = crackedSafeIds.includes(safe.id);
+                  const isCracked = safeCrackedIds.includes(safe.id);
                   return (
                     <div
                       key={safe.id}

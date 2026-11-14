@@ -23,7 +23,7 @@ PlayUnpause is a full-stack second-screen gaming companion web app built with Re
 - **Frontend:** React 19, Vite 6, Lucide Icons, Custom CSS
 - **Backend / Edge:** Cloudflare Workers, Cloudflare D1 (SQLite), Express 5 (Node >= 22.5)
 - **Payments / Entitlements:** Whop Checkout & Webhook Verification
-- **Testing:** Built-in Node.js test runner (`31` passing unit & integration tests)
+- **Testing:** Built-in Node.js test runner (`36` passing unit & integration tests)
 
 ---
 

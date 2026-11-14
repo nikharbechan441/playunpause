@@ -8,8 +8,8 @@ export function isSafePublicHttpsUrl(rawUrl) {
     return { ok: false, reason: 'URL is required' };
   }
   const trimmed = rawUrl.trim();
-  if (!trimmed || trimmed.length > 2048) {
-    return { ok: false, reason: 'Invalid URL length' };
+  if (!trimmed || trimmed.length > 2048 || /[\u0000-\u001F\u007F]/.test(trimmed)) {
+    return { ok: false, reason: 'Invalid URL length or control characters' };
   }
 
   let parsed;
@@ -34,9 +34,11 @@ export function isSafePublicHttpsUrl(rawUrl) {
     return { ok: false, reason: 'IP literals and non-ASCII hosts are not allowed' };
   }
 
+  const labels = host.split('.');
   const blockedSuffixes = [
     '.localhost',
     '.local',
+    '.localdomain',
     '.internal',
     '.arpa',
     '.home',
@@ -44,11 +46,15 @@ export function isSafePublicHttpsUrl(rawUrl) {
     '.lan',
     '.intranet',
   ];
-  if (host === 'localhost' || blockedSuffixes.some((suffix) => host.endsWith(suffix))) {
+  if (
+    host === 'localhost' ||
+    host.startsWith('localhost.') ||
+    blockedSuffixes.some((suffix) => host.endsWith(suffix)) ||
+    labels.some((label) => label === 'localhost' || label === 'localdomain')
+  ) {
     return { ok: false, reason: 'Local or internal hostnames are not allowed' };
   }
 
-  const labels = host.split('.');
   if (labels.some((label) => !label || label.length > 63 || label.startsWith('xn--'))) {
     return { ok: false, reason: 'Punycode (xn--) and malformed DNS labels are not allowed' };
   }
@@ -62,7 +68,17 @@ export function isSafePublicHttpsUrl(rawUrl) {
     return { ok: false, reason: 'Numeric IP addresses are not allowed' };
   }
 
+  parsed.hostname = host;
   return { ok: true, normalizedUrl: parsed.toString(), hostname: host };
+}
+
+export function sanitizeSponsorBadgeText(raw) {
+  if (typeof raw !== 'string') return '';
+  return raw
+    .replace(/[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60);
 }
 
 export function parseWebhookAmountCents(rawValue, fieldName = 'amount', { isSponsorPlan = false } = {}) {
@@ -71,31 +87,28 @@ export function parseWebhookAmountCents(rawValue, fieldName = 'amount', { isSpon
   const num = Number(rawStr);
   if (!Number.isFinite(num) || num <= 0) return null;
 
+  let cents;
   if (/_cents$/i.test(fieldName)) {
-    return Number.isInteger(num) ? num : Math.round(num);
+    cents = Number.isInteger(num) ? num : Math.round(num);
+  } else if (rawStr.includes('.') || !Number.isInteger(num)) {
+    // Decimal strings/numbers like "6.99" or 6.99 represent dollars.
+    cents = Math.round(num * 100);
+  } else if (num >= 500) {
+    // Integer >= 500 is already in cents (e.g. 699, 14900).
+    cents = num;
+  } else if (isSponsorPlan && num >= 99 && num <= 250) {
+    // Legacy webhook test fixtures may send whole-dollar integer (e.g. 149) exclusively on sponsor tier.
+    // Never scale arbitrary small integers on Sync Pass plans (prevents $1.00 = 100 cents bypass).
+    cents = num * 100;
+  } else {
+    cents = num;
   }
 
-  // Decimal strings/numbers like "6.99" or 6.99 represent dollars.
-  if (rawStr.includes('.') || !Number.isInteger(num)) {
-    return Math.round(num * 100);
-  }
-
-  // Integer >= 500 is already in cents (e.g. 699, 14900).
-  if (num >= 500) {
-    return num;
-  }
-
-  // Legacy webhook test fixtures may send whole-dollar integer (e.g. 149) exclusively on sponsor tier.
-  // Never scale arbitrary small integers on Sync Pass plans (prevents $1.00 = 100 cents bypass).
-  if (isSponsorPlan && num >= 99 && num <= 250) {
-    return num * 100;
-  }
-
-  return num;
+  return cents > 0 ? cents : null;
 }
 
-export function extractWebhookAmountCents(payload, { isSponsorPlan = false } = {}) {
-  const data = payload?.data || payload || {};
+function getFirstSettledAmountField(payload) {
+  const data = payload?.data && typeof payload.data === 'object' ? payload.data : payload || {};
   // Strictly evaluate actual settled amount fields (never fall back to subtotal/list price on $0 promos)
   const candidateFields = [
     ['final_amount_cents', data.final_amount_cents],
@@ -111,10 +124,39 @@ export function extractWebhookAmountCents(payload, { isSponsorPlan = false } = {
     if (rawVal === undefined || rawVal === null || rawVal === '') {
       continue;
     }
-    // Stop on first present settled amount field so $0/negative values never fall through
-    return parseWebhookAmountCents(rawVal, fieldName, { isSponsorPlan });
+    return [fieldName, rawVal];
   }
   return null;
+}
+
+export function extractWebhookAmountCents(payload, { isSponsorPlan = false } = {}) {
+  const firstField = getFirstSettledAmountField(payload);
+  if (!firstField) return null;
+  // Stop on first present settled amount field so $0/negative values never fall through
+  return parseWebhookAmountCents(firstField[1], firstField[0], { isSponsorPlan });
+}
+
+export function classifyUnconfiguredWebhookProduct(payload) {
+  const firstField = getFirstSettledAmountField(payload);
+  if (!firstField) return null;
+  const [fieldName, rawVal] = firstField;
+  const provisionalCents = parseWebhookAmountCents(rawVal, fieldName, { isSponsorPlan: false });
+  if (provisionalCents === null) return null;
+  if (provisionalCents >= 9900) return 'sponsor_24h';
+
+  // Non-production fallback when plan IDs are unset: recognize explicit whole-dollar sponsor
+  // integers (e.g. 149 or 99..250, while keeping 100 rejected as an underpaid $1.00 Sync Pass).
+  const rawStr = String(rawVal).trim();
+  const num = Number(rawStr);
+  if (
+    !/_cents$/i.test(fieldName) &&
+    !rawStr.includes('.') &&
+    Number.isInteger(num) &&
+    ((num >= 120 && num <= 250) || num === 99)
+  ) {
+    return 'sponsor_24h';
+  }
+  return 'nightrun_pass';
 }
 
 export function checkAndSweepRateLimit(
@@ -122,35 +164,51 @@ export function checkAndSweepRateLimit(
   key,
   { limit, windowMs, nowMs = Date.now(), maxBuckets = 5000 }
 ) {
+  const existing = scopeBuckets.get(key);
+  if (existing && existing.resetAt > nowMs) {
+    // Refresh LRU recency for existing active key
+    scopeBuckets.delete(key);
+    existing.count += 1;
+    scopeBuckets.set(key, existing);
+    return {
+      allowed: existing.count <= limit,
+      remaining: Math.max(0, limit - existing.count),
+      resetAt: existing.resetAt,
+    };
+  }
+
+  if (existing && existing.resetAt <= nowMs) {
+    scopeBuckets.delete(key);
+  }
+
   if (scopeBuckets.size >= maxBuckets) {
     for (const [entryKey, entryVal] of scopeBuckets.entries()) {
       if (entryVal.resetAt <= nowMs) {
         scopeBuckets.delete(entryKey);
       }
     }
-    while (scopeBuckets.size >= maxBuckets && !scopeBuckets.has(key)) {
-      const oldestKey = scopeBuckets.keys().next().value;
-      if (oldestKey === undefined) break;
-      scopeBuckets.delete(oldestKey);
+    // Only evict non-exhausted buckets so spoofed single-hit floods cannot evict active 429 blocks
+    if (scopeBuckets.size >= maxBuckets) {
+      for (const [entryKey, entryVal] of scopeBuckets.entries()) {
+        if (scopeBuckets.size < maxBuckets) break;
+        if (entryVal.count < limit) {
+          scopeBuckets.delete(entryKey);
+        }
+      }
+    }
+    // Fail closed if every slot holds an exhausted/blocked bucket
+    if (scopeBuckets.size >= maxBuckets) {
+      let earliestReset = nowMs + windowMs;
+      for (const entryVal of scopeBuckets.values()) {
+        if (entryVal.resetAt < earliestReset) {
+          earliestReset = entryVal.resetAt;
+        }
+      }
+      return { allowed: false, remaining: 0, resetAt: earliestReset };
     }
   }
 
-  const existing = scopeBuckets.get(key);
-  if (!existing || existing.resetAt <= nowMs) {
-    const nextBucket = { count: 1, resetAt: nowMs + windowMs };
-    scopeBuckets.delete(key);
-    scopeBuckets.set(key, nextBucket);
-    return { allowed: true, remaining: Math.max(0, limit - 1), resetAt: nextBucket.resetAt };
-  }
-
-  // Refresh LRU recency
-  scopeBuckets.delete(key);
-  existing.count += 1;
-  scopeBuckets.set(key, existing);
-
-  return {
-    allowed: existing.count <= limit,
-    remaining: Math.max(0, limit - existing.count),
-    resetAt: existing.resetAt,
-  };
+  const nextBucket = { count: 1, resetAt: nowMs + windowMs };
+  scopeBuckets.set(key, nextBucket);
+  return { allowed: true, remaining: Math.max(0, limit - 1), resetAt: nextBucket.resetAt };
 }

@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  parseSafeNum,
+  clampNum,
+  COD_PRESETS,
   calcNetherCoords,
   checkPortalCollision,
   triangulateStronghold,
   calcCodTtk,
   calcCs2Economy,
   calcValorantEconomy,
+  snapEaPrice,
   calcFc27Tax,
   calcSbcSquadRating,
   calcRobloxDevEx,
@@ -14,7 +18,10 @@ import {
   calcFortniteXp,
   getFreeApexLevelPacks,
   calcGtaOnlineHeist,
+  calcValorantRrClimb,
+  calcApexRankedLadder,
 } from '../src/utils/gameMath.js';
+import { COD_MW4_WEAPONS } from '../src/data/games/allGames.js';
 
 test('Minecraft uses Math.floor (never Math.round) on negative & positive coordinates', () => {
   const pos = calcNetherCoords(1023, 64, 799, 'toNether');
@@ -144,4 +151,53 @@ test('Regression: Stronghold divergent rays, CoD headMult, CS2 cashIfSaveAll, Va
   assert.equal(getFreeApexLevelPacks(500, 2), 429);
   assert.equal(getFreeApexLevelPacks(1, 3), 429);
   assert.equal(getFreeApexLevelPacks(500, 3), 544);
+});
+
+test('Regression (Sim Suite A): negative-zero normalization, 1e308 bounds, subnormal division & COD_PRESETS sync', () => {
+  assert.equal(Object.is(parseSafeNum(-0, 0), 0), true);
+  assert.equal(Object.is(parseSafeNum({}, -0), 0), true);
+  assert.equal(Object.is(clampNum(-0, 0, 100), 0), true);
+  assert.equal(Object.is(clampNum(-1e-9, 0, 100), 0), true);
+  assert.equal(clampNum(NaN, -50, 50), -50);
+
+  const hostileHeist = calcGtaOnlineHeist({
+    primaryValue: 1e308,
+    secondaryValue: 1e308,
+    players: 2,
+    hostPct: 85,
+    setupFee: -1e308,
+  });
+  assert.equal(Number.isFinite(hostileHeist.gross), true);
+  assert.equal(Number.isFinite(hostileHeist.hostGrossPayout), true);
+  assert.equal(Number.isFinite(hostileHeist.hostProfitAfterSetup), true);
+  assert.ok(hostileHeist.hostGrossPayout >= 0);
+
+  const nearParallel = triangulateStronghold(0, 0, 45, 200, 0, 45.0001);
+  assert.equal(nearParallel.valid, false);
+  const oobProjection = triangulateStronghold(-29999999, 0, 90, -29999999, 1000, 89.999);
+  assert.equal(oobProjection.valid, false);
+
+  const fcExtreme = calcFc27Tax({ buyCoins: 1e308, sellCoins: 1e308, quantity: 100 });
+  assert.equal(Number.isFinite(fcExtreme.totalProfit), true);
+  assert.equal(Number.isFinite(fcExtreme.roiPct), true);
+  const fcSubnormal = calcFc27Tax({ buyCoins: 5e-324, sellCoins: 6358243, quantity: 722 });
+  assert.equal(Number.isFinite(fcSubnormal.roiPct), true);
+  assert.equal(snapEaPrice(1e308), 15000000);
+
+  const devExExtreme = calcRobloxDevEx({ grossRobux: 1e308, targetUsd: 1e308, groupSplitPct: 1 });
+  assert.equal(Number.isFinite(devExExtreme.usdPayout), true);
+  assert.equal(Number.isFinite(devExExtreme.grossSalesNeededForTargetUsd), true);
+
+  const apexSub = calcApexRankedLadder({ currentRp: 1000, targetTierId: 'diamond', avgNetRpPerMatch: 5e-324 });
+  assert.equal(apexSub.matchesNeeded, null);
+  const valZero = calcValorantRrClimb({ currentRr: -0, winRatePct: 50, avgWinRr: 20, avgLossRr: 20 });
+  assert.equal(Object.is(valZero.curRr, 0), true);
+  assert.equal(Object.is(valZero.evPerMatch, 0), true);
+
+  const weaponIds = new Set(COD_MW4_WEAPONS.map((w) => w.id));
+  for (const preset of COD_PRESETS) {
+    if (preset.id !== 'custom') {
+      assert.equal(weaponIds.has(preset.id), true, `Missing COD_PRESETS weapon id: ${preset.id}`);
+    }
+  }
 });

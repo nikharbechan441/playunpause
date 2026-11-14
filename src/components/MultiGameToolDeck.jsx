@@ -177,7 +177,17 @@ export default function MultiGameToolDeck({
   );
 
   const gamePins = useMemo(
-    () => savedPins.filter((p) => p.gameId === game.id),
+    () =>
+      Array.isArray(savedPins)
+        ? savedPins.filter(
+            (p) =>
+              p &&
+              typeof p === 'object' &&
+              typeof p.id === 'string' &&
+              typeof p.gameId === 'string' &&
+              p.gameId === game.id
+          )
+        : [],
     [savedPins, game.id]
   );
 
@@ -973,10 +983,11 @@ export default function MultiGameToolDeck({
                 <div className="slider-pair-grid" style={{ marginTop: '14px' }}>
                   <div>
                     <div className="meter-labels" style={{ fontSize: '0.78rem', marginBottom: '6px' }}>
-                      <span>Custom Weapon A RPM</span>
+                      <label htmlFor="cod-custom-rpm">Custom Weapon A RPM</label>
                       <strong className="mono">{useCustomStats ? customRpm : weaponAObj.rpm} RPM</strong>
                     </div>
                     <input
+                      id="cod-custom-rpm"
                       type="range"
                       min={300}
                       max={1200}
@@ -991,10 +1002,11 @@ export default function MultiGameToolDeck({
                   </div>
                   <div>
                     <div className="meter-labels" style={{ fontSize: '0.78rem', marginBottom: '6px' }}>
-                      <span>Custom Damage / Bullet</span>
+                      <label htmlFor="cod-custom-dmg">Custom Damage / Bullet</label>
                       <strong className="mono">{useCustomStats ? customDmg : weaponAObj.damage} DMG</strong>
                     </div>
                     <input
+                      id="cod-custom-dmg"
                       type="range"
                       min={20}
                       max={90}
@@ -1056,7 +1068,7 @@ export default function MultiGameToolDeck({
                     />
                   </div>
                   <div className="mg-field">
-                    <label>Remaining Matches</label>
+                    <span className="mg-field-label">Remaining Matches</span>
                     <div className="hud-readout" style={{ width: '100%', justifyContent: 'center' }}>
                       {camoMatchesLeft} Matches Left
                     </div>
@@ -2120,10 +2132,11 @@ export default function MultiGameToolDeck({
               {cayoPlayers > 1 && (
                 <div style={{ marginTop: '14px' }}>
                   <div className="meter-labels" style={{ fontSize: '0.8rem', marginBottom: '6px' }}>
-                    <span>Host Cut (Min 15% per crew enforced)</span>
+                    <label htmlFor="cayo-host-cut-slider">Host Cut (Min 15% per crew enforced)</label>
                     <strong className="mono">{cayoResult.hostPct}%</strong>
                   </div>
                   <input
+                    id="cayo-host-cut-slider"
                     type="range"
                     min={15}
                     max={cayoResult.maxHostPct}
@@ -2295,36 +2308,40 @@ export default function MultiGameToolDeck({
                 {EMPTY_PIN_HINTS[game.id] || 'Pin any calculated target above for instant second-screen access.'}
               </p>
             ) : (
-              gamePins.map((pin) => (
+              gamePins.map((pin) => {
+                const pinLabel = typeof pin.label === 'string' && pin.label ? pin.label : 'Pinned calculation';
+                const pinValue = pin.value != null ? String(pin.value) : '';
+                return (
                 <div key={pin.id} className="mg-pin-item">
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--ink-secondary)' }}>
-                      {pin.label}
+                      {pinLabel}
                     </div>
                     <div className="mono" style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-primary)' }}>
-                      {pin.value}
+                      {pinValue}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       type="button"
                       className="subtle-pill-btn"
-                      aria-label={`Copy pinned ${pin.label}`}
-                      onClick={() => copyText(pin.value, pin.id)}
+                      aria-label={`Copy pinned ${pinLabel}`}
+                      onClick={() => copyText(pinValue, pin.id)}
                     >
                       {copiedKey === pin.id ? <Check size={13} /> : <Copy size={13} />}
                     </button>
                     <button
                       type="button"
                       className="subtle-pill-btn"
-                      aria-label={`Remove pinned ${pin.label}`}
+                      aria-label={`Remove pinned ${pinLabel}`}
                       onClick={() => onRemovePin(pin.id)}
                     >
                       <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

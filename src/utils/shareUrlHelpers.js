@@ -3,10 +3,55 @@
  * Shared across CSR components and SSR/unit tests so every control round-trips cleanly.
  */
 import { CANONICAL_ORIGIN, GAME_TO_CANONICAL_PATH } from '../data/seoRoutes.js';
-import { parseSafeNum } from './gameMath.js';
+import { clampNum, parseSafeNum } from './gameMath.js';
+
+function safeIntBound(raw, fallback, min, max) {
+  const n = clampNum(Math.round(parseSafeNum(raw, fallback)), min, max);
+  return n === 0 ? 0 : n;
+}
+
+function safeFloatBound(raw, fallback, min, max, decimals = 2) {
+  const factor = 10 ** decimals;
+  const clamped = clampNum(parseSafeNum(raw, fallback), min, max);
+  const rounded = Math.round(clamped * factor) / factor;
+  return rounded === 0 ? 0 : rounded;
+}
+
+const BLOCKED_SHARE_STRINGS = new Set([
+  'NaN',
+  'Infinity',
+  '-Infinity',
+  'undefined',
+  'null',
+  '__proto__',
+  'constructor',
+  'prototype',
+  'toString',
+]);
+
+function sanitizeStr(raw, maxLen = 64, fallback = '') {
+  if (typeof raw !== 'string') return fallback;
+  const cleaned = raw
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDFFF]/g, (m) => (m.length === 2 ? m : ''))
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '')
+    .trim();
+  if (!cleaned || BLOCKED_SHARE_STRINGS.has(cleaned) || /^\[object\s+[^\]]+\]$/i.test(cleaned)) {
+    return fallback;
+  }
+  let out = '';
+  for (const ch of cleaned) {
+    if (out.length + ch.length > maxLen) break;
+    out += ch;
+  }
+  if (!out || BLOCKED_SHARE_STRINGS.has(out) || /^\[object\s+[^\]]+\]$/i.test(out)) {
+    return fallback;
+  }
+  return out;
+}
 
 export function formatDurationMinutes(totalMinutes) {
-  const mins = Math.max(0, Math.round(totalMinutes));
+  const safe = parseSafeNum(totalMinutes, 0);
+  const mins = clampNum(Math.round(safe), 0, 100000000);
   const hours = Math.floor(mins / 60);
   const rem = mins % 60;
   if (hours === 0) return `${rem}m`;
@@ -14,8 +59,9 @@ export function formatDurationMinutes(totalMinutes) {
 }
 
 export function formatCountdownMs(diffMs) {
-  if (diffMs <= 0) return 'Live Now (NZ Unlocked)';
-  const totalSec = Math.floor(diffMs / 1000);
+  const safe = parseSafeNum(diffMs, 0);
+  if (safe <= 0) return 'Live Now (NZ Unlocked)';
+  const totalSec = Math.floor(Math.min(safe, 1e15) / 1000);
   const days = Math.floor(totalSec / 86400);
   const hours = Math.floor((totalSec % 86400) / 3600);
   const mins = Math.floor((totalSec % 3600) / 60);
@@ -44,7 +90,10 @@ export function buildCrewFromCuts(cutsArr, templateCrew = DEFAULT_HEIST_CREW) {
   if (!Array.isArray(cutsArr) || cutsArr.length < 2 || cutsArr.length > 4) {
     return cloneDefault();
   }
-  const normalized = cutsArr.map((v) => Math.round(Number(v)));
+  const normalized = cutsArr.map((v) => {
+    const r = Math.round(parseSafeNum(v, -1));
+    return r === 0 ? 0 : r;
+  });
   if (normalized.some((n) => !Number.isFinite(n) || n < 0 || n > 100)) {
     return cloneDefault();
   }
@@ -59,8 +108,21 @@ export function buildCrewFromCuts(cutsArr, templateCrew = DEFAULT_HEIST_CREW) {
 }
 
 function resolveOrigin(originOverride) {
-  if (originOverride && typeof originOverride === 'string') return originOverride.replace(/\/+$/, '');
-  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+  if (originOverride && typeof originOverride === 'string') {
+    const candidate = sanitizeStr(originOverride, 256, '').replace(/\/+$/, '');
+    try {
+      const parsed = new URL(candidate);
+      if ((parsed.protocol === 'https:' || parsed.protocol === 'http:') && parsed.origin !== 'null') {
+        return parsed.origin;
+      }
+    } catch {
+      // fall through to window.location.origin or CANONICAL_ORIGIN
+    }
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    const winOrigin = String(window.location.origin);
+    if (/^https?:\/\//i.test(winOrigin)) return winOrigin.replace(/\/+$/, '');
+  }
   return CANONICAL_ORIGIN;
 }
 
@@ -71,8 +133,17 @@ function resolveScopedPath(defaultBase, pathnameOverride) {
       : typeof window !== 'undefined' && window.location?.pathname
         ? window.location.pathname
         : defaultBase;
-  if (defaultBase !== '/' && (raw === defaultBase || raw.startsWith(`${defaultBase}/`))) {
-    return raw;
+  const clean = sanitizeStr(raw, 256, '');
+  if (
+    clean &&
+    !clean.includes('//') &&
+    !clean.includes('\\') &&
+    !clean.includes('?') &&
+    !clean.includes('#') &&
+    defaultBase !== '/' &&
+    (clean === defaultBase || clean.startsWith(`${defaultBase}/`))
+  ) {
+    return clean;
   }
   return defaultBase;
 }
@@ -88,18 +159,18 @@ function formatQueryString(entries) {
   return qs ? `?${qs}` : '';
 }
 
-export function buildStorageSharePath(
-  { consoleId = 'xss-512', freeGb = 140, includePatch = false, mbps = 120, customOffsetGb = 0, sacrificedIds = [] } = {},
-  pathnameOverride
-) {
+export function buildStorageSharePath(rawState, pathnameOverride) {
+  const s = rawState && typeof rawState === 'object' ? rawState : {};
   const base = resolveScopedPath('/gta-6/storage', pathnameOverride);
-  const offset = Math.round(parseSafeNum(customOffsetGb, 0));
-  const cleanIds = Array.isArray(sacrificedIds) ? sacrificedIds.filter(Boolean) : [];
+  const offset = safeIntBound(s.customOffsetGb, 0, -60, 120);
+  const cleanIds = Array.isArray(s.sacrificedIds)
+    ? s.sacrificedIds.map((id) => sanitizeStr(id, 48, '')).filter(Boolean).slice(0, 15)
+    : [];
   const entries = [
-    ['c', consoleId],
-    ['free', Math.round(parseSafeNum(freeGb, 140))],
-    ['patch', includePatch ? 1 : 0],
-    ['mbps', Math.round(parseSafeNum(mbps, 120))],
+    ['c', sanitizeStr(s.consoleId ?? 'xss-512', 32, 'xss-512')],
+    ['free', safeIntBound(s.freeGb, 140, 0, 2000)],
+    ['patch', s.includePatch ? 1 : 0],
+    ['mbps', safeIntBound(s.mbps, 120, 10, 2500)],
   ];
   if (offset !== 0) entries.push(['offset', offset]);
   if (cleanIds.length > 0) entries.push(['uninstalled', cleanIds.join(',')]);
@@ -110,14 +181,13 @@ export function buildStorageShareUrl(state, originOverride, pathnameOverride) {
   return `${resolveOrigin(originOverride)}${buildStorageSharePath(state, pathnameOverride)}`;
 }
 
-export function buildSafeCodesSharePath(
-  { district = 'All', safeId = '', query = '' } = {},
-  pathnameOverride
-) {
+export function buildSafeCodesSharePath(rawState, pathnameOverride) {
+  const s = rawState && typeof rawState === 'object' ? rawState : {};
   const base = resolveScopedPath('/gta-6/safe-codes', pathnameOverride);
-  const cleanQuery = String(query || '').trim();
-  const entries = [['dist', district || 'All']];
-  if (safeId) entries.push(['safe', safeId]);
+  const cleanQuery = sanitizeStr(s.query ?? '', 60, '');
+  const cleanSafeId = sanitizeStr(s.safeId ?? '', 48, '');
+  const entries = [['dist', sanitizeStr(s.district ?? 'All', 48, 'All')]];
+  if (cleanSafeId) entries.push(['safe', cleanSafeId]);
   if (cleanQuery) entries.push(['q', cleanQuery]);
   return `${base}${formatQueryString(entries)}`;
 }
@@ -126,18 +196,16 @@ export function buildSafeCodesShareUrl(state, originOverride, pathnameOverride) 
   return `${resolveOrigin(originOverride)}${buildSafeCodesSharePath(state, pathnameOverride)}`;
 }
 
-export function buildHeistMarketSharePath(
-  { subTab = 'heist', gross = 2450000, fee = 12, cuts = [40, 30, 15, 15], seedCash = 1600000 } = {},
-  pathnameOverride
-) {
+export function buildHeistMarketSharePath(rawState, pathnameOverride) {
+  const s = rawState && typeof rawState === 'object' ? rawState : {};
   const base = resolveScopedPath('/gta-6/heist-split', pathnameOverride);
-  const normalizedSub = normalizeHeistSubTab(subTab);
-  const cleanCuts = Array.isArray(cuts) && cuts.length >= 2 ? cuts : [40, 30, 15, 15];
-  const cleanSeed = Math.round(parseSafeNum(seedCash, 1600000));
+  const normalizedSub = normalizeHeistSubTab(s.subTab);
+  const cleanCuts = buildCrewFromCuts(s.cuts).map((m) => m.pct);
+  const cleanSeed = safeIntBound(s.seedCash, 1600000, 0, 50000000);
   const entries = [
     ['sub', normalizedSub],
-    ['gross', Math.round(parseSafeNum(gross, 2450000))],
-    ['fee', Math.round(parseSafeNum(fee, 12))],
+    ['gross', safeIntBound(s.gross, 2450000, 10000, 25000000)],
+    ['fee', safeIntBound(s.fee, 12, 0, 35)],
     ['cuts', cleanCuts.join(',')],
   ];
   if (normalizedSub === 'market' || cleanSeed !== 1600000) {
@@ -150,10 +218,12 @@ export function buildHeistMarketShareUrl(state, originOverride, pathnameOverride
   return `${resolveOrigin(originOverride)}${buildHeistMarketSharePath(state, pathnameOverride)}`;
 }
 
-export function buildNightRunSharePath({ mins = 45, waypointId = '' } = {}, pathnameOverride) {
+export function buildNightRunSharePath(rawState, pathnameOverride) {
+  const s = rawState && typeof rawState === 'object' ? rawState : {};
   const base = resolveScopedPath('/gta-6/night-run', pathnameOverride);
-  const entries = [['mins', Math.round(parseSafeNum(mins, 45))]];
-  if (waypointId) entries.push(['wp', waypointId]);
+  const cleanWaypoint = sanitizeStr(s.waypointId ?? '', 48, '');
+  const entries = [['mins', safeIntBound(s.mins, 45, 45, 120)]];
+  if (cleanWaypoint) entries.push(['wp', cleanWaypoint]);
   return `${base}${formatQueryString(entries)}`;
 }
 
@@ -161,32 +231,35 @@ export function buildNightRunShareUrl(state, originOverride, pathnameOverride) {
   return `${resolveOrigin(originOverride)}${buildNightRunSharePath(state, pathnameOverride)}`;
 }
 
-export function buildMultiGameSharePath(gameId, state = {}, pathnameOverride) {
-  const canonicalKey = gameId === 'ea-fc-25' ? 'ea-fc-27' : gameId;
-  const defaultBase = GAME_TO_CANONICAL_PATH[canonicalKey] || '/';
+export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
+  const state = rawState && typeof rawState === 'object' ? rawState : {};
+  const canonicalKey = gameId === 'ea-fc-25' ? 'ea-fc-27' : typeof gameId === 'string' ? gameId : '';
+  const defaultBase = Object.hasOwn(GAME_TO_CANONICAL_PATH, canonicalKey)
+    ? GAME_TO_CANONICAL_PATH[canonicalKey]
+    : '/';
   const base = resolveScopedPath(defaultBase, pathnameOverride);
   let entries = [];
 
   switch (canonicalKey) {
     case 'cod-warzone':
       entries = [
-        ['a', state.weaponAId ?? 'raal-mg'],
-        ['b', state.weaponBId ?? 'c9-smg'],
-        ['hp', Math.round(parseSafeNum(state.codHp, 300))],
-        ['hs', Math.round(parseSafeNum(state.codHeadshots, 1))],
+        ['a', sanitizeStr(state.weaponAId ?? 'raal-mg', 40, 'raal-mg')],
+        ['b', sanitizeStr(state.weaponBId ?? 'c9-smg', 40, 'c9-smg')],
+        ['hp', safeIntBound(state.codHp, 300, 100, 300)],
+        ['hs', safeIntBound(state.codHeadshots, 1, 0, 8)],
         ['bolt', state.codOpenBolt ? 1 : 0],
         ['custom', state.codUseCustom ? 1 : 0],
-        ['dmg', Math.round(parseSafeNum(state.codCustomDmg, 36))],
-        ['rpm', Math.round(parseSafeNum(state.codCustomRpm, 882))],
-        ['classes', Math.round(parseSafeNum(state.camoClassCount, 21))],
-        ['mpgun', Math.round(parseSafeNum(state.camoMatchesPerGun, 6))],
+        ['dmg', safeIntBound(state.codCustomDmg, 36, 1, 500)],
+        ['rpm', safeIntBound(state.codCustomRpm, 882, 60, 2000)],
+        ['classes', safeIntBound(state.camoClassCount, 21, 0, 33)],
+        ['mpgun', safeIntBound(state.camoMatchesPerGun, 6, 1, 30)],
       ];
       break;
     case 'fortnite':
       entries = [
-        ['lvl', Math.round(parseSafeNum(state.fnLevel, 44))],
-        ['target', Math.round(parseSafeNum(state.fnTarget, 200))],
-        ['days', Math.round(parseSafeNum(state.fnDays, 28))],
+        ['lvl', safeIntBound(state.fnLevel, 44, 1, 200)],
+        ['target', safeIntBound(state.fnTarget, 200, 1, 200)],
+        ['days', safeIntBound(state.fnDays, 28, 1, 120)],
         ['dailies', (state.fnDailies ?? true) ? 1 : 0],
         ['creative', (state.fnCreative ?? true) ? 1 : 0],
         ['lego', state.fnLego ? 1 : 0],
@@ -194,76 +267,87 @@ export function buildMultiGameSharePath(gameId, state = {}, pathnameOverride) {
       break;
     case 'minecraft':
       entries = [
-        ['dir', state.mcDir ?? 'toNether'],
-        ['x', Math.round(parseSafeNum(state.netherX, -20))],
-        ['y', Math.round(parseSafeNum(state.netherY, 64))],
-        ['z', Math.round(parseSafeNum(state.netherZ, 1023))],
-        ['bx', Math.round(parseSafeNum(state.portalBX, 45))],
-        ['by', Math.round(parseSafeNum(state.portalBY, 64))],
-        ['bz', Math.round(parseSafeNum(state.portalBZ, 980))],
-        ['t1x', parseSafeNum(state.throw1X, 0)],
-        ['t1z', parseSafeNum(state.throw1Z, 0)],
-        ['t1d', parseSafeNum(state.throw1Deg, -45)],
-        ['t2x', parseSafeNum(state.throw2X, 200)],
-        ['t2z', parseSafeNum(state.throw2Z, 0)],
-        ['t2d', parseSafeNum(state.throw2Deg, 45)],
+        ['dir', state.mcDir === 'toOverworld' ? 'toOverworld' : 'toNether'],
+        ['x', safeIntBound(state.netherX, -20, -30000000, 30000000)],
+        ['y', safeIntBound(state.netherY, 64, -64, 320)],
+        ['z', safeIntBound(state.netherZ, 1023, -30000000, 30000000)],
+        ['bx', safeIntBound(state.portalBX, 45, -30000000, 30000000)],
+        ['by', safeIntBound(state.portalBY, 64, -64, 320)],
+        ['bz', safeIntBound(state.portalBZ, 980, -30000000, 30000000)],
+        ['t1x', safeFloatBound(state.throw1X, 0, -30000000, 30000000, 2)],
+        ['t1z', safeFloatBound(state.throw1Z, 0, -30000000, 30000000, 2)],
+        ['t1d', safeFloatBound(state.throw1Deg, -45, -360, 360, 2)],
+        ['t2x', safeFloatBound(state.throw2X, 200, -30000000, 30000000, 2)],
+        ['t2z', safeFloatBound(state.throw2Z, 0, -30000000, 30000000, 2)],
+        ['t2d', safeFloatBound(state.throw2Deg, 45, -360, 360, 2)],
       ];
       break;
-    case 'ea-fc-27':
+    case 'ea-fc-27': {
+      const sbcArr = Array.isArray(state.sbcRatings)
+        ? state.sbcRatings.slice(0, 11).map((n) => safeIntBound(n, 84, 45, 99))
+        : null;
+      const sbcStr =
+        sbcArr && sbcArr.length === 11 ? sbcArr.join(',') : '86,86,85,85,85,84,84,84,84,84,84';
       entries = [
-        ['buy', Math.round(parseSafeNum(state.buyPrice, 185000))],
-        ['sell', Math.round(parseSafeNum(state.sellPrice, 215000))],
-        ['qty', Math.round(parseSafeNum(state.quantity, 1))],
-        ['sbc', Array.isArray(state.sbcRatings) ? state.sbcRatings.join(',') : '86,86,85,85,85,84,84,84,84,84,84'],
+        ['buy', safeIntBound(state.buyPrice, 185000, 150, 15000000)],
+        ['sell', safeIntBound(state.sellPrice, 215000, 200, 15000000)],
+        ['qty', safeIntBound(state.quantity, 1, 1, 100)],
+        ['sbc', sbcStr],
       ];
       break;
+    }
     case 'roblox':
       entries = [
-        ['robux', Math.round(parseSafeNum(state.robux, 50000))],
-        ['rate', state.devexRate ?? 'std-2025'],
-        ['split', Math.round(parseSafeNum(state.groupSplit, 100))],
-        ['net', Math.round(parseSafeNum(state.desiredNet, 30000))],
+        ['robux', safeIntBound(state.robux, 50000, 0, 50000000)],
+        ['rate', sanitizeStr(state.devexRate ?? 'std-2025', 32, 'std-2025')],
+        ['split', safeIntBound(state.groupSplit, 100, 1, 100)],
+        ['net', safeIntBound(state.desiredNet, 30000, 0, 15000000)],
       ];
       break;
-    case 'cs2':
+    case 'cs2': {
+      const teamArr = Array.isArray(state.csTeamCash)
+        ? state.csTeamCash.slice(0, 5).map((n) => safeIntBound(n, 3200, 0, 16000))
+        : null;
+      const teamStr = teamArr && teamArr.length === 5 ? teamArr.join(',') : '4900,3200,2100,5600,3800';
       entries = [
-        ['side', state.cs2Side ?? 'CT'],
-        ['cash', Math.round(parseSafeNum(state.cs2Cash, 3200))],
-        ['loss', Math.round(parseSafeNum(state.cs2Loss, 1))],
+        ['side', state.cs2Side === 'T' ? 'T' : 'CT'],
+        ['cash', safeIntBound(state.cs2Cash, 3200, 0, 16000)],
+        ['loss', safeIntBound(state.cs2Loss, 1, 0, 4)],
         ['plant', state.cs2Plant ? 1 : 0],
-        ['team', Array.isArray(state.csTeamCash) ? state.csTeamCash.join(',') : '4900,3200,2100,5600,3800'],
+        ['team', teamStr],
       ];
       break;
+    }
     case 'valorant':
       entries = [
-        ['cred', Math.round(parseSafeNum(state.valCreds, 3900))],
-        ['vw', Math.round(parseSafeNum(state.valWeapon, 2900))],
-        ['va', Math.round(parseSafeNum(state.valArmor, 650))],
-        ['vu', Math.round(parseSafeNum(state.valUtil, 350))],
-        ['vl', Math.round(parseSafeNum(state.valLoss, 1))],
-        ['rr', Math.round(parseSafeNum(state.valRr, 44))],
-        ['wr', Math.round(parseSafeNum(state.valWr, 55))],
-        ['winRr', Math.round(parseSafeNum(state.valWinRr, 21))],
-        ['lossRr', Math.round(parseSafeNum(state.valLossRr, 16))],
+        ['cred', safeIntBound(state.valCreds, 3900, 0, 9000)],
+        ['vw', safeIntBound(state.valWeapon, 2900, 0, 4700)],
+        ['va', safeIntBound(state.valArmor, 650, 0, 1000)],
+        ['vu', safeIntBound(state.valUtil, 350, 0, 1200)],
+        ['vl', safeIntBound(state.valLoss, 1, 0, 2)],
+        ['rr', safeIntBound(state.valRr, 44, 0, 99)],
+        ['wr', safeIntBound(state.valWr, 55, 1, 99)],
+        ['winRr', safeIntBound(state.valWinRr, 21, 5, 50)],
+        ['lossRr', safeIntBound(state.valLossRr, 16, 5, 50)],
       ];
       break;
     case 'apex-legends':
       entries = [
-        ['apexLvl', Math.round(parseSafeNum(state.apexLevel, 420))],
-        ['prestige', Math.round(parseSafeNum(state.apexPrestige, 0))],
-        ['bp', Math.round(parseSafeNum(state.apexBp, 28))],
-        ['bought', Math.round(parseSafeNum(state.apexBought, 20))],
-        ['tier', state.apexTier ?? 'diamond'],
-        ['apexRp', Math.round(parseSafeNum(state.apexRp, 8400))],
-        ['avgRp', Math.round(parseSafeNum(state.apexAvgRp, 95))],
+        ['apexLvl', safeIntBound(state.apexLevel, 420, 1, 500)],
+        ['prestige', safeIntBound(state.apexPrestige, 0, 0, 3)],
+        ['bp', safeIntBound(state.apexBp, 28, 0, 300)],
+        ['bought', safeIntBound(state.apexBought, 20, 0, 500)],
+        ['tier', sanitizeStr(state.apexTier ?? 'diamond', 24, 'diamond')],
+        ['apexRp', safeIntBound(state.apexRp, 8400, 0, 40000)],
+        ['avgRp', safeIntBound(state.apexAvgRp, 95, -100, 400)],
       ];
       break;
     case 'gta-v':
       entries = [
-        ['cayo', Math.round(parseSafeNum(state.cayoPrimary, 1300000))],
-        ['csec', Math.round(parseSafeNum(state.cayoSecondary, 495000))],
-        ['players', Math.round(parseSafeNum(state.cayoPlayers, 2))],
-        ['hostPct', Math.round(parseSafeNum(state.cayoHostPct, 85))],
+        ['cayo', safeIntBound(state.cayoPrimary, 1300000, 630000, 2500000)],
+        ['csec', safeIntBound(state.cayoSecondary, 495000, 0, 2500000)],
+        ['players', safeIntBound(state.cayoPlayers, 2, 1, 4)],
+        ['hostPct', safeIntBound(state.cayoHostPct, 85, 15, 100)],
         ['hard', (state.cayoHard ?? true) ? 1 : 0],
         ['elite', (state.cayoElite ?? true) ? 1 : 0],
       ];

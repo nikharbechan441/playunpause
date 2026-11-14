@@ -667,3 +667,164 @@ test('Worker enforces explicit static cache headers, non-poisoning 404s, 1-hop w
   assert.equal(upperEmbed.status, 200);
   assert.equal(upperEmbed.headers.get('x-robots-tag'), 'noindex, follow');
 });
+
+test('Worker security hardening: non-object webhooks, timestamp-bound HMAC, LRU bucket preservation, dev sponsor scaling, and edge parity', async () => {
+  const secret = 'ws_b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1';
+  const baseEnv = {
+    DB: createMockD1(),
+    ASSETS: createMockAssets(),
+    NODE_ENV: 'production',
+    ALLOW_DEMO_UNLOCK: 'false',
+    WHOP_PASS_PLAN_ID: 'prod_pass_sec',
+    WHOP_SPONSOR_PLAN_ID: 'prod_spon_sec',
+    WHOP_WEBHOOK_SECRET: secret,
+    ADMIN_API_KEY: 'admin-worker-sec-test',
+  };
+
+  const signStd = (id, ts, bodyStr) => {
+    const key = Buffer.from(secret.slice(3), 'base64');
+    return `v1,${crypto.createHmac('sha256', key).update(`${id}.${ts}.${bodyStr}`, 'utf8').digest('base64')}`;
+  };
+  const nowTs = String(Math.floor(Date.now() / 1000));
+
+  // 1. Signed non-object JSON payloads must return 400 (never throw TypeError / 500)
+  for (const [idx, evilBody] of ['null', '123', '"hello"', '[]', '{"type":"payment.succeeded","data":null}'].entries()) {
+    const msgId = `msg_nonobj_${idx}`;
+    const res = await worker.fetch(
+      new Request('https://playunpause.com/api/webhooks/whop', {
+        method: 'POST',
+        headers: {
+          'webhook-id': msgId,
+          'webhook-timestamp': nowTs,
+          'webhook-signature': signStd(msgId, nowTs, evilBody),
+          'cf-connecting-ip': `198.51.100.${120 + idx}`,
+        },
+        body: evilBody,
+      }),
+      baseEnv
+    );
+    assert.equal(res.status, 400, `Expected 400 for signed body ${evilBody}`);
+  }
+
+  // 2. Legacy x-whop-signature without timestamp binding must fail when webhook-timestamp shifts
+  const tsOrderBody = JSON.stringify({
+    type: 'payment.succeeded',
+    data: { id: 'pay_ts_bind_1', final_amount: 6.99, currency: 'usd', plan_id: 'prod_pass_sec' },
+  });
+  const rawOnlyHex = crypto.createHmac('sha256', secret).update(tsOrderBody, 'utf8').digest('hex');
+  const rawOnlyRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'x-whop-signature': rawOnlyHex,
+        'webhook-timestamp': String(Number(nowTs) + 5),
+        'cf-connecting-ip': '198.51.100.130',
+      },
+      body: tsOrderBody,
+    }),
+    baseEnv
+  );
+  assert.equal(rawOnlyRes.status, 401);
+
+  // 3. Spoofed-IP flood cannot evict an active 429 rate-limited IP bucket before TTL expiry
+  const blockedIp = '192.0.2.211';
+  let hit429 = false;
+  for (let i = 0; i < 25; i += 1) {
+    const r = await worker.fetch(
+      new Request('https://playunpause.com/api/pass/activate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': blockedIp },
+        body: JSON.stringify({ codeOrEmail: 'UP-BADCODE1' }),
+      }),
+      baseEnv
+    );
+    if (r.status === 429) hit429 = true;
+  }
+  assert.equal(hit429, true);
+
+  for (let i = 0; i < 5_100; i += 1) {
+    const a = (i >> 8) & 255;
+    const b = i & 255;
+    await worker.fetch(
+      new Request('https://playunpause.com/api/pass/activate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': `10.88.${a}.${b}` },
+        body: '{}',
+      }),
+      baseEnv
+    );
+  }
+  const postFloodRes = await worker.fetch(
+    new Request('https://playunpause.com/api/pass/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'cf-connecting-ip': blockedIp },
+      body: JSON.stringify({ codeOrEmail: 'UP-BADCODE1' }),
+    }),
+    baseEnv
+  );
+  assert.equal(postFloodRes.status, 429);
+
+  // 4. Non-prod unconfigured-plan fallback scales 149 -> sponsor_24h (14900) while rejecting 100 ($1.00)
+  const devUnconfEnv = {
+    ...baseEnv,
+    NODE_ENV: 'test',
+    WHOP_PASS_PLAN_ID: '',
+    WHOP_SPONSOR_PLAN_ID: '',
+  };
+  const sponWholeBody = JSON.stringify({
+    type: 'payment.succeeded',
+    data: { id: 'pay_unconf_149', final_amount: 149, currency: 'usd', metadata: { badge_text: 'Sponsor Unconf' } },
+  });
+  const sponWholeRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'webhook-id': 'msg_unconf_149',
+        'webhook-timestamp': nowTs,
+        'webhook-signature': signStd('msg_unconf_149', nowTs, sponWholeBody),
+        'cf-connecting-ip': '198.51.100.140',
+      },
+      body: sponWholeBody,
+    }),
+    devUnconfEnv
+  );
+  assert.equal(sponWholeRes.status, 200);
+  const pass100Body = JSON.stringify({
+    type: 'payment.succeeded',
+    data: { id: 'pay_unconf_100', final_amount: 100, currency: 'usd' },
+  });
+  const pass100Res = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'webhook-id': 'msg_unconf_100',
+        'webhook-timestamp': nowTs,
+        'webhook-signature': signStd('msg_unconf_100', nowTs, pass100Body),
+        'cf-connecting-ip': '198.51.100.141',
+      },
+      body: pass100Body,
+    }),
+    devUnconfEnv
+  );
+  assert.equal(pass100Res.status, 400);
+
+  // 5. Admin sponsor strips CR/LF and bidi override chars; www double-slash collapses cleanly
+  const adminBadgeRes = await worker.fetch(
+    new Request('https://playunpause.com/api/admin/sponsor', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-admin-key': 'admin-worker-sec-test',
+        'cf-connecting-ip': '198.51.100.142',
+      },
+      body: JSON.stringify({ badgeText: 'Clean\r\nSponsor\u202EBadge', targetUrl: 'https://example.com' }),
+    }),
+    baseEnv
+  );
+  assert.equal(adminBadgeRes.status, 200);
+  assert.equal((await adminBadgeRes.json()).badgeText, 'Clean Sponsor Badge');
+
+  const wwwDoubleSlash = await worker.fetch(new Request('https://www.playunpause.com//evil.com'), baseEnv);
+  assert.equal(wwwDoubleSlash.status, 301);
+  assert.equal(wwwDoubleSlash.headers.get('location'), 'https://playunpause.com/evil.com');
+});

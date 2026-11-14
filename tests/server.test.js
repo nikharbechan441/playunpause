@@ -9,12 +9,14 @@ import { createApp, sanitizeSyncState } from '../server/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import { verifyWhopWebhook } from '../server/webhookAuth.js';
 import { computeHeistSplit, normalizePercentages } from '../server/splitMath.js';
 import {
   isSafePublicHttpsUrl,
   checkAndSweepRateLimit,
   parseWebhookAmountCents,
 } from '../server/securityHelpers.js';
+import { resolveWwwRedirectLocation } from '../src/data/ssrHtml.js';
 
 function signStandardWebhook(secretBase64, id, timestamp, bodyString) {
   const key = Buffer.from(secretBase64, 'base64');
@@ -702,7 +704,187 @@ test('Express parity: 1-hop www redirects, non-poisoning static 404s, explicit c
       const upperEmbed = await rawRequest('GET', '/EMBED/minecraft');
       assert.equal(upperEmbed.status, 200);
       assert.equal(upperEmbed.headers['x-robots-tag'], 'noindex, follow');
+
+      const wwwDoubleSlash = await rawRequest('GET', '//evil.com', { host: 'www.playunpause.com' });
+      assert.equal(wwwDoubleSlash.status, 301);
+      assert.equal(wwwDoubleSlash.headers.location, 'https://playunpause.com/evil.com');
     }
+  } finally {
+    server.close();
+    db.close();
+  }
+});
+
+test('Security hardening parity: SSRF normalization, sub-cent null guard, timestamp-bound HMAC, blocked LRU retention, 405 & /api case', async () => {
+  // 1. SSRF localhost.* / .localdomain & trailing dot normalization
+  assert.equal(isSafePublicHttpsUrl('https://localhost.localdomain/').ok, false);
+  assert.equal(isSafePublicHttpsUrl('https://localhost.example.com/').ok, false);
+  assert.equal(isSafePublicHttpsUrl('https://sub.localdomain/').ok, false);
+  assert.equal(isSafePublicHttpsUrl('https://example.com\r\n').ok, true);
+  assert.equal(isSafePublicHttpsUrl('https://example.com.\n').normalizedUrl, 'https://example.com/');
+
+  // 2. Sub-cent amounts rounding to 0 return null (never 0)
+  assert.equal(parseWebhookAmountCents(0.004, 'final_amount'), null);
+  assert.equal(parseWebhookAmountCents('1e-7', 'final_amount'), null);
+  assert.equal(parseWebhookAmountCents(0.4, 'final_amount_cents'), null);
+
+  // 3. resolveWwwRedirectLocation collapses repeated slashes cleanly
+  assert.equal(
+    resolveWwwRedirectLocation('//evil.com', new URLSearchParams(), ''),
+    'https://playunpause.com/evil.com'
+  );
+
+  // 4. Timestamp-less legacy x-whop-signature without timestamp prefix must reject
+  const rawSecret = 'legacy-test-secret-0123456789';
+  const payloadStr = JSON.stringify({ type: 'payment.succeeded', data: { id: 'pay_x' } });
+  const nowSec = 1_750_000_000;
+  const rawHex = crypto.createHmac('sha256', rawSecret).update(payloadStr, 'utf8').digest('hex');
+  assert.equal(
+    verifyWhopWebhook({
+      rawBody: payloadStr,
+      headers: { 'x-whop-signature': rawHex, 'webhook-timestamp': String(nowSec) },
+      secret: rawSecret,
+      nowEpochSeconds: nowSec,
+    }).valid,
+    false
+  );
+
+  // 5. Blocked/exhausted rate-limit buckets resist spoofed-IP LRU eviction & fail closed if full of blocked buckets
+  const rlBuckets = new Map();
+  const t0 = 1_000_000;
+  for (let i = 0; i < 6; i += 1) {
+    checkAndSweepRateLimit(rlBuckets, 'attacker-ip', {
+      limit: 5,
+      windowMs: 60_000,
+      nowMs: t0,
+      maxBuckets: 50,
+    });
+  }
+  for (let i = 0; i < 120; i += 1) {
+    checkAndSweepRateLimit(rlBuckets, `spoof-${i}`, {
+      limit: 5,
+      windowMs: 60_000,
+      nowMs: t0,
+      maxBuckets: 50,
+    });
+  }
+  assert.equal(
+    checkAndSweepRateLimit(rlBuckets, 'attacker-ip', {
+      limit: 5,
+      windowMs: 60_000,
+      nowMs: t0,
+      maxBuckets: 50,
+    }).allowed,
+    false
+  );
+
+  const fullBlocked = new Map();
+  for (let b = 0; b < 4; b += 1) {
+    for (let k = 0; k < 2; k += 1) {
+      checkAndSweepRateLimit(fullBlocked, `blocked-${b}`, {
+        limit: 2,
+        windowMs: 60_000,
+        nowMs: t0,
+        maxBuckets: 4,
+      });
+    }
+  }
+  assert.equal(
+    checkAndSweepRateLimit(fullBlocked, 'overflow-new-ip', {
+      limit: 2,
+      windowMs: 60_000,
+      nowMs: t0,
+      maxBuckets: 4,
+    }).allowed,
+    false
+  );
+  assert.equal(fullBlocked.size, 4);
+
+  // 6. Live Express checks: signed null/array webhook 400, /api case-strict 404, POST / 405, admin badge strip, unconf dev scaling
+  const secretB64 = Buffer.from('express-hardening-secret-key-32b').toString('base64');
+  const whopSecret = `ws_${secretB64}`;
+  const { app, db } = createApp({
+    dbPath: ':memory:',
+    env: {
+      NODE_ENV: 'test',
+      ALLOW_DEMO_UNLOCK: 'false',
+      WHOP_WEBHOOK_SECRET: whopSecret,
+      ADMIN_API_KEY: 'admin-express-sec',
+    },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  const { port } = server.address();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const ts = String(Math.floor(Date.now() / 1000));
+
+  try {
+    for (const [idx, evil] of ['null', '[]', '"hello"', '{"type":"payment.succeeded","data":null}'].entries()) {
+      const id = `msg_exp_evil_${idx}`;
+      const r = await fetch(`${baseUrl}/api/webhooks/whop`, {
+        method: 'POST',
+        headers: {
+          'webhook-id': id,
+          'webhook-timestamp': ts,
+          'webhook-signature': signStandardWebhook(secretB64, id, ts, evil),
+        },
+        body: evil,
+      });
+      assert.equal(r.status, 400, `Expected 400 on Express webhook for ${evil}`);
+    }
+
+    const upperApi = await fetch(`${baseUrl}/api/CONFIG`);
+    assert.equal(upperApi.status, 404);
+    assert.deepEqual(await upperApi.json(), { error: 'API route not found' });
+
+    const upperApiPrefix = await fetch(`${baseUrl}/API/config`);
+    assert.equal(upperApiPrefix.status, 404);
+
+    const postRoot = await fetch(`${baseUrl}/`, { method: 'POST' });
+    assert.equal(postRoot.status, 405);
+    assert.deepEqual(await postRoot.json(), { error: 'Method not allowed' });
+
+    const badgeRes = await fetch(`${baseUrl}/api/admin/sponsor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': 'admin-express-sec',
+      },
+      body: JSON.stringify({ badgeText: 'Expr\r\nSponsor\u202E24h', targetUrl: 'https://example.com' }),
+    });
+    assert.equal(badgeRes.status, 200);
+    assert.equal((await badgeRes.json()).badgeText, 'Expr Sponsor 24h');
+
+    // Non-prod unconfigured plan fallback scales 149 -> sponsor_24h (14900) and rejects 100 ($1.00)
+    const devSponBody = JSON.stringify({
+      type: 'payment.succeeded',
+      data: { id: 'pay_exp_unconf_149', final_amount: 149, currency: 'usd', metadata: { badge_text: 'Unconf Exp' } },
+    });
+    const devSponRes = await fetch(`${baseUrl}/api/webhooks/whop`, {
+      method: 'POST',
+      headers: {
+        'webhook-id': 'msg_exp_u149',
+        'webhook-timestamp': ts,
+        'webhook-signature': signStandardWebhook(secretB64, 'msg_exp_u149', ts, devSponBody),
+      },
+      body: devSponBody,
+    });
+    assert.equal(devSponRes.status, 200);
+
+    const dev100Body = JSON.stringify({
+      type: 'payment.succeeded',
+      data: { id: 'pay_exp_unconf_100', final_amount: 100, currency: 'usd' },
+    });
+    const dev100Res = await fetch(`${baseUrl}/api/webhooks/whop`, {
+      method: 'POST',
+      headers: {
+        'webhook-id': 'msg_exp_u100',
+        'webhook-timestamp': ts,
+        'webhook-signature': signStandardWebhook(secretB64, 'msg_exp_u100', ts, dev100Body),
+      },
+      body: dev100Body,
+    });
+    assert.equal(dev100Res.status, 400);
   } finally {
     server.close();
     db.close();

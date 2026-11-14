@@ -170,9 +170,16 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  scroll-padding-top: 116px;
+  scroll-padding-bottom: 84px;
   overflow-x: hidden;
   background-color: var(--bg-canvas);
   color: var(--ink-primary);
+}
+
+main:not(.embed-app-shell) :where([id], input, select, textarea, button, a, section) {
+  scroll-margin-top: 116px;
+  scroll-margin-bottom: 84px;
 }
 
 body {
@@ -375,6 +382,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -424,8 +432,9 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 44px;
-  padding: 0 13px;
+  min-height: 44px;
+  height: auto;
+  padding: 6px 13px;
   border-radius: 10px;
   border: 1px solid var(--border-strong);
   background: var(--bg-surface);
@@ -462,16 +471,19 @@ textarea {
 .topbar-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  flex-shrink: 0;
+  max-width: 100%;
+  flex-shrink: 1;
 }
 
 .nz-hud-pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 44px;
-  padding: 0 12px;
+  min-height: 44px;
+  height: auto;
+  padding: 6px 12px;
   border-radius: 10px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -501,8 +513,9 @@ textarea {
   justify-content: center;
   gap: 6px;
   min-width: 44px;
-  height: 44px;
-  padding: 0 12px;
+  min-height: 44px;
+  height: auto;
+  padding: 6px 12px;
   border-radius: 10px;
   border: 1px solid var(--border-strong);
   background: var(--bg-surface);
@@ -527,8 +540,9 @@ textarea {
 }
 
 .pass-header-btn {
-  height: 44px;
-  padding: 0 14px;
+  min-height: 44px;
+  height: auto;
+  padding: 6px 14px;
   border-radius: 10px;
   border: 1px solid var(--border-strong);
   background: var(--bg-recessed);
@@ -587,8 +601,8 @@ textarea {
   align-items: center;
   gap: 7px;
   min-height: 44px;
-  height: 44px;
-  padding: 0 12px;
+  height: auto;
+  padding: 6px 12px;
   font-family: var(--font-display);
   font-size: 0.84rem;
   font-weight: 500;
@@ -666,8 +680,8 @@ textarea {
   align-items: center;
   gap: 7px;
   min-height: 44px;
-  height: 44px;
-  padding: 0 14px;
+  height: auto;
+  padding: 6px 14px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
@@ -1009,6 +1023,7 @@ input[type='range']::-moz-range-thumb {
 
 .primary-coral-btn {
   min-height: 44px;
+  min-width: 0;
   padding: 10px 16px;
   border-radius: 10px;
   border: 1px solid var(--cta-bg);
@@ -1017,7 +1032,9 @@ input[type='range']::-moz-range-thumb {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.89rem;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
   box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.35);
   display: inline-flex;
   align-items: center;
@@ -1041,6 +1058,7 @@ input[type='range']::-moz-range-thumb {
 .secondary-key-btn,
 .stage-dark-btn {
   min-height: 44px;
+  min-width: 0;
   padding: 9px 14px;
   border-radius: 10px;
   border: 1px solid var(--border-strong);
@@ -1049,7 +1067,9 @@ input[type='range']::-moz-range-thumb {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 0.86rem;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
   box-shadow: var(--specular-top);
   display: inline-flex;
   align-items: center;
@@ -1172,6 +1192,7 @@ input[type='range']::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  overflow-wrap: anywhere;
   transition: border-color 150ms var(--ease-out), background-color 150ms var(--ease-out),
     transform 120ms var(--ease-spring);
 }
@@ -1198,6 +1219,7 @@ input[type='range']::-moz-range-thumb {
   font-size: 0.76rem;
   font-weight: 600;
   letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
   color: var(--ink-muted);
 }
 
@@ -1211,6 +1233,7 @@ input[type='range']::-moz-range-thumb {
   font-family: var(--font-display);
   font-size: 0.86rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
   color: var(--ink-primary);
 }
 
@@ -2108,7 +2131,8 @@ input[type='range']::-moz-range-thumb {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.mg-field label {
+.mg-field label,
+.mg-field .mg-field-label {
   display: block;
   font-size: 0.78rem;
   font-weight: 600;
@@ -3392,6 +3416,8 @@ input[type='range']::-moz-range-thumb {
 }
 
 .legal-modal-body {
+  flex: 1 1 auto;
+  min-height: 140px;
   overflow-y: auto;
   padding-right: 4px;
   font-size: 0.86rem;
@@ -3522,5 +3548,131 @@ input[type='range']::-moz-range-thumb {
 
   .sync-restore-row {
     flex-direction: column;
+  }
+}
+
+/* =========================================================================
+   OFFLINE / RECOVERY & STORAGE QUOTA WARNING BANNERS
+   ========================================================================= */
+.chunk-error-card {
+  border-color: var(--coral-border);
+}
+
+.chunk-error-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.storage-warn-banner {
+  border-color: var(--gold-border);
+  background: var(--gold-soft);
+}
+
+/* =========================================================================
+   LANDSCAPE MOBILE (<= 440px HEIGHT): PREVENT STICKY / MODAL COLLAPSE
+   ========================================================================= */
+@media (max-height: 440px) {
+  html {
+    scroll-padding-top: 16px;
+    scroll-padding-bottom: 16px;
+  }
+
+  main:not(.embed-app-shell) :where([id], input, select, textarea, button, a, section) {
+    scroll-margin-top: 16px;
+    scroll-margin-bottom: 16px;
+  }
+
+  .hud-header-wrap {
+    position: static;
+  }
+
+  .gta-workspace-nav {
+    display: inline-flex;
+  }
+
+  .mobile-bottom-rail {
+    display: none;
+  }
+
+  .app-shell.has-mobile-bottom-rail {
+    padding-bottom: 24px;
+  }
+
+  .live-receipt-stage,
+  .receipt-stage-col,
+  .keypad-box,
+  .wire-ledger-card {
+    position: static;
+  }
+
+  .modal-backdrop {
+    padding: 8px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .modal-card,
+  .legal-modal-card {
+    max-height: none;
+    overflow-y: visible;
+    margin: auto 0;
+    padding: 14px 16px;
+  }
+
+  .legal-modal-body {
+    min-height: 120px;
+    overflow-y: visible;
+  }
+}
+
+/* =========================================================================
+   FORCED COLORS / WINDOWS HIGH CONTRAST ACCESSIBILITY
+   ========================================================================= */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .mode-tab,
+  .subtab-btn,
+  .filter-pill,
+  .console-key,
+  .console-pill,
+  .subtle-pill-btn,
+  .tactile-icon-btn,
+  .game-switch-btn,
+  .pass-header-btn,
+  .game-selector-item,
+  .safe-card,
+  .game-kill-btn,
+  .sacrifice-chip {
+    border: 1px solid ButtonText;
+  }
+
+  .mode-tab.active,
+  .subtab-btn.active,
+  .filter-pill.active,
+  .console-key.selected,
+  .console-pill.active,
+  .quick-game-pill.active,
+  .game-selector-item.active,
+  .safe-card.selected,
+  .game-kill-btn.sacrificed,
+  .sacrifice-chip.checked,
+  .sync-pill-pro,
+  [aria-selected='true'],
+  [aria-pressed='true'],
+  [aria-current='page'] {
+    border: 2px solid Highlight;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  .quick-game-pill.active::after {
+    background: Highlight;
   }
 }

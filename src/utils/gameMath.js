@@ -3,109 +3,130 @@
  * Zero DOM dependencies so every formula runs in Vite/React AND node --test.
  */
 
+function normalizeZero(n) {
+  return n === 0 ? 0 : n;
+}
+
 export function parseSafeNum(val, fallback = 0) {
-  if (val === '' || val === null || val === undefined) return fallback;
+  const fbNum = Number(fallback);
+  const safeFb = Number.isFinite(fbNum) ? normalizeZero(fbNum) : 0;
+  if (val === '' || val === null || val === undefined || typeof val === 'object' && !Array.isArray(val)) {
+    return safeFb;
+  }
   const n = Number(val);
-  return Number.isFinite(n) ? n : fallback;
+  return Number.isFinite(n) ? normalizeZero(n) : safeFb;
 }
 
 export function clampNum(val, min, max) {
+  const lo = Number.isFinite(Number(min)) ? normalizeZero(Number(min)) : 0;
+  const hi = Number.isFinite(Number(max)) ? normalizeZero(Number(max)) : lo;
   const n = Number(val);
-  if (!Number.isFinite(n)) return min;
-  return Math.min(max, Math.max(min, n));
+  if (!Number.isFinite(n)) return lo;
+  const clamped = Math.min(hi, Math.max(lo, n));
+  return normalizeZero(clamped);
 }
 
 /**
  * Minecraft Overworld <-> Nether 8:1 linker + 3D collision & chunk calculator
  * Uses Math.floor (exact game integer rule, never Math.round).
  */
+const MC_OVERWORLD_LIMIT = 30000000;
+const MC_NETHER_LIMIT = 3750000;
+
 export function calcNetherCoords(xVal, yVal, zVal, direction = 'toNether') {
-  const x = parseSafeNum(xVal, 0);
+  const limit = direction === 'toNether' ? MC_OVERWORLD_LIMIT : MC_NETHER_LIMIT;
+  const x = clampNum(parseSafeNum(xVal, 0), -limit, limit);
   const y = clampNum(parseSafeNum(yVal, 64), -64, 320);
-  const z = parseSafeNum(zVal, 0);
+  const z = clampNum(parseSafeNum(zVal, 0), -limit, limit);
 
   if (direction === 'toNether') {
-    const outX = Math.floor(x / 8);
-    const outZ = Math.floor(z / 8);
-    const cx = Math.floor(x / 16);
-    const cz = Math.floor(z / 16);
-    const ocx = Math.floor(outX / 16);
-    const ocz = Math.floor(outZ / 16);
+    const outX = normalizeZero(Math.floor(x / 8));
+    const outZ = normalizeZero(Math.floor(z / 8));
+    const cx = normalizeZero(Math.floor(x / 16));
+    const cz = normalizeZero(Math.floor(z / 16));
+    const ocx = normalizeZero(Math.floor(outX / 16));
+    const ocz = normalizeZero(Math.floor(outZ / 16));
     return {
       input: { x, y, z },
       output: { x: outX, y, z: outZ },
       chunk: {
         cx,
         cz,
-        rx: Math.floor(cx / 32),
-        rz: Math.floor(cz / 32),
-        lx: ((Math.floor(x) % 16) + 16) % 16,
-        lz: ((Math.floor(z) % 16) + 16) % 16,
+        rx: normalizeZero(Math.floor(cx / 32)),
+        rz: normalizeZero(Math.floor(cz / 32)),
+        lx: normalizeZero(((Math.floor(x) % 16) + 16) % 16),
+        lz: normalizeZero(((Math.floor(z) % 16) + 16) % 16),
       },
       outChunk: {
         cx: ocx,
         cz: ocz,
-        rx: Math.floor(ocx / 32),
-        rz: Math.floor(ocz / 32),
-        lx: ((outX % 16) + 16) % 16,
-        lz: ((outZ % 16) + 16) % 16,
+        rx: normalizeZero(Math.floor(ocx / 32)),
+        rz: normalizeZero(Math.floor(ocz / 32)),
+        lx: normalizeZero(((outX % 16) + 16) % 16),
+        lz: normalizeZero(((outZ % 16) + 16) % 16),
       },
       netherYWarning: y < 28 ? 'Below Lava Sea (Y=31) — dig carefully in Nether' : y > 120 ? 'Near Nether Bedrock Roof (Y=128)' : 'Safe build band (Y=32–118)',
     };
   }
 
-  const outX = Math.floor(x * 8);
-  const outZ = Math.floor(z * 8);
-  const cx = Math.floor(x / 16);
-  const cz = Math.floor(z / 16);
-  const ocx = Math.floor(outX / 16);
-  const ocz = Math.floor(outZ / 16);
+  const outX = normalizeZero(Math.floor(x * 8));
+  const outZ = normalizeZero(Math.floor(z * 8));
+  const cx = normalizeZero(Math.floor(x / 16));
+  const cz = normalizeZero(Math.floor(z / 16));
+  const ocx = normalizeZero(Math.floor(outX / 16));
+  const ocz = normalizeZero(Math.floor(outZ / 16));
   return {
     input: { x, y, z },
     output: { x: outX, y, z: outZ },
     chunk: {
       cx,
       cz,
-      rx: Math.floor(cx / 32),
-      rz: Math.floor(cz / 32),
-      lx: ((Math.floor(x) % 16) + 16) % 16,
-      lz: ((Math.floor(z) % 16) + 16) % 16,
+      rx: normalizeZero(Math.floor(cx / 32)),
+      rz: normalizeZero(Math.floor(cz / 32)),
+      lx: normalizeZero(((Math.floor(x) % 16) + 16) % 16),
+      lz: normalizeZero(((Math.floor(z) % 16) + 16) % 16),
     },
     outChunk: {
       cx: ocx,
       cz: ocz,
-      rx: Math.floor(ocx / 32),
-      rz: Math.floor(ocz / 32),
-      lx: ((outX % 16) + 16) % 16,
-      lz: ((outZ % 16) + 16) % 16,
+      rx: normalizeZero(Math.floor(ocx / 32)),
+      rz: normalizeZero(Math.floor(ocz / 32)),
+      lx: normalizeZero(((outX % 16) + 16) % 16),
+      lz: normalizeZero(((outZ % 16) + 16) % 16),
     },
     netherYWarning: 'Overworld exit uses closest valid terrain within 128 blocks',
   };
 }
 
-export function checkPortalCollision(aOverworld, bOverworld) {
-  const ax = Math.floor(parseSafeNum(aOverworld.x, 0) / 8);
-  const ay = parseSafeNum(aOverworld.y, 64);
-  const az = Math.floor(parseSafeNum(aOverworld.z, 0) / 8);
+export function checkPortalCollision(aOverworld = {}, bOverworld = {}) {
+  const a = aOverworld && typeof aOverworld === 'object' ? aOverworld : {};
+  const b = bOverworld && typeof bOverworld === 'object' ? bOverworld : {};
+  const ox1 = clampNum(parseSafeNum(a.x, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const oy1 = clampNum(parseSafeNum(a.y, 64), -64, 320);
+  const oz1 = clampNum(parseSafeNum(a.z, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const ox2 = clampNum(parseSafeNum(b.x, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const oy2 = clampNum(parseSafeNum(b.y, 64), -64, 320);
+  const oz2 = clampNum(parseSafeNum(b.z, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
 
-  const bx = Math.floor(parseSafeNum(bOverworld.x, 0) / 8);
-  const by = parseSafeNum(bOverworld.y, 64);
-  const bz = Math.floor(parseSafeNum(bOverworld.z, 0) / 8);
+  const ax = normalizeZero(Math.floor(ox1 / 8));
+  const ay = oy1;
+  const az = normalizeZero(Math.floor(oz1 / 8));
+
+  const bx = normalizeZero(Math.floor(ox2 / 8));
+  const by = oy2;
+  const bz = normalizeZero(Math.floor(oz2 / 8));
 
   const netherHorizontalDist = Math.hypot(bx - ax, bz - az);
   const nether3dDist = Math.hypot(bx - ax, by - ay, bz - az);
-  const overworldChebyshevXZ = Math.max(
-    Math.abs(parseSafeNum(bOverworld.x, 0) - parseSafeNum(aOverworld.x, 0)),
-    Math.abs(parseSafeNum(bOverworld.z, 0) - parseSafeNum(aOverworld.z, 0))
-  );
+  const overworldChebyshevXZ = Math.max(Math.abs(ox2 - ox1), Math.abs(oz2 - oz1));
 
   const conflictRisk = netherHorizontalDist < 16 || overworldChebyshevXZ < 128;
   return {
     netherA: { x: ax, y: ay, z: az },
     netherB: { x: bx, y: by, z: bz },
-    netherHorizontalDist: Number(netherHorizontalDist.toFixed(1)),
-    nether3dDist: Number(nether3dDist.toFixed(1)),
-    overworldGap: Math.round(overworldChebyshevXZ),
+    netherHorizontalDist: normalizeZero(Number(netherHorizontalDist.toFixed(1))),
+    nether3dDist: normalizeZero(Number(nether3dDist.toFixed(1))),
+    overworldGap: normalizeZero(Math.round(overworldChebyshevXZ)),
     conflictRisk,
     verdict: conflictRisk
       ? 'LINK RISK — Portals share the 128-block Overworld / 16-block Nether search radius. Match exact divided X/Y/Z frames inside both dimensions!'
@@ -118,12 +139,12 @@ export function checkPortalCollision(aOverworld, bOverworld) {
  * Facing angle convention: 0 = +Z (South), -90 = +X (East), +90 = -X (West), +-180 = -Z (North).
  */
 export function triangulateStronghold(x1Val, z1Val, deg1Val, x2Val, z2Val, deg2Val) {
-  const x1 = parseSafeNum(x1Val, 0);
-  const z1 = parseSafeNum(z1Val, 0);
-  const x2 = parseSafeNum(x2Val, 200);
-  const z2 = parseSafeNum(z2Val, 0);
-  const a1 = (parseSafeNum(deg1Val, 0) * Math.PI) / 180;
-  const a2 = (parseSafeNum(deg2Val, -45) * Math.PI) / 180;
+  const x1 = clampNum(parseSafeNum(x1Val, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const z1 = clampNum(parseSafeNum(z1Val, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const x2 = clampNum(parseSafeNum(x2Val, 200), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const z2 = clampNum(parseSafeNum(z2Val, 0), -MC_OVERWORLD_LIMIT, MC_OVERWORLD_LIMIT);
+  const a1 = (clampNum(parseSafeNum(deg1Val, 0), -3600, 3600) * Math.PI) / 180;
+  const a2 = (clampNum(parseSafeNum(deg2Val, -45), -3600, 3600) * Math.PI) / 180;
 
   const dx1 = -Math.sin(a1);
   const dz1 = Math.cos(a1);
@@ -131,25 +152,36 @@ export function triangulateStronghold(x1Val, z1Val, deg1Val, x2Val, z2Val, deg2V
   const dz2 = Math.cos(a2);
 
   const denom = dx1 * dz2 - dz1 * dx2;
-  if (Math.abs(denom) < 0.025) {
+  if (!Number.isFinite(denom) || Math.abs(denom) < 0.025) {
     return { valid: false, reason: 'Angles too parallel — walk 150+ blocks sideways before Throw #2' };
   }
 
   const t1 = ((x2 - x1) * dz2 - (z2 - z1) * dx2) / denom;
   const t2 = ((x2 - x1) * dz1 - (z2 - z1) * dx1) / denom;
-  if (!(t1 > 0 && t2 > 0)) {
+  if (!Number.isFinite(t1) || !Number.isFinite(t2) || !(t1 > 0 && t2 > 0)) {
     return { valid: false, reason: 'Rays diverge behind throw points — stand sideways and throw facing forward' };
   }
-  const ix = Math.round(x1 + t1 * dx1);
-  const iz = Math.round(z1 + t1 * dz1);
-  const distFromThrow2 = Math.round(Math.hypot(ix - x2, iz - z2));
+  const rawIx = x1 + t1 * dx1;
+  const rawIz = z1 + t1 * dz1;
+  const ix = normalizeZero(Math.round(rawIx));
+  const iz = normalizeZero(Math.round(rawIz));
+  const distFromThrow2 = normalizeZero(Math.round(Math.hypot(ix - x2, iz - z2)));
+  if (
+    !Number.isFinite(ix) ||
+    !Number.isFinite(iz) ||
+    !Number.isFinite(distFromThrow2) ||
+    Math.abs(ix) > MC_OVERWORLD_LIMIT ||
+    Math.abs(iz) > MC_OVERWORLD_LIMIT
+  ) {
+    return { valid: false, reason: 'Intersection falls beyond Minecraft world border — move sideways and re-throw' };
+  }
 
   return {
     valid: true,
     x: ix,
     z: iz,
-    netherX: Math.floor(ix / 8),
-    netherZ: Math.floor(iz / 8),
+    netherX: normalizeZero(Math.floor(ix / 8)),
+    netherZ: normalizeZero(Math.floor(iz / 8)),
     distFromThrow2,
   };
 }
@@ -159,19 +191,21 @@ export function triangulateStronghold(x1Val, z1Val, deg1Val, x2Val, z2Val, deg2V
  */
 export const COD_PRESETS = [
   { id: 'custom', name: 'Custom Stats', category: 'Manual', damage: 34, rpm: 820, headMult: 1.32, openBoltMs: 0 },
-  { id: 'mw4-smg', name: 'Striker / Sub CQB', category: 'SMG · 0–14m', damage: 36, rpm: 857, headMult: 1.28, openBoltMs: 0 },
-  { id: 'mw4-ar', name: 'M4A1 Tactical Rifle', category: 'AR · Mid-Range', damage: 32, rpm: 750, headMult: 1.35, openBoltMs: 0 },
-  { id: 'mw4-heavy-ar', name: 'Lachmann / MCW Beam', category: 'AR · Long-Range', damage: 39, rpm: 632, headMult: 1.38, openBoltMs: 0 },
-  { id: 'mw4-lmg', name: 'Pulemyot Support LMG', category: 'LMG · Open-Bolt', damage: 44, rpm: 600, headMult: 1.3, openBoltMs: 50 },
+  { id: 'c9-smg', name: 'C9 (SMG)', category: 'SMG · Close', damage: 36, rpm: 882, headMult: 1.28, openBoltMs: 0 },
+  { id: 'm4-classic', name: 'M4', category: 'AR · Mid-Range', damage: 32, rpm: 750, headMult: 1.35, openBoltMs: 0 },
+  { id: 'krig-c', name: 'Krig C', category: 'AR · Long-Range', damage: 39, rpm: 632, headMult: 1.38, openBoltMs: 0 },
+  { id: 'raal-mg', name: 'RAAL MG', category: 'LMG · Open-Bolt (+50ms)', damage: 44, rpm: 612, headMult: 1.32, openBoltMs: 50 },
 ];
 
-export function calcCodTtk({ hp = 300, damage = 34, rpm = 820, headshots = 0, headMult = 1.32, openBoltMs = 0 }) {
+export function calcCodTtk(opts = {}) {
+  const { hp = 300, damage = 34, rpm = 820, headshots = 0, headMult = 1.32, openBoltMs = 0 } =
+    opts && typeof opts === 'object' ? opts : {};
   const safeHp = clampNum(parseSafeNum(hp, 300), 1, 1000);
   const safeDmg = clampNum(parseSafeNum(damage, 34), 1, 500);
   const safeRpm = clampNum(parseSafeNum(rpm, 820), 60, 2000);
   const hsCount = clampNum(parseSafeNum(headshots, 0), 0, 20);
   const safeHeadMult = clampNum(parseSafeNum(headMult, 1.32), 1, 10);
-  const boltDelay = Math.max(0, parseSafeNum(openBoltMs, 0));
+  const boltDelay = clampNum(parseSafeNum(openBoltMs, 0), 0, 5000);
 
   const headDmg = Math.round(safeDmg * safeHeadMult);
   let remainingHp = safeHp;
@@ -206,7 +240,9 @@ export function calcCodTtk({ hp = 300, damage = 34, rpm = 820, headshots = 0, he
  */
 export const CS2_LOSS_LADDER = [1400, 1900, 2400, 2900, 3400];
 
-export function calcCs2Economy({ cash = 3200, lossLevel = 1, side = 'CT', bombPlanted = false }) {
+export function calcCs2Economy(opts = {}) {
+  const { cash = 3200, lossLevel = 1, side = 'CT', bombPlanted = false } =
+    opts && typeof opts === 'object' ? opts : {};
   const curCash = clampNum(parseSafeNum(cash, 0), 0, 16000);
   const lvl = clampNum(Math.round(parseSafeNum(lossLevel, 1)), 0, 4);
   const currentBonus = CS2_LOSS_LADDER[lvl];
@@ -262,11 +298,13 @@ export const VAL_ARMOR = [
   { id: 'heavy', name: 'Heavy Armor', cost: 1000 },
 ];
 
-export function calcValorantEconomy({ credits = 3600, weaponCost = 2900, armorCost = 1000, utilCost = 600, lossStreak = 1 }) {
+export function calcValorantEconomy(opts = {}) {
+  const { credits = 3600, weaponCost = 2900, armorCost = 1000, utilCost = 600, lossStreak = 1 } =
+    opts && typeof opts === 'object' ? opts : {};
   const safeCreds = clampNum(parseSafeNum(credits, 3600), 0, 9000);
-  const safeWeapon = Math.max(0, Math.round(parseSafeNum(weaponCost, 0)));
-  const safeArmor = Math.max(0, Math.round(parseSafeNum(armorCost, 0)));
-  const safeUtil = Math.max(0, Math.round(parseSafeNum(utilCost, 0)));
+  const safeWeapon = clampNum(Math.round(parseSafeNum(weaponCost, 0)), 0, 100000);
+  const safeArmor = clampNum(Math.round(parseSafeNum(armorCost, 0)), 0, 100000);
+  const safeUtil = clampNum(Math.round(parseSafeNum(utilCost, 0)), 0, 100000);
   const safeLoss = clampNum(Math.round(parseSafeNum(lossStreak, 1)), 0, 2);
   const totalBuy = safeWeapon + safeArmor + safeUtil;
   const canAfford = safeCreds >= totalBuy;
@@ -293,7 +331,7 @@ export function calcValorantEconomy({ credits = 3600, weaponCost = 2900, armorCo
  * EA Sports FC 27 Tax, Sniping Break-Even & 11-Player SBC Rating Formula
  */
 export function snapEaPrice(rawCoins) {
-  const c = Math.max(200, Math.round(parseSafeNum(rawCoins, 200)));
+  const c = clampNum(Math.round(parseSafeNum(rawCoins, 200)), 200, 15000000);
   if (c < 1000) return Math.ceil(c / 50) * 50;
   if (c < 10000) return Math.ceil(c / 100) * 100;
   if (c < 50000) return Math.ceil(c / 250) * 250;
@@ -301,16 +339,19 @@ export function snapEaPrice(rawCoins) {
   return Math.ceil(c / 1000) * 1000;
 }
 
-export function calcFc27Tax({ buyCoins = 185000, sellCoins = 215000, quantity = 1 }) {
-  const buy = Math.max(0, parseSafeNum(buyCoins, 0));
-  const sell = Math.max(0, parseSafeNum(sellCoins, 0));
+export function calcFc27Tax(opts = {}) {
+  const { buyCoins = 185000, sellCoins = 215000, quantity = 1 } =
+    opts && typeof opts === 'object' ? opts : {};
+  const buy = clampNum(Math.round(parseSafeNum(buyCoins, 0)), 0, 15000000);
+  const sell = clampNum(Math.round(parseSafeNum(sellCoins, 0)), 0, 15000000);
   const qty = clampNum(Math.round(parseSafeNum(quantity, 1)), 1, 100);
 
-  const taxPerCard = Math.round(sell * 0.05);
-  const netPerCard = sell - taxPerCard;
-  const profitPerCard = netPerCard - buy;
-  const totalProfit = profitPerCard * qty;
-  const roiPct = buy > 0 ? Number(((profitPerCard / buy) * 100).toFixed(1)) : 0;
+  const taxPerCard = normalizeZero(Math.round(sell * 0.05));
+  const netPerCard = normalizeZero(sell - taxPerCard);
+  const profitPerCard = normalizeZero(netPerCard - buy);
+  const totalProfit = normalizeZero(profitPerCard * qty);
+  const rawRoi = buy >= 1 ? (profitPerCard / buy) * 100 : 0;
+  const roiPct = Number.isFinite(rawRoi) ? normalizeZero(Number(rawRoi.toFixed(1))) : 0;
 
   const minBreakEvenExact = buy > 0 ? Math.ceil(buy / 0.95) : 0;
   const minBreakEvenSnapped = buy > 0 ? snapEaPrice(minBreakEvenExact) : 0;
@@ -356,18 +397,21 @@ export function calcRobloxMinSalesFor30k(groupSplitPct = 100) {
   return Math.ceil(30000 / (0.7 * split));
 }
 
-export function calcRobloxDevEx({ grossRobux = 50000, rateId = 'std-2025', groupSplitPct = 100, targetUsd = 100 }) {
-  const gross = Math.max(0, Math.round(parseSafeNum(grossRobux, 0)));
+export function calcRobloxDevEx(opts = {}) {
+  const { grossRobux = 50000, rateId = 'std-2025', groupSplitPct = 100, targetUsd = 100 } =
+    opts && typeof opts === 'object' ? opts : {};
+  const gross = clampNum(Math.round(parseSafeNum(grossRobux, 0)), 0, 1000000000);
   const split = clampNum(parseSafeNum(groupSplitPct, 100), 1, 100) / 100;
   const rateObj = ROBLOX_RATES.find((r) => r.id === rateId) || ROBLOX_RATES[0];
 
-  const afterMarketFee = Math.round(gross * 0.7);
-  const creatorNetRobux = Math.round(afterMarketFee * split);
-  const usdPayout = creatorNetRobux * rateObj.usdPerRobux;
+  const afterMarketFee = normalizeZero(Math.round(gross * 0.7));
+  const creatorNetRobux = normalizeZero(Math.round(afterMarketFee * split));
+  const usdPayout = normalizeZero(creatorNetRobux * rateObj.usdPerRobux);
   const eligible = creatorNetRobux >= 30000;
   const minSalesFor30k = calcRobloxMinSalesFor30k(groupSplitPct);
-  const robuxNeededForTargetUsd = Math.ceil(Math.max(0, parseSafeNum(targetUsd, 100)) / rateObj.usdPerRobux);
-  const grossSalesNeededForTargetUsd = Math.ceil(robuxNeededForTargetUsd / (0.7 * split));
+  const safeTargetUsd = clampNum(parseSafeNum(targetUsd, 100), 0, 100000000);
+  const robuxNeededForTargetUsd = normalizeZero(Math.ceil(safeTargetUsd / rateObj.usdPerRobux));
+  const grossSalesNeededForTargetUsd = normalizeZero(Math.ceil(robuxNeededForTargetUsd / (0.7 * split)));
 
   return {
     gross,
@@ -386,7 +430,9 @@ export function calcRobloxDevEx({ grossRobux = 50000, rateId = 'std-2025', group
 /**
  * Fortnite Realistic Daily & Weekly XP Pace
  */
-export function calcFortniteXp({ currentLevel = 42, targetLevel = 100, daysRemaining = 24, includeDailies = true, includeCreative = false }) {
+export function calcFortniteXp(opts = {}) {
+  const { currentLevel = 42, targetLevel = 100, daysRemaining = 24, includeDailies = true, includeCreative = false } =
+    opts && typeof opts === 'object' ? opts : {};
   const cur = clampNum(Math.round(parseSafeNum(currentLevel, 1)), 1, 200);
   const tgt = clampNum(Math.round(parseSafeNum(targetLevel, 100)), 1, 200);
   const days = clampNum(Math.round(parseSafeNum(daysRemaining, 1)), 1, 120);
@@ -456,14 +502,17 @@ export function getFreeApexLevelPacks(level = 1, prestige = 0) {
 /**
  * GTA Online Cayo Perico / Casino Heist with 15% Mandatory Crew Floor
  */
-export function calcGtaOnlineHeist({ primaryValue = 1300000, secondaryValue = 450000, players = 2, hostPct = 85, hardMode = true, setupFee = 100000 }) {
+export function calcGtaOnlineHeist(opts = {}) {
+  const { primaryValue = 1300000, secondaryValue = 450000, players = 2, hostPct = 85, hardMode = true, setupFee = 100000 } =
+    opts && typeof opts === 'object' ? opts : {};
   const safePlayers = clampNum(Math.round(parseSafeNum(players, 2)), 1, 4);
-  const primary = Math.max(0, parseSafeNum(primaryValue, 0)) * (hardMode ? 1.1 : 1.0);
-  const secondary = Math.max(0, parseSafeNum(secondaryValue, 0));
-  const gross = Math.round(primary + secondary);
-  const pavelCut = Math.round(gross * 0.02);
-  const fenceCut = Math.round(gross * 0.1);
-  const netPool = Math.max(0, gross - pavelCut - fenceCut);
+  const primary = clampNum(parseSafeNum(primaryValue, 0), 0, 100000000) * (hardMode ? 1.1 : 1.0);
+  const secondary = clampNum(parseSafeNum(secondaryValue, 0), 0, 100000000);
+  const safeSetupFee = clampNum(Math.round(parseSafeNum(setupFee, 100000)), 0, 5000000);
+  const gross = normalizeZero(Math.round(primary + secondary));
+  const pavelCut = normalizeZero(Math.round(gross * 0.02));
+  const fenceCut = normalizeZero(Math.round(gross * 0.1));
+  const netPool = normalizeZero(Math.max(0, gross - pavelCut - fenceCut));
 
   const minCrewCut = 15;
   const maxHostPct = safePlayers === 1 ? 100 : 100 - minCrewCut * (safePlayers - 1);
@@ -474,8 +523,8 @@ export function calcGtaOnlineHeist({ primaryValue = 1300000, secondaryValue = 45
   const eachCrewPct = crewCount > 0 ? Math.floor(remainingPct / crewCount) : 0;
   const crewExtra = crewCount > 0 ? remainingPct % crewCount : 0;
 
-  const hostGrossPayout = Math.round((netPool * clampedHostPct) / 100);
-  const hostProfitAfterSetup = hostGrossPayout - Math.max(0, setupFee);
+  const hostGrossPayout = normalizeZero(Math.round((netPool * clampedHostPct) / 100));
+  const hostProfitAfterSetup = normalizeZero(hostGrossPayout - safeSetupFee);
   const crewPayouts = Array.from({ length: crewCount }, (_, idx) => {
     const pct = eachCrewPct + (idx < crewExtra ? 1 : 0);
     return {
@@ -502,21 +551,23 @@ export function calcGtaOnlineHeist({ primaryValue = 1300000, secondaryValue = 45
 /**
  * Valorant Ranked RR Climb Simulator (Win/Loss RR EV)
  */
-export function calcValorantRrClimb({ currentRr = 42, winRatePct = 54, avgWinRr = 20, avgLossRr = 16 }) {
+export function calcValorantRrClimb(opts = {}) {
+  const { currentRr = 42, winRatePct = 54, avgWinRr = 20, avgLossRr = 16 } =
+    opts && typeof opts === 'object' ? opts : {};
   const curRr = clampNum(parseSafeNum(currentRr, 0), 0, 99);
   const wr = clampNum(parseSafeNum(winRatePct, 52), 1, 99) / 100;
   const winRr = clampNum(parseSafeNum(avgWinRr, 20), 5, 50);
   const lossRr = clampNum(parseSafeNum(avgLossRr, 16), 5, 50);
 
   const rrNeeded = Math.max(1, 100 - curRr);
-  const evPerMatch = wr * winRr - (1 - wr) * lossRr;
+  const evPerMatch = normalizeZero(wr * winRr - (1 - wr) * lossRr);
   const positiveClimb = evPerMatch > 0.05;
   const matchesToPromote = positiveClimb ? Math.ceil(rrNeeded / evPerMatch) : null;
 
   return {
     curRr,
     rrNeeded,
-    evPerMatch: Number(evPerMatch.toFixed(2)),
+    evPerMatch: normalizeZero(Number(evPerMatch.toFixed(2))),
     positiveClimb,
     matchesToPromote,
   };
@@ -534,12 +585,16 @@ export const APEX_RANK_TIERS = [
   { id: 'master', name: 'Master', thresholdRp: 21000, entryCost: 100 },
 ];
 
-export function calcApexRankedLadder({ currentRp = 7400, targetTierId = 'diamond', avgNetRpPerMatch = 85 }) {
+export function calcApexRankedLadder(opts = {}) {
+  const { currentRp = 7400, targetTierId = 'diamond', avgNetRpPerMatch = 85 } =
+    opts && typeof opts === 'object' ? opts : {};
   const cur = clampNum(parseSafeNum(currentRp, 7400), 0, 40000);
   const tier = APEX_RANK_TIERS.find((t) => t.id === targetTierId) || APEX_RANK_TIERS[4];
   const avgGain = clampNum(parseSafeNum(avgNetRpPerMatch, 85), -100, 400);
   const rpGap = Math.max(0, tier.thresholdRp - cur);
-  const matchesNeeded = rpGap === 0 ? 0 : avgGain > 0 ? Math.ceil(rpGap / avgGain) : null;
+  const rawMatches = avgGain > 0.05 ? Math.ceil(rpGap / avgGain) : null;
+  const matchesNeeded =
+    rpGap === 0 ? 0 : rawMatches !== null && Number.isFinite(rawMatches) ? rawMatches : null;
 
   return {
     cur,

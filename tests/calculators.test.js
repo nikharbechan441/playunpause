@@ -1,9 +1,29 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { generateQrMatrix, MAX_QR_UTF8_BYTES } from '../src/utils/qrCode.js';
-import { computeStorageDiagnosis, renderStorageReceiptCanvas, renderSquadSplitCanvas } from '../src/utils/canvasCards.js';
-import { renderStudioSpecCardCanvas } from '../src/utils/shareCardEngine.js';
-import { buildCrewFromCuts } from '../src/utils/shareUrlHelpers.js';
+import {
+  computeStorageDiagnosis,
+  renderStorageReceiptCanvas,
+  renderSquadSplitCanvas,
+  shareOrDownloadCanvas,
+} from '../src/utils/canvasCards.js';
+import {
+  formatDiscordSummary,
+  renderStudioSpecCardCanvas,
+  downloadStudioSpecPng,
+} from '../src/utils/shareCardEngine.js';
+import {
+  formatDurationMinutes,
+  formatCountdownMs,
+  buildCrewFromCuts,
+  buildStorageSharePath,
+  buildStorageShareUrl,
+  buildSafeCodesSharePath,
+  buildHeistMarketSharePath,
+  buildMultiGameSharePath,
+  buildMultiGameShareUrl,
+} from '../src/utils/shareUrlHelpers.js';
+import { parseSafeStatefulQuery, resolveSeoRequest } from '../src/data/seoRoutes.js';
 import { gta6Pack } from '../src/data/games/gta6Pack.js';
 import { resolveGameIdFromSlug, COD_MW4_WEAPONS, TOP_GAMES } from '../src/data/games/allGames.js';
 import {
@@ -220,4 +240,169 @@ test('Heist crew slicer & Canvas diagnosis/headless guards handle 2/3-player spl
   assert.equal(renderStorageReceiptCanvas({ consoleName: 'PS5', consoleId: 'ps5-base', usableGb: 667, installSizeGb: 212, deletedGames: [], alreadyFreeGb: 200, mbps: 120, downloadTimeText: '4h', nzStatusLabel: '5d' }), null);
   assert.equal(renderSquadSplitCanvas({ jobTitle: 'Duo', grossDollars: 2450000, supportFeePct: 12, supportFeeDollars: 294000, netPoolDollars: 2156000, crewRows: duo }), null);
   assert.equal(renderStudioSpecCardCanvas({ gameTitle: 'Minecraft', toolTitle: 'Portal', heroLabel: 'NETHER', heroValue: '-3750000 / 64 / 3750000', heroSub: 'Chunk 12, 12' }), null);
+});
+
+test('Regression (Sim Suite A): Share URL helpers & seoRoutes query sanitization block prototype/XSS/surrogates/-0', () => {
+  assert.equal(buildMultiGameSharePath('__proto__', null), '/');
+  assert.equal(buildStorageSharePath(null).startsWith('/gta-6/storage?'), true);
+  assert.equal(buildSafeCodesSharePath(null).startsWith('/gta-6/safe-codes?'), true);
+  assert.equal(buildHeistMarketSharePath(null).startsWith('/gta-6/heist-split?'), true);
+
+  const safeUrl = buildStorageShareUrl(
+    { consoleId: 'Infinity', freeGb: -0, sacrificedIds: ['cod', '\uD800', 'toString'] },
+    'javascript:alert(1)',
+    '//evil.com'
+  );
+  assert.equal(safeUrl.startsWith('https://playunpause.com/gta-6/storage?'), true);
+  assert.equal(safeUrl.includes('Infinity'), false);
+  assert.equal(safeUrl.includes('javascript:'), false);
+
+  const csUrl = buildMultiGameShareUrl('cs2', { csTeamCash: [1e308, NaN, -5, 4000, 2000] }, 'javascript:alert(1)');
+  assert.equal(csUrl.startsWith('https://playunpause.com/cs2?'), true);
+  assert.equal(csUrl.includes('NaN'), false);
+
+  assert.equal(formatDurationMinutes(NaN), '0m');
+  assert.equal(formatDurationMinutes(Infinity), '0m');
+  assert.equal(formatCountdownMs(NaN), 'Live Now (NZ Unlocked)');
+  assert.equal(formatCountdownMs(Infinity), 'Live Now (NZ Unlocked)');
+
+  const normCrew = buildCrewFromCuts([-0, 100]);
+  assert.equal(Object.is(normCrew[0].pct, 0), true);
+
+  assert.equal(buildSafeCodesSharePath({ query: 'ab\uD800c\u202E' }), '/gta-6/safe-codes?dist=All&q=abc');
+
+  const parsed = parseSafeStatefulQuery(
+    new URLSearchParams([
+      ['free', '-1e-7'],
+      ['t1d', '-1e-7'],
+      ['q', 'ab\u0007c<>\u202E'],
+    ])
+  );
+  assert.equal(Object.is(parsed.freeGb, 0), true);
+  assert.equal(Object.is(parsed.throw1Deg, 0), true);
+  assert.equal(parsed.query, 'abc');
+
+  const poisonQuery = parseSafeStatefulQuery('?q=%5Bobject+Object%5D');
+  assert.equal(poisonQuery.query, '');
+
+  const redir = resolveSeoRequest('/gta-6/storage/', '?free=140');
+  assert.equal(redir.status, 301);
+  assert.equal(redir.redirectTo, 'https://playunpause.com/gta-6/storage?free=140');
+});
+
+test('Regression (Sim Suite A): Mocked Canvas guards non-hex accents, OOB arcTo, 4096px cap & null exports', async () => {
+  const prevDocument = globalThis.document;
+  const prevCreateObjUrl = URL.createObjectURL;
+  const prevRevokeObjUrl = URL.revokeObjectURL;
+
+  const drawnTexts = [];
+  const gradientColors = [];
+  const arcRadii = [];
+  const createdCanvases = [];
+
+  try {
+    URL.createObjectURL = () => 'blob:mock-test';
+    URL.revokeObjectURL = () => {};
+    globalThis.document = {
+      body: { appendChild() {}, removeChild() {} },
+      createElement(tag) {
+        if (tag !== 'canvas') return { href: '', download: '', click() {}, remove() {} };
+        const canvas = {
+          width: 300,
+          height: 150,
+          getContext() {
+            return {
+              fillStyle: '#000000',
+              strokeStyle: '#000000',
+              font: '16px monospace',
+              lineWidth: 1,
+              textAlign: 'left',
+              beginPath() {},
+              closePath() {},
+              moveTo() {},
+              lineTo() {},
+              quadraticCurveTo() {},
+              fill() {},
+              stroke() {},
+              fillRect() {},
+              arcTo(x1, y1, x2, y2, r) {
+                arcRadii.push(r);
+                assert.equal(Number.isFinite(r) && r >= 0, true, `Negative/non-finite arcTo radius: ${r}`);
+                assert.equal(x1 >= 0 && x1 <= 960 && x2 >= 0 && x2 <= 960, true, `OOB arcTo x: ${x1}, ${x2}`);
+              },
+              measureText(t) {
+                return { width: String(t).length * 9 };
+              },
+              fillText(t) {
+                drawnTexts.push(String(t));
+              },
+              createLinearGradient() {
+                return { addColorStop(_, c) { gradientColors.push(c); } };
+              },
+              createRadialGradient() {
+                return { addColorStop(_, c) { gradientColors.push(c); } };
+              },
+            };
+          },
+          toBlob(cb) {
+            cb({ type: 'image/png', size: 10 });
+          },
+        };
+        createdCanvases.push(canvas);
+        return canvas;
+      },
+    };
+
+    for (const badAccent of ['rgb(52, 211, 153)', 'var(--coral)', '', null, '#fff']) {
+      const c = renderStudioSpecCardCanvas({
+        gameTitle: 1e308,
+        toolTitle: 'Telemetry',
+        heroLabel: 'RESULT',
+        heroValue: '🚀🚀\uD800',
+        accentColor: badAccent,
+        rows: null,
+      });
+      assert.ok(c);
+    }
+    assert.equal(gradientColors.some((c) => /var\(|rgb\(|^2A$|^66$/i.test(c)), false);
+    assert.equal(drawnTexts.some((t) => t.includes('🚀🚀')), true);
+    assert.equal(
+      drawnTexts.some((t) => /NaN|Infinity|\[object Object\]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(t)),
+      false
+    );
+
+    assert.equal(formatDiscordSummary(null).includes('playunpause.com'), true);
+    assert.equal(await downloadStudioSpecPng(null), false);
+
+    const squadCanvas = renderSquadSplitCanvas({
+      jobTitle: null,
+      grossDollars: Infinity,
+      supportFeePct: NaN,
+      supportFeeDollars: Infinity,
+      netPoolDollars: NaN,
+      crewRows: [
+        { name: 'Host', pct: NaN, payout: Infinity },
+        { name: 'P2', pct: 200, payout: 1e308 },
+        ...Array.from({ length: 120 }, (_, i) => ({ name: `M${i}`, pct: 10, payout: 100 })),
+      ],
+    });
+    assert.ok(squadCanvas);
+    assert.ok(squadCanvas.height <= 4096);
+    assert.equal(drawnTexts.some((t) => /NaN%|Infinity/.test(t)), false);
+
+    const hugeStorageCanvas = renderStorageReceiptCanvas({
+      consoleName: 'Xbox',
+      deletedGames: Array.from({ length: 200 }, (_, i) => ({ id: `g${i}`, title: `Game ${i}`, sizeGb: 50 })),
+    });
+    assert.ok(hugeStorageCanvas);
+    assert.ok(hugeStorageCanvas.height <= 4096);
+    assert.ok(renderStorageReceiptCanvas(null));
+    assert.ok(arcRadii.length > 0);
+
+    assert.deepEqual(await shareOrDownloadCanvas(null, 'x.png', 'X'), { method: 'failed' });
+  } finally {
+    globalThis.document = prevDocument;
+    URL.createObjectURL = prevCreateObjUrl;
+    URL.revokeObjectURL = prevRevokeObjUrl;
+  }
 });

@@ -94,11 +94,6 @@ export function verifyWhopWebhook({
       if (aBound.length === b.length && crypto.timingSafeEqual(aBound, b)) {
         return { valid: true, eventId: webhookId || null };
       }
-      const rawExpectedHex = crypto.createHmac('sha256', keyBuf).update(rawString, 'utf8').digest('hex');
-      const aRaw = Buffer.from(rawExpectedHex, 'utf8');
-      if (aRaw.length === b.length && crypto.timingSafeEqual(aRaw, b)) {
-        return { valid: true, eventId: webhookId || null };
-      }
     }
   }
 

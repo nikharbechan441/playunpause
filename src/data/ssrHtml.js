@@ -50,13 +50,14 @@ export function getStaticAssetCacheControl(pathname) {
 }
 
 export function resolveWwwRedirectLocation(pathname, searchParams, search = '') {
-  if (!isStaticAssetPath(pathname)) {
-    const seoRes = resolveSeoRequest(pathname, searchParams);
+  const cleanPath = String(pathname || '/').replace(/\/{2,}/g, '/') || '/';
+  if (!isStaticAssetPath(cleanPath)) {
+    const seoRes = resolveSeoRequest(cleanPath, searchParams);
     if (seoRes.status === 301 && seoRes.redirectTo) {
       return seoRes.redirectTo;
     }
   }
-  return `${CANONICAL_ORIGIN}${pathname}${search || ''}`;
+  return `${CANONICAL_ORIGIN}${cleanPath}${search || ''}`;
 }
 
 export function escapeHtml(str) {

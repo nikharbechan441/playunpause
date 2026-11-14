@@ -1986,7 +1986,8 @@ function safeInt(raw, fallback, min, max) {
   if (raw === null || raw === undefined || raw === '') return fallback;
   const n = Number(raw);
   if (!Number.isFinite(n)) return fallback;
-  return Math.round(clampNum(n, min, max));
+  const rounded = Math.round(clampNum(n, min, max));
+  return rounded === 0 ? 0 : rounded;
 }
 
 function safeNum(raw, fallback, min, max, decimals = 2) {
@@ -1994,7 +1995,8 @@ function safeNum(raw, fallback, min, max, decimals = 2) {
   const n = Number(raw);
   if (!Number.isFinite(n)) return fallback;
   const factor = 10 ** decimals;
-  return Math.round(clampNum(n, min, max) * factor) / factor;
+  const out = Math.round(clampNum(n, min, max) * factor) / factor;
+  return out === 0 ? 0 : out;
 }
 
 const VALID_SAFE_IDS = new Set([...(gta6Pack.safes || []), ...(gta6Pack.safeCodes || [])].map((s) => s.id));
@@ -2038,7 +2040,24 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   }
 
   if (params.has('q')) {
-    clean.query = String(params.get('q') || '').replace(/[<>"'`]/g, '').trim().slice(0, 60);
+    const rawQ = String(params.get('q') || '')
+      .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDFFF]/g, (m) => (m.length === 2 ? m : ''))
+      .replace(/[<>"'`\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '')
+      .trim();
+    const isPoisonQ =
+      rawQ === 'NaN' ||
+      rawQ === 'Infinity' ||
+      rawQ === '-Infinity' ||
+      rawQ === 'undefined' ||
+      /^\[object\s+[^\]]+\]$/i.test(rawQ);
+    let slicedQ = '';
+    if (!isPoisonQ) {
+      for (const ch of rawQ) {
+        if (slicedQ.length + ch.length > 60) break;
+        slicedQ += ch;
+      }
+    }
+    clean.query = slicedQ;
   }
   if (params.has('dist')) {
     const d = String(params.get('dist') || '').trim();

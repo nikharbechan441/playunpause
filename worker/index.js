@@ -3,6 +3,8 @@ import { verifyWhopWebhook, generateDeckCode } from '../server/webhookAuth.js';
 import {
   isSafePublicHttpsUrl,
   extractWebhookAmountCents,
+  classifyUnconfiguredWebhookProduct,
+  sanitizeSponsorBadgeText,
   checkAndSweepRateLimit,
 } from '../server/securityHelpers.js';
 import { resolveSeoRequest } from '../src/data/seoRoutes.js';
@@ -385,8 +387,15 @@ async function handleWorkerRequest(request, env = {}) {
         return jsonResponse({ error: 'Malformed JSON payload' }, 400, env);
       }
 
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return jsonResponse({ error: 'Webhook payload must be a JSON object' }, 400, env);
+      }
+
       const eventType = String(payload.type || payload.action || '');
-      const data = payload.data || {};
+      const data =
+        payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+          ? payload.data
+          : {};
       const txId = String(data.id || check.eventId || payload.id || '').trim();
       if (!txId) {
         return jsonResponse({ error: 'Missing transaction reference' }, 400, env);
@@ -559,11 +568,10 @@ async function handleWorkerRequest(request, env = {}) {
       } else if (passIds.length || sponsorIds.length) {
         return jsonResponse({ error: 'Missing or unrecognized product plan ID' }, 400, env);
       } else {
-        const provisionalCents = extractWebhookAmountCents(payload, { isSponsorPlan: false });
-        if (provisionalCents === null) {
+        productKind = classifyUnconfiguredWebhookProduct(payload);
+        if (!productKind) {
           return jsonResponse({ error: 'Missing or invalid payment amount' }, 400, env);
         }
-        productKind = provisionalCents >= 9900 ? 'sponsor_24h' : 'nightrun_pass';
       }
 
       const amountCents = extractWebhookAmountCents(payload, {
@@ -1140,7 +1148,7 @@ async function handleWorkerRequest(request, env = {}) {
       const { errorResp, data: body } = await readJsonBody(request, env);
       if (errorResp) return errorResp;
 
-      const badgeText = String(body?.badgeText || '').trim().slice(0, 60);
+      const badgeText = sanitizeSponsorBadgeText(body?.badgeText);
       const rawUrl = String(body?.targetUrl || '').trim();
       const whopRef = String(body?.whopRef || '').trim().slice(0, 120) || null;
       const rawHours = Number(body?.durationHours ?? 24);

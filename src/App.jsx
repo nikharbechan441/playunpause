@@ -36,14 +36,23 @@ import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
 import { copyTextReliably } from './utils/clipboard.js';
 import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
 
-const StorageUnlockDeck = lazy(() => import('./components/StorageUnlockDeck.jsx'));
-const SafeKeypadVault = lazy(() => import('./components/SafeKeypadVault.jsx'));
-const SquadHeistMarketDeck = lazy(() => import('./components/SquadHeistMarketDeck.jsx'));
-const NightRunProDeck = lazy(() => import('./components/NightRunProDeck.jsx'));
-const MultiGameToolDeck = lazy(() => import('./components/MultiGameToolDeck.jsx'));
-const GameSelectorModal = lazy(() => import('./components/GameSelectorModal.jsx'));
-const LegalComplianceModal = lazy(() => import('./components/LegalComplianceModal.jsx'));
-const EmbedWidgetModal = lazy(() => import('./components/EmbedWidgetModal.jsx'));
+const loadStorageUnlockDeck = () => import('./components/StorageUnlockDeck.jsx');
+const loadSafeKeypadVault = () => import('./components/SafeKeypadVault.jsx');
+const loadSquadHeistMarketDeck = () => import('./components/SquadHeistMarketDeck.jsx');
+const loadNightRunProDeck = () => import('./components/NightRunProDeck.jsx');
+const loadMultiGameToolDeck = () => import('./components/MultiGameToolDeck.jsx');
+const loadGameSelectorModal = () => import('./components/GameSelectorModal.jsx');
+const loadLegalComplianceModal = () => import('./components/LegalComplianceModal.jsx');
+const loadEmbedWidgetModal = () => import('./components/EmbedWidgetModal.jsx');
+
+const StorageUnlockDeck = lazy(loadStorageUnlockDeck);
+const SafeKeypadVault = lazy(loadSafeKeypadVault);
+const SquadHeistMarketDeck = lazy(loadSquadHeistMarketDeck);
+const NightRunProDeck = lazy(loadNightRunProDeck);
+const MultiGameToolDeck = lazy(loadMultiGameToolDeck);
+const GameSelectorModal = lazy(loadGameSelectorModal);
+const LegalComplianceModal = lazy(loadLegalComplianceModal);
+const EmbedWidgetModal = lazy(loadEmbedWidgetModal);
 
 const STORAGE_KEY = 'unpause_deck_state_v5';
 const LEGACY_KEYS = [
@@ -106,52 +115,217 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function loadInitialDeckState() {
-  const fallback = {
-    theme: 'obsidian',
-    soundEnabled: true,
-    isPro: false,
-    deckCode: null,
-    crackedSafeIds: [],
-    checkedRouteIds: [],
-    savedPins: [],
+class ChunkErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      errorMessage: error?.message || 'Unable to load this calculator module.',
+    };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, errorMessage: '' });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const card = (
+        <section
+          className={this.props.isModal ? 'modal-card chunk-error-card' : 'deck-panel chunk-error-card'}
+          role="alert"
+          onClick={this.props.isModal ? (e) => e.stopPropagation() : undefined}
+        >
+          <div className={this.props.isModal ? '' : 'deck-body-pad'}>
+            <h2 className="legal-heading">Calculator module unavailable offline</h2>
+            <p className="legal-copy compact-bottom">
+              This tool chunk has not been cached in your browser yet ({this.state.errorMessage}).
+              Reconnect to the network and retry, or return to the active calculator.
+            </p>
+            <div className="chunk-error-actions">
+              <button
+                type="button"
+                className="primary-coral-btn"
+                onClick={() => {
+                  this.setState({ hasError: false, errorMessage: '' });
+                  if (typeof window !== 'undefined' && typeof window.location?.reload === 'function') {
+                    window.location.reload();
+                  }
+                }}
+              >
+                Reload Module
+              </button>
+              {typeof this.props.onRecover === 'function' && (
+                <button
+                  type="button"
+                  className="secondary-key-btn"
+                  onClick={() => {
+                    this.setState({ hasError: false, errorMessage: '' });
+                    this.props.onRecover();
+                  }}
+                >
+                  {this.props.recoverLabel || 'Back to Active Tool'}
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+
+      if (this.props.isModal) {
+        return (
+          <div
+            className="modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => {
+              this.setState({ hasError: false, errorMessage: '' });
+              this.props.onRecover?.();
+            }}
+          >
+            {card}
+          </div>
+        );
+      }
+
+      return card;
+    }
+    return this.props.children;
+  }
+}
+
+const DEFAULT_DECK_STATE = {
+  theme: 'obsidian',
+  soundEnabled: true,
+  isPro: false,
+  deckCode: null,
+  crackedSafeIds: [],
+  checkedRouteIds: [],
+  savedPins: [],
+};
+
+function sanitizeDeckCode(val) {
+  if (typeof val !== 'string') return null;
+  const trimmed = val.trim().toUpperCase();
+  return /^UP-[A-Z0-9]{6,12}$/.test(trimmed) ? trimmed : null;
+}
+
+function sanitizeStringIdArray(val, maxLen = 200) {
+  if (!Array.isArray(val)) return [];
+  const out = [];
+  for (const item of val) {
+    if (typeof item !== 'string') continue;
+    const clean = item.trim().slice(0, 80);
+    if (clean) out.push(clean);
+    if (out.length >= maxLen) break;
+  }
+  return out;
+}
+
+function sanitizeSavedPins(val) {
+  if (!Array.isArray(val)) return [];
+  const out = [];
+  for (const item of val) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    if (typeof item.id !== 'string' || typeof item.gameId !== 'string') continue;
+    const id = item.id.trim().slice(0, 80);
+    const gameId = item.gameId.trim().slice(0, 40);
+    if (!id || !gameId) continue;
+    const label =
+      typeof item.label === 'string' && item.label.trim()
+        ? item.label.trim().slice(0, 120)
+        : 'Pinned calculation';
+    const value =
+      typeof item.value === 'string' || (typeof item.value === 'number' && Number.isFinite(item.value))
+        ? String(item.value).slice(0, 140)
+        : '';
+    out.push({ id, gameId, label, value });
+    if (out.length >= 60) break;
+  }
+  return out;
+}
+
+function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode = false } = {}) {
+  const safeBase = {
+    theme: baseFallback.theme === 'paper' ? 'paper' : 'obsidian',
+    soundEnabled: typeof baseFallback.soundEnabled === 'boolean' ? baseFallback.soundEnabled : true,
+    isPro: baseFallback.isPro === true && Boolean(sanitizeDeckCode(baseFallback.deckCode)),
+    deckCode: sanitizeDeckCode(baseFallback.deckCode),
+    crackedSafeIds: sanitizeStringIdArray(baseFallback.crackedSafeIds),
+    checkedRouteIds: sanitizeStringIdArray(baseFallback.checkedRouteIds),
+    savedPins: sanitizeSavedPins(baseFallback.savedPins),
   };
-  if (typeof window === 'undefined') return fallback;
+
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return safeBase;
+  }
+
+  const cleanDeckCode = sanitizeDeckCode(raw.deckCode);
+  const rawIsPro = legacyMode ? raw.isPro === true : raw.isPro === true;
+  const rawSafes = Array.isArray(raw.crackedSafeIds)
+    ? raw.crackedSafeIds
+    : legacyMode && Array.isArray(raw.crackedSafes)
+      ? raw.crackedSafes
+      : null;
+
+  return {
+    theme: raw.theme === 'paper' ? 'paper' : raw.theme === 'obsidian' ? 'obsidian' : safeBase.theme,
+    soundEnabled: typeof raw.soundEnabled === 'boolean' ? raw.soundEnabled : safeBase.soundEnabled,
+    isPro: rawIsPro && Boolean(cleanDeckCode),
+    deckCode: cleanDeckCode,
+    crackedSafeIds: rawSafes !== null ? sanitizeStringIdArray(rawSafes) : safeBase.crackedSafeIds,
+    checkedRouteIds: Array.isArray(raw.checkedRouteIds)
+      ? sanitizeStringIdArray(raw.checkedRouteIds)
+      : safeBase.checkedRouteIds,
+    savedPins: Array.isArray(raw.savedPins) ? sanitizeSavedPins(raw.savedPins) : safeBase.savedPins,
+  };
+}
+
+function parseStoredDeckObject(rawText) {
+  if (!rawText || typeof rawText !== 'string') return null;
+  try {
+    const parsed = JSON.parse(rawText);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {
+    // Ignore malformed JSON entries
+  }
+  return null;
+}
+
+function loadInitialDeckState() {
+  if (typeof window === 'undefined') {
+    return { ...DEFAULT_DECK_STATE };
+  }
   try {
     const rawV5 = window.localStorage.getItem(STORAGE_KEY);
-    if (rawV5) {
-      const parsed = JSON.parse(rawV5);
-      return {
-        ...fallback,
-        ...parsed,
-        theme: parsed.theme === 'paper' ? 'paper' : 'obsidian',
-        crackedSafeIds: Array.isArray(parsed.crackedSafeIds) ? parsed.crackedSafeIds : [],
-        checkedRouteIds: Array.isArray(parsed.checkedRouteIds) ? parsed.checkedRouteIds : [],
-        savedPins: Array.isArray(parsed.savedPins) ? parsed.savedPins : [],
-      };
-    }
-    for (const oldKey of LEGACY_KEYS) {
-      const legacyRaw = window.localStorage.getItem(oldKey);
-      if (!legacyRaw) continue;
-      const parsed = JSON.parse(legacyRaw);
-      return {
-        ...fallback,
-        soundEnabled: parsed.soundEnabled !== false,
-        isPro: Boolean(parsed.isPro),
-        deckCode: typeof parsed.deckCode === 'string' ? parsed.deckCode : null,
-        crackedSafeIds: Array.isArray(parsed.crackedSafeIds)
-          ? parsed.crackedSafeIds
-          : Array.isArray(parsed.crackedSafes)
-            ? parsed.crackedSafes
-            : [],
-        checkedRouteIds: Array.isArray(parsed.checkedRouteIds) ? parsed.checkedRouteIds : [],
-        savedPins: Array.isArray(parsed.savedPins) ? parsed.savedPins : [],
-      };
+    const parsedV5 = parseStoredDeckObject(rawV5);
+    if (parsedV5) {
+      return sanitizeDeckState(parsedV5, DEFAULT_DECK_STATE);
     }
   } catch {
     // Ignore storage read errors in restricted browsers
   }
-  return fallback;
+
+  for (const oldKey of LEGACY_KEYS) {
+    try {
+      const legacyRaw = window.localStorage.getItem(oldKey);
+      const parsedLegacy = parseStoredDeckObject(legacyRaw);
+      if (parsedLegacy) {
+        return sanitizeDeckState(parsedLegacy, DEFAULT_DECK_STATE, { legacyMode: true });
+      }
+    } catch {
+      // Continue scanning older keys if one legacy entry is unreadable
+    }
+  }
+  return { ...DEFAULT_DECK_STATE };
 }
 
 function readRouteFromLocation() {
@@ -239,6 +413,8 @@ export default function App() {
   const [qrMatrix, setQrMatrix] = useState(null);
   const [qrError, setQrError] = useState('');
   const [syncToast, setSyncToast] = useState(null);
+  const [storageError, setStorageError] = useState('');
+  const [pendingSyncCode, setPendingSyncCode] = useState(() => routeState.syncCode || null);
 
   const gameModalRef = useRef(null);
   const proModalRef = useRef(null);
@@ -321,14 +497,56 @@ export default function App() {
   useEffect(() => {
     if (skipNextPersistRef.current) {
       skipNextPersistRef.current = false;
+      setStorageError('');
       return;
     }
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(deckState));
-    } catch {
-      // Ignore quota errors
+      setStorageError('');
+    } catch (err) {
+      const msg =
+        err?.name === 'QuotaExceededError'
+          ? 'Browser storage is full — recent changes cannot be saved locally. Clear saved pins or local data to free space.'
+          : 'Browser storage is blocked or unavailable — recent changes will not persist after reload.';
+      setStorageError(msg);
     }
   }, [deckState]);
+
+  // Idle warm-preloading of lazy calculator & modal chunks so visited sessions switch cleanly offline
+  useEffect(() => {
+    if (isEmbed || typeof window === 'undefined') return undefined;
+    if (navigator?.connection?.saveData) return undefined;
+
+    let cancelled = false;
+    const warmChunks = () => {
+      if (cancelled) return;
+      Promise.allSettled([
+        loadStorageUnlockDeck(),
+        loadSafeKeypadVault(),
+        loadSquadHeistMarketDeck(),
+        loadNightRunProDeck(),
+        loadMultiGameToolDeck(),
+        loadGameSelectorModal(),
+        loadLegalComplianceModal(),
+        loadEmbedWidgetModal(),
+        import('./utils/qrCode.js'),
+      ]);
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(warmChunks, { timeout: 2200 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback?.(idleId);
+      };
+    }
+
+    const timerId = window.setTimeout(warmChunks, 900);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [isEmbed]);
 
   // Tick minute countdown clock
   useEffect(() => {
@@ -422,40 +640,63 @@ export default function App() {
     }
   }, [routeState.normalizeToPath]);
 
-  // Auto-hydrating #sync=UP-XXXXXXXX hash links (Cross-device QR flow) & scrubbing fragment from history
-  useEffect(() => {
-    const syncCode = initialSyncCodeRef.current;
+  const restoreSyncPassByCode = async (rawCode) => {
+    const syncCode = sanitizeDeckCode(rawCode);
     if (!syncCode) return;
-    fetch(`/api/sync/${encodeURIComponent(syncCode)}`)
-      .then(async (res) => {
-        const data = await res.json().catch(() => null);
-        if (res.status === 403) {
-          setDeckState((prev) =>
-            prev.deckCode === syncCode
-              ? { ...prev, isPro: false, deckCode: null }
-              : prev
-          );
-          const errText = data?.error || 'This Sync Pass was refunded or deactivated.';
-          setClaimError(errText);
-          setSyncToast({ tone: 'err', text: errText });
-          return;
-        }
-        if (res.ok && data?.ok && data?.state) {
-          const nextCode = data.deckCode || syncCode;
-          setDeckState((prev) => ({
-            ...prev,
-            isPro: true,
-            deckCode: nextCode,
-            crackedSafeIds: Array.isArray(data.state.crackedSafeIds) ? data.state.crackedSafeIds : prev.crackedSafeIds,
-            checkedRouteIds: Array.isArray(data.state.checkedRouteIds) ? data.state.checkedRouteIds : prev.checkedRouteIds,
-            savedPins: Array.isArray(data.state.savedPins) ? data.state.savedPins : prev.savedPins,
-          }));
-          setClaimStatus(`Synced to ${nextCode}`);
-          setSyncToast({ tone: 'ok', text: `Sync Pass ${nextCode} restored to this device.` });
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
+    let shouldScrubHash = false;
+    try {
+      const res = await fetch(`/api/sync/${encodeURIComponent(syncCode)}`);
+      const data = await res.json().catch(() => null);
+      if (res.status === 403) {
+        shouldScrubHash = true;
+        setPendingSyncCode(null);
+        setDeckState((prev) =>
+          prev.deckCode === syncCode
+            ? { ...prev, isPro: false, deckCode: null }
+            : prev
+        );
+        const errText = data?.error || 'This Sync Pass was refunded or deactivated.';
+        setClaimError(errText);
+        setSyncToast({ tone: 'err', text: errText });
+        return;
+      }
+      if (res.ok && data?.ok && data?.state) {
+        shouldScrubHash = true;
+        setPendingSyncCode(null);
+        const nextCode = sanitizeDeckCode(data.deckCode) || syncCode;
+        setDeckState((prev) => ({
+          ...prev,
+          isPro: true,
+          deckCode: nextCode,
+          crackedSafeIds: Array.isArray(data.state.crackedSafeIds)
+            ? sanitizeStringIdArray(data.state.crackedSafeIds)
+            : prev.crackedSafeIds,
+          checkedRouteIds: Array.isArray(data.state.checkedRouteIds)
+            ? sanitizeStringIdArray(data.state.checkedRouteIds)
+            : prev.checkedRouteIds,
+          savedPins: Array.isArray(data.state.savedPins)
+            ? sanitizeSavedPins(data.state.savedPins)
+            : prev.savedPins,
+        }));
+        setClaimError('');
+        setClaimStatus(`Synced to ${nextCode}`);
+        setSyncToast({ tone: 'ok', text: `Sync Pass ${nextCode} restored to this device.` });
+        return;
+      }
+      const errText =
+        (data && typeof data.error === 'string' && data.error) ||
+        `Could not restore Sync Pass (HTTP ${res.status}). Your sync link is preserved — retry shortly.`;
+      setPendingSyncCode(syncCode);
+      setClaimError(errText);
+      setSyncToast({ tone: 'err', text: errText });
+    } catch {
+      setPendingSyncCode(syncCode);
+      const errText =
+        'Network error while restoring Sync Pass. Reconnect and click Retry Sync or reload.';
+      setClaimError(errText);
+      setSyncToast({ tone: 'err', text: errText });
+    } finally {
+      if (shouldScrubHash) {
         try {
           if (window.location.hash && window.location.hash.toLowerCase().startsWith('#sync=')) {
             window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
@@ -463,7 +704,15 @@ export default function App() {
         } catch {
           // Ignore history restrictions
         }
-      });
+      }
+    }
+  };
+
+  // Auto-hydrating #sync=UP-XXXXXXXX hash links (Cross-device QR flow) & scrubbing fragment only when settled
+  useEffect(() => {
+    const syncCode = initialSyncCodeRef.current;
+    if (!syncCode) return;
+    restoreSyncPassByCode(syncCode);
   }, []);
 
   // Debounced cloud state push when Sync Pass active
@@ -573,7 +822,7 @@ export default function App() {
   const handleSavePin = (pinObj) => {
     setDeckState((prev) => ({
       ...prev,
-      savedPins: [pinObj, ...prev.savedPins].slice(0, 60),
+      savedPins: sanitizeSavedPins([pinObj, ...(Array.isArray(prev.savedPins) ? prev.savedPins : [])]),
     }));
   };
 
@@ -581,7 +830,9 @@ export default function App() {
     playSwitchTick(deckState.soundEnabled, 580);
     setDeckState((prev) => ({
       ...prev,
-      savedPins: prev.savedPins.filter((p) => p.id !== pinId),
+      savedPins: Array.isArray(prev.savedPins)
+        ? prev.savedPins.filter((p) => p && p.id !== pinId)
+        : [],
     }));
   };
 
@@ -612,27 +863,31 @@ export default function App() {
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok || !data.ok) {
-        setClaimError(data?.error || 'Could not verify code or receipt.');
+        setClaimError(
+          data?.error ||
+            (resp.status >= 500
+              ? `Sync server returned HTTP ${resp.status}. Please try again shortly.`
+              : 'Could not verify code or receipt.')
+        );
       } else {
+        const nextCode = sanitizeDeckCode(data.deckCode);
+        if (!nextCode) {
+          setClaimError('Server returned an unrecognized Sync Pass code format.');
+          return;
+        }
         playUnlockChime(deckState.soundEnabled);
+        const safeSafes = sanitizeStringIdArray(data.state?.crackedSafeIds);
+        const safeRoutes = sanitizeStringIdArray(data.state?.checkedRouteIds);
+        const safePins = sanitizeSavedPins(data.state?.savedPins);
         setDeckState((prev) => ({
           ...prev,
           isPro: true,
-          deckCode: data.deckCode,
-          crackedSafeIds:
-            Array.isArray(data.state?.crackedSafeIds) && data.state.crackedSafeIds.length
-              ? data.state.crackedSafeIds
-              : prev.crackedSafeIds,
-          checkedRouteIds:
-            Array.isArray(data.state?.checkedRouteIds) && data.state.checkedRouteIds.length
-              ? data.state.checkedRouteIds
-              : prev.checkedRouteIds,
-          savedPins:
-            Array.isArray(data.state?.savedPins) && data.state.savedPins.length
-              ? data.state.savedPins
-              : prev.savedPins,
+          deckCode: nextCode,
+          crackedSafeIds: safeSafes.length ? safeSafes : prev.crackedSafeIds,
+          checkedRouteIds: safeRoutes.length ? safeRoutes : prev.checkedRouteIds,
+          savedPins: safePins.length ? safePins : prev.savedPins,
         }));
-        setClaimStatus(`Synced to ${data.deckCode}`);
+        setClaimStatus(`Synced to ${nextCode}`);
         setClaimInput('');
         setClaimReceiptInput('');
       }
@@ -645,28 +900,40 @@ export default function App() {
 
   const handlePullCloudNow = async () => {
     if (!deckState.deckCode) return;
+    setClaimError('');
+    setClaimStatus('');
     try {
       const res = await fetch(`/api/sync/${encodeURIComponent(deckState.deckCode)}`);
       const data = await res.json().catch(() => null);
       if (res.status === 403) {
+        const errText = data?.error || 'Sync Pass inactive or refunded.';
         setDeckState((prev) => ({ ...prev, isPro: false, deckCode: null }));
-        setClaimError(data?.error || 'Sync Pass inactive or refunded.');
+        setClaimError(errText);
+        setSyncToast({ tone: 'err', text: errText });
         return;
       }
       if (res.ok && data?.ok && data?.state) {
         playSwitchTick(deckState.soundEnabled, 820);
         setDeckState((prev) => ({
           ...prev,
-          crackedSafeIds: data.state.crackedSafeIds || [],
-          checkedRouteIds: data.state.checkedRouteIds || [],
-          savedPins: data.state.savedPins || [],
+          crackedSafeIds: sanitizeStringIdArray(data.state.crackedSafeIds),
+          checkedRouteIds: sanitizeStringIdArray(data.state.checkedRouteIds),
+          savedPins: sanitizeSavedPins(data.state.savedPins),
         }));
         setClaimStatus('Synced latest state from cloud.');
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         uiTimerRef.current = setTimeout(() => setClaimStatus(''), 2000);
+        return;
       }
+      const errText =
+        (data && typeof data.error === 'string' && data.error) ||
+        `Cloud sync unavailable (HTTP ${res.status}). Try again shortly.`;
+      setClaimError(errText);
+      setSyncToast({ tone: 'err', text: errText });
     } catch {
-      // Ignore
+      const errText = 'Network error while pulling cloud state. Check connection and try again.';
+      setClaimError(errText);
+      setSyncToast({ tone: 'err', text: errText });
     }
   };
 
@@ -841,13 +1108,14 @@ export default function App() {
     return (
       <div style={accentStyle} className="embed-root-wrap">
         <main className="app-shell embed-app-shell">
-          <Suspense
-            fallback={
-              <div className="deck-panel embed-loading-card">
-                Loading calculator module…
-              </div>
-            }
-          >
+          <ChunkErrorBoundary resetKey={`embed:${activeGamePack.id}:${activeTab}`}>
+            <Suspense
+              fallback={
+                <div className="deck-panel embed-loading-card">
+                  Loading calculator module…
+                </div>
+              }
+            >
             {activeGamePack.isGta6Suite ? (
               <div className="deck-stage-transition" key={`embed-gta-${activeTab}`}>
                 {activeTab === 'storage' && (
@@ -920,7 +1188,8 @@ export default function App() {
                 />
               </div>
             )}
-          </Suspense>
+            </Suspense>
+          </ChunkErrorBoundary>
 
           <footer className="embed-attribution-bar">
             <div className="embed-attribution-copy">
@@ -1024,7 +1293,7 @@ export default function App() {
 
             <button
               type="button"
-              className="tactile-icon-btn"
+              className="tactile-icon-btn header-sound-btn"
               onClick={toggleSound}
               aria-label={deckState.soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
               title={deckState.soundEnabled ? 'Mute clicks' : 'Enable clicks'}
@@ -1115,14 +1384,45 @@ export default function App() {
 
       {/* MAIN STUDIO WORKBENCH */}
       <main className={`app-shell ${showMobileBottomRail ? 'has-mobile-bottom-rail' : ''}`}>
+        {storageError && (
+          <div className="sync-toast-banner err storage-warn-banner" role="alert">
+            <span>{storageError}</span>
+            <div className="sync-toast-actions">
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={handleClearLocalData}
+              >
+                Clear Local Data
+              </button>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                aria-label="Dismiss storage warning"
+                onClick={() => setStorageError('')}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
         {syncToast && (
           <div
             className={`sync-toast-banner ${syncToast.tone === 'err' ? 'err' : 'ok'}`}
-            role="status"
-            aria-live="polite"
+            role={syncToast.tone === 'err' ? 'alert' : 'status'}
+            aria-live={syncToast.tone === 'err' ? 'assertive' : 'polite'}
           >
             <span>{syncToast.text}</span>
             <div className="sync-toast-actions">
+              {syncToast.tone === 'err' && pendingSyncCode && (
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={() => restoreSyncPassByCode(pendingSyncCode)}
+                >
+                  Retry Sync
+                </button>
+              )}
               <button
                 type="button"
                 className="subtle-pill-btn"
@@ -1259,19 +1559,24 @@ export default function App() {
                 <span>{activeGamePack.sourceNote}</span>
               </span>
               <span style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
-                100% Free Core Tools · Works Offline
+                100% Free Core Tools · Runs Locally Once Loaded
               </span>
             </div>
           )}
         </section>
 
-        <Suspense
-          fallback={
-            <div className="deck-panel" style={{ padding: '24px', color: 'var(--ink-secondary)' }}>
-              Loading calculator module…
-            </div>
-          }
+        <ChunkErrorBoundary
+          resetKey={`${activeGamePack.id}:${activeTab}`}
+          onRecover={() => navigateToPath('/')}
+          recoverLabel="Back to Preload Calculator"
         >
+          <Suspense
+            fallback={
+              <div className="deck-panel" style={{ padding: '24px', color: 'var(--ink-secondary)' }}>
+                Loading calculator module…
+              </div>
+            }
+          >
         {activeGamePack.isGta6Suite ? (
           <div>
             <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Tools">
@@ -1374,7 +1679,8 @@ export default function App() {
             />
           </div>
         )}
-        </Suspense>
+          </Suspense>
+        </ChunkErrorBoundary>
 
         {/* TRUST / GAME DOMAIN FAQ GRID */}
         <section className="trust-faq-grid" aria-label="Quick Reference FAQs">
@@ -1445,6 +1751,20 @@ export default function App() {
             </div>
 
             <div className="footer-actions-row">
+              <button
+                type="button"
+                className="subtle-pill-btn footer-sound-btn"
+                aria-pressed={!deckState.soundEnabled}
+                aria-label={deckState.soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
+                onClick={toggleSound}
+              >
+                {deckState.soundEnabled ? (
+                  <Volume2 size={13} aria-hidden="true" />
+                ) : (
+                  <VolumeX size={13} aria-hidden="true" />
+                )}
+                <span>{deckState.soundEnabled ? 'Sound: On' : 'Sound: Muted'}</span>
+              </button>
               <button
                 type="button"
                 className="subtle-pill-btn"
@@ -1557,16 +1877,23 @@ export default function App() {
 
       {/* MODAL 1: GAME SWITCHER */}
       {showGameModal && (
-        <Suspense fallback={null}>
-          <GameSelectorModal
-            isOpen={showGameModal}
-            onClose={() => setShowGameModal(false)}
-            activeGameId={activeGameId}
-            onSelectGame={handleSelectGame}
-            soundEnabled={deckState.soundEnabled}
-            modalRef={gameModalRef}
-          />
-        </Suspense>
+        <ChunkErrorBoundary
+          isModal
+          resetKey={`modal-game-${activeGameId}`}
+          onRecover={() => setShowGameModal(false)}
+          recoverLabel="Close"
+        >
+          <Suspense fallback={null}>
+            <GameSelectorModal
+              isOpen={showGameModal}
+              onClose={() => setShowGameModal(false)}
+              activeGameId={activeGameId}
+              onSelectGame={handleSelectGame}
+              soundEnabled={deckState.soundEnabled}
+              modalRef={gameModalRef}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
       )}
 
       {/* MODAL 2: UNPAUSE SYNC PASS & QR CROSS-DEVICE LINK */}
@@ -1900,29 +2227,43 @@ export default function App() {
 
       {/* MODAL 4: COMPLIANCE & LEGAL */}
       {Boolean(legalSection) && (
-        <Suspense fallback={null}>
-          <LegalComplianceModal
-            isOpen={Boolean(legalSection)}
-            activeSection={legalSection || 'terms'}
-            onSelectSection={setLegalSection}
-            onClose={() => setLegalSection(null)}
-            modalRef={legalModalRef}
-            runtimeConfig={runtimeConfig}
-            soundEnabled={deckState.soundEnabled}
-          />
-        </Suspense>
+        <ChunkErrorBoundary
+          isModal
+          resetKey={`modal-legal-${legalSection}`}
+          onRecover={() => setLegalSection(null)}
+          recoverLabel="Close"
+        >
+          <Suspense fallback={null}>
+            <LegalComplianceModal
+              isOpen={Boolean(legalSection)}
+              activeSection={legalSection || 'terms'}
+              onSelectSection={setLegalSection}
+              onClose={() => setLegalSection(null)}
+              modalRef={legalModalRef}
+              runtimeConfig={runtimeConfig}
+              soundEnabled={deckState.soundEnabled}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
       )}
 
       {/* MODAL 5: EMBED CALCULATOR WIDGET */}
       {showEmbedModal && (
-        <Suspense fallback={null}>
-          <EmbedWidgetModal
-            isOpen={showEmbedModal}
-            onClose={() => setShowEmbedModal(false)}
-            initialEmbedPath={currentEmbedPath}
-            soundEnabled={deckState.soundEnabled}
-          />
-        </Suspense>
+        <ChunkErrorBoundary
+          isModal
+          resetKey={`modal-embed-${currentEmbedPath}`}
+          onRecover={() => setShowEmbedModal(false)}
+          recoverLabel="Close"
+        >
+          <Suspense fallback={null}>
+            <EmbedWidgetModal
+              isOpen={showEmbedModal}
+              onClose={() => setShowEmbedModal(false)}
+              initialEmbedPath={currentEmbedPath}
+              soundEnabled={deckState.soundEnabled}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
       )}
     </div>
   );

@@ -8,6 +8,8 @@ import { verifyWhopWebhook, generateDeckCode } from './webhookAuth.js';
 import {
   isSafePublicHttpsUrl,
   extractWebhookAmountCents,
+  classifyUnconfiguredWebhookProduct,
+  sanitizeSponsorBadgeText,
   checkAndSweepRateLimit,
 } from './securityHelpers.js';
 import { resolveSeoRequest } from '../src/data/seoRoutes.js';
@@ -194,9 +196,15 @@ export function createApp({ dbPath, env = process.env } = {}) {
     next();
   });
 
-  app.use('/api', (_req, res, next) => {
+  app.use('/api', (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (
+      req.baseUrl !== '/api' ||
+      (req.path !== req.path.toLowerCase() && !req.path.startsWith('/sync/'))
+    ) {
+      return res.status(404).json({ error: 'API route not found' });
+    }
     next();
   });
 
@@ -343,8 +351,15 @@ export function createApp({ dbPath, env = process.env } = {}) {
         return res.status(400).json({ error: 'Malformed JSON payload' });
       }
 
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return res.status(400).json({ error: 'Webhook payload must be a JSON object' });
+      }
+
       const eventType = String(payload.type || payload.action || '');
-      const data = payload.data || {};
+      const data =
+        payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+          ? payload.data
+          : {};
       const txId = String(data.id || check.eventId || payload.id || '').trim();
 
       if (!txId) {
@@ -502,11 +517,10 @@ export function createApp({ dbPath, env = process.env } = {}) {
       } else if (passIds.length || sponsorIds.length) {
         return res.status(400).json({ error: 'Missing or unrecognized product plan ID' });
       } else {
-        const provisionalCents = extractWebhookAmountCents(payload, { isSponsorPlan: false });
-        if (provisionalCents === null) {
+        productKind = classifyUnconfiguredWebhookProduct(payload);
+        if (!productKind) {
           return res.status(400).json({ error: 'Missing payment amount' });
         }
-        productKind = provisionalCents >= 9900 ? 'sponsor_24h' : 'nightrun_pass';
       }
 
       const amountCents = extractWebhookAmountCents(payload, {
@@ -964,7 +978,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const badgeText = String(req.body?.badgeText || '').trim().slice(0, 60);
+    const badgeText = sanitizeSponsorBadgeText(req.body?.badgeText);
     const rawUrl = String(req.body?.targetUrl || '').trim();
     const whopRef = String(req.body?.whopRef || '').trim().slice(0, 120) || null;
     const rawHours = Number(req.body?.durationHours ?? 24);
@@ -990,6 +1004,17 @@ export function createApp({ dbPath, env = process.env } = {}) {
   // Explicit JSON 404 for unknown /api routes
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'API route not found' });
+  });
+
+  // Match Worker 405 JSON response for unsupported HTTP methods outside /api
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.setHeader('Allow', 'GET, HEAD');
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    return next();
   });
 
   // Serve compiled Vite static bundle in production with server-side SEO/AEO route prerendering

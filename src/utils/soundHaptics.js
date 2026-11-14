@@ -1,15 +1,61 @@
 let audioCtx = null;
+let resumeInFlight = false;
+let lastResumeAttemptMs = 0;
+let lastTickOscMs = -Infinity;
+let lastChimeOscMs = -Infinity;
+
+const MIN_OSC_COALESCE_MS = 18;
+const MIN_RESUME_RETRY_MS = 100;
+
+function nowTimestampMs() {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function disconnectAudioNodes(osc, gain) {
+  try {
+    osc.disconnect();
+  } catch {
+    // Ignore disconnect errors on already-released nodes
+  }
+  try {
+    gain.disconnect();
+  } catch {
+    // Ignore disconnect errors on already-released nodes
+  }
+}
 
 function getCtx() {
   if (typeof window === 'undefined') return null;
+  if (audioCtx && audioCtx.state === 'closed') {
+    audioCtx = null;
+  }
   if (!audioCtx) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (AudioContextClass) {
       audioCtx = new AudioContextClass();
     }
   }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+  if (audioCtx && audioCtx.state === 'suspended' && !resumeInFlight) {
+    const nowMs = nowTimestampMs();
+    if (nowMs - lastResumeAttemptMs >= MIN_RESUME_RETRY_MS) {
+      lastResumeAttemptMs = nowMs;
+      resumeInFlight = true;
+      try {
+        const res = audioCtx.resume();
+        if (res && typeof res.finally === 'function') {
+          res.catch(() => {}).finally(() => {
+            resumeInFlight = false;
+          });
+        } else {
+          resumeInFlight = false;
+        }
+      } catch {
+        resumeInFlight = false;
+      }
+    }
   }
   return audioCtx;
 }
@@ -27,8 +73,14 @@ export function triggerHaptic(ms = 8) {
 export function playSwitchTick(soundEnabled = true, pitchHz = 680) {
   triggerHaptic(8);
   if (!soundEnabled) return;
+  const callMs = nowTimestampMs();
+  if (callMs - lastTickOscMs < MIN_OSC_COALESCE_MS) return;
   const ctx = getCtx();
-  if (!ctx) return;
+  if (!ctx || ctx.state === 'closed') return;
+  lastTickOscMs = callMs;
+
+  const safePitch =
+    Number.isFinite(pitchHz) && pitchHz > 0 ? Math.min(8000, Math.max(60, pitchHz)) : 680;
 
   try {
     const now = ctx.currentTime;
@@ -36,7 +88,7 @@ export function playSwitchTick(soundEnabled = true, pitchHz = 680) {
     const gain = ctx.createGain();
 
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(pitchHz, now);
+    osc.frequency.setValueAtTime(safePitch, now);
     osc.frequency.exponentialRampToValueAtTime(190, now + 0.028);
 
     gain.gain.setValueAtTime(0.06, now);
@@ -44,6 +96,7 @@ export function playSwitchTick(soundEnabled = true, pitchHz = 680) {
 
     osc.connect(gain);
     gain.connect(ctx.destination);
+    osc.onended = () => disconnectAudioNodes(osc, gain);
     osc.start(now);
     osc.stop(now + 0.032);
   } catch {
@@ -70,8 +123,11 @@ export function playKeypadBeep(soundEnabled = true, digit = '5') {
 export function playUnlockChime(soundEnabled = true) {
   triggerHaptic([12, 30, 16]);
   if (!soundEnabled) return;
+  const callMs = nowTimestampMs();
+  if (callMs - lastChimeOscMs < MIN_OSC_COALESCE_MS) return;
   const ctx = getCtx();
-  if (!ctx) return;
+  if (!ctx || ctx.state === 'closed') return;
+  lastChimeOscMs = callMs;
 
   try {
     const now = ctx.currentTime;
@@ -85,6 +141,7 @@ export function playUnlockChime(soundEnabled = true) {
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
       osc.connect(gain);
       gain.connect(ctx.destination);
+      osc.onended = () => disconnectAudioNodes(osc, gain);
       osc.start(start);
       osc.stop(start + 0.17);
     });
