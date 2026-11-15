@@ -209,10 +209,12 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
           .join('')}</ol></nav>`
       : '';
 
-  const mojNotice =
+  const complianceNotice =
     route.gameId === 'minecraft'
       ? '<p><strong>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</strong></p>'
-      : '';
+      : route.gameId === 'roblox'
+        ? '<p><strong>Requires 13+ account and 30,000 net earned R$ eligibility. Zero data is collected on minors.</strong></p>'
+        : '';
 
   const metaRowsHtml =
     Array.isArray(route.metaRows) && route.metaRows.length > 0
@@ -238,7 +240,7 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
 
   const mainHtml = `<main class="ssr-fallback-shell">${breadcrumbsHtml}<h1>${escapeHtml(
     route.h1
-  )}</h1><p>${escapeHtml(route.answerSummary)}</p>${mojNotice}${metaRowsHtml}${faqHtml}${relatedHtml}</main>`;
+  )}</h1><p>${escapeHtml(route.answerSummary)}</p>${complianceNotice}${metaRowsHtml}${faqHtml}${relatedHtml}</main>`;
 
   let html = baseHtml
     .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${escapeHtml(route.title)}</title>`)

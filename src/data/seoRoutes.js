@@ -698,7 +698,7 @@ function buildProgrammaticRoutes() {
       shortLabel: 'Mastery Camo Tracker',
       title: 'CoD Mastery Camo Pace & Weapon Tracker — Unpause',
       h1: '33-Weapon Mastery Camo Pace Calculator',
-      preset: { weaponAId: 'c9-smg', weaponBId: 'xm4-ar', codHp: 300, codHeadshots: 1, codOpenBolt: true },
+      preset: { studioTab: 'camo', weaponAId: 'c9-smg', weaponBId: 'xm4-ar', codHp: 300, codHeadshots: 1, codOpenBolt: true },
       description:
         'Estimate exact matches and hours remaining to unlock final Mastery Camo across 33 weapons, adjust matches per gun, and pin milestones free with zero ads.',
       answer:
@@ -709,7 +709,7 @@ function buildProgrammaticRoutes() {
       shortLabel: 'Skip Launchers Guide',
       title: 'Skip Launchers for CoD 33-Weapon Mastery — Unpause',
       h1: 'How DLC Guns Let You Skip Launchers for 33-Weapon Mastery',
-      preset: { weaponAId: 'krig-c', weaponBId: 'c9-smg', codHp: 300, codHeadshots: 1, codOpenBolt: true },
+      preset: { studioTab: 'camo', weaponAId: 'krig-c', weaponBId: 'c9-smg', codHp: 300, codHeadshots: 1, codOpenBolt: true },
       description:
         'Check your remaining weapon count for 33-weapon CoD Mastery Camo when swapping Launchers and Melee for Season 1 DLC rifles and SMGs. Instant free tracker.',
       answer:
@@ -793,7 +793,7 @@ function buildProgrammaticRoutes() {
         { name: 'EA Sports FC 27', path: '/ea-fc-27' },
         { name: `${ovr} SBC Solver`, path: `/ea-fc-27/sbc/${ovr}-rated-squad` },
       ],
-      preset: { sbcRatings: squad, buyPrice: 12000, sellPrice: 15000 },
+      preset: { studioTab: 'sbc', sbcRatings: squad, buyPrice: 12000, sellPrice: 15000 },
       metaRows: [
         { label: `Proven ${ovr} OVR Combo A`, val: `9 × ${ovr} OVR + 2 × ${ovr - 1} OVR` },
         { label: `Proven ${ovr} OVR Combo B`, val: `2 × ${ovr + 1} + 3 × ${ovr} + 6 × ${ovr - 1} OVR` },
@@ -864,7 +864,7 @@ function buildProgrammaticRoutes() {
       shortLabel: 'Stronghold 2-Throw',
       title: 'Minecraft Stronghold 2-Throw Triangulator — Unpause',
       h1: '2-Throw Eye of Ender Stronghold Triangulation Calculator',
-      preset: { mcDir: 'toNether', netherX: 0, netherY: 64, netherZ: 0 },
+      preset: { studioTab: 'stronghold', mcDir: 'toNether', netherX: 0, netherY: 64, netherZ: 0 },
       description:
         'Find your End Portal Stronghold using just two Eye of Ender throws: log X/Z coordinates + F3 facing angles and get exact Overworld & Nether tunnel targets.',
       answer:
@@ -886,7 +886,7 @@ function buildProgrammaticRoutes() {
       shortLabel: 'Eye of Ender Math',
       title: 'Find End Portal With 2 Eyes of Ender — Unpause',
       h1: 'Speedrunner 2-Throw Eye of Ender Intersection Solver',
-      preset: { mcDir: 'toNether', netherX: 120, netherY: 64, netherZ: -320 },
+      preset: { studioTab: 'stronghold', mcDir: 'toNether', netherX: 120, netherY: 64, netherZ: -320 },
       description:
         'Save Eyes of Ender and travel 8x faster via the Nether: enter two throw coordinates and angles to calculate the Stronghold’s exact Nether tunnel drop.',
       answer:
@@ -1257,7 +1257,7 @@ function buildProgrammaticRoutes() {
       answer:
         'Instead of dividing 100 - RR by win points alone, our simulator computes true EV per match: (Win% × Avg Win RR) - (Loss% × Avg Loss RR), predicting realistic rank-up games at 55% win rate.',
       ogImage: '/og/valorant.png',
-      preset: { valCreds: 3900, valRr: 44, valWr: 55 },
+      preset: { studioTab: 'rr', valCreds: 3900, valRr: 44, valWr: 55 },
     },
     {
       path: '/valorant/loss-streak-save-credits',
@@ -1326,7 +1326,7 @@ function buildProgrammaticRoutes() {
       answer:
         'Ranked entry fees scale from 20 RP in Silver and 35 RP in Gold to 55 RP in Platinum, 75 RP in Diamond, and 100 RP in Master—making consistent Top-5 placement + KP essential for positive RP/match.',
       ogImage: '/og/apex-legends.png',
-      preset: { apexRp: 8400, apexTier: 'diamond', apexAvgRp: 95 },
+      preset: { studioTab: 'ranked', apexRp: 8400, apexTier: 'diamond', apexAvgRp: 95 },
     },
     {
       path: '/apex-legends/diamond-to-master-rp-grind',
@@ -1340,7 +1340,7 @@ function buildProgrammaticRoutes() {
       answer:
         'Climbing from Diamond IV (15,000 RP) to Master (21,000 RP) requires +6,000 net RP despite -75 RP lobby entry fees—averaging ~75 games at +80 net RP per match.',
       ogImage: '/og/apex-legends.png',
-      preset: { apexRp: 15000, apexTier: 'master', apexAvgRp: 80 },
+      preset: { studioTab: 'ranked', apexRp: 15000, apexTier: 'master', apexAvgRp: 80 },
     },
     {
       path: '/apex-legends/heirloom-shards-pity-tracker',
@@ -2000,6 +2000,7 @@ function safeNum(raw, fallback, min, max, decimals = 2) {
 }
 
 const VALID_SAFE_IDS = new Set([...(gta6Pack.safes || []), ...(gta6Pack.safeCodes || [])].map((s) => s.id));
+const VALID_STUDIO_TABS = new Set(['duel', 'camo', 'portals', 'stronghold', 'buy', 'rr', 'tax', 'sbc', 'pity', 'ranked']);
 
 function parseBoolParam(params, key) {
   if (!params.has(key)) return undefined;
@@ -2021,6 +2022,11 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
 
   const clean = { ...(basePreset && typeof basePreset === 'object' ? basePreset : {}) };
   if (clean.subTab === 'stocks') clean.subTab = 'market';
+
+  if (params.has('tab')) {
+    const rawTab = String(params.get('tab') || '').trim().toLowerCase();
+    if (VALID_STUDIO_TABS.has(rawTab)) clean.studioTab = rawTab;
+  }
 
   const c = params.get('c');
   if (c && VALID_CONSOLE_IDS.has(c.trim())) clean.consoleId = c.trim();
@@ -2122,10 +2128,10 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.has('bz')) clean.portalBZ = safeInt(params.get('bz'), clean.portalBZ ?? 980, -30000000, 30000000);
   if (params.has('t1x')) clean.throw1X = safeNum(params.get('t1x'), clean.throw1X ?? 0, -30000000, 30000000);
   if (params.has('t1z')) clean.throw1Z = safeNum(params.get('t1z'), clean.throw1Z ?? 0, -30000000, 30000000);
-  if (params.has('t1d')) clean.throw1Deg = safeNum(params.get('t1d'), clean.throw1Deg ?? -45, -360, 360);
+  if (params.has('t1d')) clean.throw1Deg = safeNum(params.get('t1d'), clean.throw1Deg ?? -45, -3600, 3600);
   if (params.has('t2x')) clean.throw2X = safeNum(params.get('t2x'), clean.throw2X ?? 200, -30000000, 30000000);
   if (params.has('t2z')) clean.throw2Z = safeNum(params.get('t2z'), clean.throw2Z ?? 0, -30000000, 30000000);
-  if (params.has('t2d')) clean.throw2Deg = safeNum(params.get('t2d'), clean.throw2Deg ?? 45, -360, 360);
+  if (params.has('t2d')) clean.throw2Deg = safeNum(params.get('t2d'), clean.throw2Deg ?? 45, -3600, 3600);
 
   if (params.has('buy')) clean.buyPrice = safeInt(params.get('buy'), clean.buyPrice ?? 185000, 150, 15000000);
   if (params.has('sell')) clean.sellPrice = safeInt(params.get('sell'), clean.sellPrice ?? 215000, 200, 15000000);
@@ -2202,11 +2208,41 @@ export function getSitemapRoutes() {
   return ALL_CANONICAL_ROUTES;
 }
 
+const CORE_ROUTE_PATH_SET = new Set(CORE_ROUTES.map((r) => r.path));
+
+function getRouteFamilyPrefix(pathname) {
+  const parts = String(pathname || '').split('/').filter(Boolean);
+  return parts.length >= 2 ? `/${parts.slice(0, 2).join('/')}` : null;
+}
+
 export function getRelatedRoutesFor(route, maxCount = 8) {
   if (!route) return CORE_ROUTES.slice(0, maxCount);
-  const sameGame = ALL_CANONICAL_ROUTES.filter(
-    (r) => !r.legal && r.path !== route.path && r.gameId === route.gameId
-  );
+  const targetPath = route.parentCanonicalPath || route.path;
+  const familyPrefix = getRouteFamilyPrefix(targetPath);
+  const targetTab = route.preset?.studioTab;
+  const targetCluster = route.cluster;
+
+  const sameGame = ALL_CANONICAL_ROUTES
+    .filter((r) => !r.legal && r.path !== route.path && r.gameId === route.gameId)
+    .map((r, index) => {
+      let score = 0;
+      if (familyPrefix && (r.path === familyPrefix || r.path.startsWith(`${familyPrefix}/`))) {
+        score += 100;
+      }
+      if (targetTab && r.preset?.studioTab === targetTab) {
+        score += 50;
+      }
+      if (targetCluster && r.cluster === targetCluster) {
+        score += 25;
+      }
+      if (CORE_ROUTE_PATH_SET.has(r.path)) {
+        score += 15;
+      }
+      return { route: r, score, index };
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map((entry) => entry.route);
+
   const crossHubs = CORE_ROUTES.filter(
     (r) => r.path !== route.path && r.gameId !== route.gameId
   );

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import { AnimatedValue, SpotlightPanel } from '../utils/motionPrimitives.jsx';
 import { buildNightRunSharePath, buildNightRunShareUrl } from '../utils/shareUrlHelpers.js';
 
 const SESSION_DURATIONS = [
@@ -252,7 +253,7 @@ export default function NightRunProDeck({
         <div className="night-stage-grid">
           {/* LEFT: INTERACTIVE LEONIDA ROUTE MAP + TIME-BOXED STOPS */}
           <div id="night-route-panel" role="tabpanel" aria-labelledby={`night-tab-${sessionMins}`}>
-            <div className="coastal-map-card">
+            <SpotlightPanel className="coastal-map-card">
               <div
                 style={{
                   display: 'flex',
@@ -393,11 +394,11 @@ export default function NightRunProDeck({
                   );
                 })}
               </svg>
-            </div>
+            </SpotlightPanel>
 
             <div className="meter-labels" style={{ marginBottom: '10px' }}>
               <span className="section-label">
-                {sessionMins}-Minute Route ({completedStopsCount}/{activeRouteStops.length} Done)
+                {sessionMins}-Minute Route (<AnimatedValue value={completedStopsCount} />/{activeRouteStops.length} Done)
               </span>
               <span className="district-pill">
                 <MapPin size={12} style={{ marginRight: '4px', verticalAlign: '-1px' }} />

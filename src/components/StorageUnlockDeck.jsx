@@ -22,6 +22,7 @@ import {
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
 import { MAX_FREE_PROFILES, MAX_SYNC_PROFILES } from '../utils/syncState.js';
+import { AnimatedValue, SpotlightPanel } from '../utils/motionPrimitives.jsx';
 import {
   formatDurationMinutes,
   formatCountdownMs,
@@ -416,11 +417,13 @@ export default function StorageUnlockDeck({
             </div>
 
             {/* SSD CAPACITY TELEMETRY BAR */}
-            <div className="meter-box ssd-meter-card">
+            <SpotlightPanel className="meter-box ssd-meter-card">
               <div className="meter-labels">
                 <span>
                   Target Required:{' '}
-                  <strong className="mono">{installTargetGb} GB</strong>
+                  <strong className="mono">
+                    <AnimatedValue value={installTargetGb} suffix=" GB" />
+                  </strong>
                   {customOffsetGb !== 0 && (
                     <span style={{ color: 'var(--ink-muted)', fontSize: '0.76rem', marginLeft: '6px' }}>
                       ({customOffsetGb > 0 ? `+${customOffsetGb}` : customOffsetGb} GB adj)
@@ -431,9 +434,15 @@ export default function StorageUnlockDeck({
                   className="mono"
                   style={{ color: fits ? 'var(--teal-dark)' : 'var(--coral)', fontWeight: 700 }}
                 >
-                  {fits
-                    ? `FITS (+${surplusGb} GB HEADROOM)`
-                    : `SHORT BY ${shortfallGb} GB`}
+                  {fits ? (
+                    <>
+                      FITS (+<AnimatedValue value={surplusGb} suffix=" GB HEADROOM" />)
+                    </>
+                  ) : (
+                    <>
+                      SHORT BY <AnimatedValue value={shortfallGb} suffix=" GB" />
+                    </>
+                  )}
                 </span>
               </div>
 
@@ -558,7 +567,7 @@ export default function StorageUnlockDeck({
                   </div>
                 </div>
               </div>
-            </div>
+            </SpotlightPanel>
 
             {/* UNINSTALL QUEUE */}
             <div className="meter-labels" style={{ marginTop: '12px' }}>
@@ -673,7 +682,9 @@ export default function StorageUnlockDeck({
 
                 <div className="receipt-row" style={{ fontWeight: 700 }}>
                   <span>Total Free Space</span>
-                  <span>{totalClearedGb} / {usableGb} GB</span>
+                  <span>
+                    <AnimatedValue value={totalClearedGb} /> / {usableGb} GB
+                  </span>
                 </div>
                 <div className="receipt-row">
                   <span>ETA @ {mbps} Mbps</span>

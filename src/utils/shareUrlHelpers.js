@@ -231,6 +231,22 @@ export function buildNightRunShareUrl(state, originOverride, pathnameOverride) {
   return `${resolveOrigin(originOverride)}${buildNightRunSharePath(state, pathnameOverride)}`;
 }
 
+const STUDIO_TABS_BY_GAME = {
+  'cod-warzone': ['duel', 'camo'],
+  minecraft: ['portals', 'stronghold'],
+  'ea-fc-27': ['tax', 'sbc'],
+  valorant: ['buy', 'rr'],
+  'apex-legends': ['pity', 'ranked'],
+};
+
+export function normalizeStudioTab(gameId, rawTab) {
+  const canonicalKey = gameId === 'ea-fc-25' ? 'ea-fc-27' : typeof gameId === 'string' ? gameId : '';
+  const allowed = STUDIO_TABS_BY_GAME[canonicalKey];
+  if (!allowed) return '';
+  const clean = typeof rawTab === 'string' ? rawTab.trim().toLowerCase() : '';
+  return allowed.includes(clean) ? clean : allowed[0];
+}
+
 export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
   const state = rawState && typeof rawState === 'object' ? rawState : {};
   const canonicalKey = gameId === 'ea-fc-25' ? 'ea-fc-27' : typeof gameId === 'string' ? gameId : '';
@@ -243,6 +259,7 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
   switch (canonicalKey) {
     case 'cod-warzone':
       entries = [
+        ['tab', normalizeStudioTab(canonicalKey, state.studioTab)],
         ['a', sanitizeStr(state.weaponAId ?? 'raal-mg', 40, 'raal-mg')],
         ['b', sanitizeStr(state.weaponBId ?? 'c9-smg', 40, 'c9-smg')],
         ['hp', safeIntBound(state.codHp, 300, 100, 300)],
@@ -267,6 +284,7 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
       break;
     case 'minecraft':
       entries = [
+        ['tab', normalizeStudioTab(canonicalKey, state.studioTab)],
         ['dir', state.mcDir === 'toOverworld' ? 'toOverworld' : 'toNether'],
         ['x', safeIntBound(state.netherX, -20, -30000000, 30000000)],
         ['y', safeIntBound(state.netherY, 64, -64, 320)],
@@ -276,10 +294,10 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
         ['bz', safeIntBound(state.portalBZ, 980, -30000000, 30000000)],
         ['t1x', safeFloatBound(state.throw1X, 0, -30000000, 30000000, 2)],
         ['t1z', safeFloatBound(state.throw1Z, 0, -30000000, 30000000, 2)],
-        ['t1d', safeFloatBound(state.throw1Deg, -45, -360, 360, 2)],
+        ['t1d', safeFloatBound(state.throw1Deg, -45, -3600, 3600, 2)],
         ['t2x', safeFloatBound(state.throw2X, 200, -30000000, 30000000, 2)],
         ['t2z', safeFloatBound(state.throw2Z, 0, -30000000, 30000000, 2)],
-        ['t2d', safeFloatBound(state.throw2Deg, 45, -360, 360, 2)],
+        ['t2d', safeFloatBound(state.throw2Deg, 45, -3600, 3600, 2)],
       ];
       break;
     case 'ea-fc-27': {
@@ -289,6 +307,7 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
       const sbcStr =
         sbcArr && sbcArr.length === 11 ? sbcArr.join(',') : '86,86,85,85,85,84,84,84,84,84,84';
       entries = [
+        ['tab', normalizeStudioTab(canonicalKey, state.studioTab)],
         ['buy', safeIntBound(state.buyPrice, 185000, 150, 15000000)],
         ['sell', safeIntBound(state.sellPrice, 215000, 200, 15000000)],
         ['qty', safeIntBound(state.quantity, 1, 1, 100)],
@@ -320,6 +339,7 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
     }
     case 'valorant':
       entries = [
+        ['tab', normalizeStudioTab(canonicalKey, state.studioTab)],
         ['cred', safeIntBound(state.valCreds, 3900, 0, 9000)],
         ['vw', safeIntBound(state.valWeapon, 2900, 0, 4700)],
         ['va', safeIntBound(state.valArmor, 650, 0, 1000)],
@@ -333,6 +353,7 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
       break;
     case 'apex-legends':
       entries = [
+        ['tab', normalizeStudioTab(canonicalKey, state.studioTab)],
         ['apexLvl', safeIntBound(state.apexLevel, 420, 1, 500)],
         ['prestige', safeIntBound(state.apexPrestige, 0, 0, 3)],
         ['bp', safeIntBound(state.apexBp, 28, 0, 300)],

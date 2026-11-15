@@ -129,6 +129,10 @@
   --cta-bg: #121722;
   --cta-ink: #ffffff;
 
+  --game-accent: #9f1239;
+  --game-accent-soft: rgba(159, 18, 57, 0.10);
+  --game-accent-ring: rgba(159, 18, 57, 0.30);
+
   --coral: #be123c;
   --coral-soft: rgba(190, 18, 60, 0.10);
   --coral-border: rgba(190, 18, 60, 0.34);
@@ -868,6 +872,7 @@ textarea {
 
 .deck-input {
   width: 100%;
+  min-width: 0;
   min-height: 44px;
   background: var(--bg-recessed);
   border: 1px solid var(--border-strong);
@@ -2668,6 +2673,46 @@ input[type='range']::-moz-range-thumb {
     padding: 6px 4px;
     font-size: 0.76rem;
     justify-content: center;
+  }
+
+  /* Expand touch hitboxes to >=44px while keeping visual 6px track */
+  input[type='range'] {
+    min-height: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+
+  input[type='range']::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--select-accent) 0%,
+      var(--select-accent) var(--pct, 50%),
+      var(--bg-canvas) var(--pct, 50%),
+      var(--bg-canvas) 100%
+    );
+    border: 1px solid var(--border-subtle);
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    margin-top: -7px;
+  }
+
+  input[type='range']::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--select-accent) 0%,
+      var(--select-accent) var(--pct, 50%),
+      var(--bg-canvas) var(--pct, 50%),
+      var(--bg-canvas) 100%
+    );
+    border: 1px solid var(--border-subtle);
   }
 }
 

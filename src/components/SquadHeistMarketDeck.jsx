@@ -22,6 +22,7 @@ import {
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
 import { MAX_FREE_PROFILES, MAX_SYNC_PROFILES } from '../utils/syncState.js';
+import { AnimatedValue, SpotlightPanel } from '../utils/motionPrimitives.jsx';
 import {
   DEFAULT_HEIST_CREW,
   normalizeHeistSubTab,
@@ -706,7 +707,7 @@ export default function SquadHeistMarketDeck({
             </div>
 
             {/* RIGHT WIRE LEDGER + PNG EXPORT */}
-            <div className="wire-ledger-card mobile-answer-first">
+            <SpotlightPanel className="wire-ledger-card mobile-answer-first">
               <div className="wire-header-band">
                 <div className="mono" style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-muted)' }}>
                   UNPAUSE // SQUAD WIRE LEDGER
@@ -753,19 +754,19 @@ export default function SquadHeistMarketDeck({
                   <div>
                     <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>GROSS VAULT</div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
-                      ${grossDollars.toLocaleString('en-US')}
+                      $<AnimatedValue value={grossDollars} />
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>NPC FEE ({supportFeePct}%)</div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--gold)' }}>
-                      -${supportFeeDollars.toLocaleString('en-US')}
+                      -$<AnimatedValue value={supportFeeDollars} />
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>NET POOL</div>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--teal-dark)' }}>
-                      ${netPoolDollars.toLocaleString('en-US')}
+                      $<AnimatedValue value={netPoolDollars} />
                     </div>
                   </div>
                 </div>
@@ -784,7 +785,7 @@ export default function SquadHeistMarketDeck({
                       <span style={{ color: 'var(--ink-muted)', fontSize: '0.73rem' }}>({m.role})</span>
                     </div>
                     <div className="mono" style={{ position: 'relative', fontWeight: 700, fontSize: '0.88rem', color: m.textColor }}>
-                      {m.pct}% · ${m.payout.toLocaleString('en-US')}
+                      {m.pct}% · $<AnimatedValue value={m.payout} />
                     </div>
                   </div>
                 ))}
@@ -934,7 +935,7 @@ export default function SquadHeistMarketDeck({
                   </div>
                 )}
               </div>
-            </div>
+            </SpotlightPanel>
           </div>
         ) : (
           <div id="squad-panel-market" role="tabpanel" aria-labelledby="squad-tab-market">

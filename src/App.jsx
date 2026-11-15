@@ -123,16 +123,6 @@ const DEFAULT_RUNTIME = {
   activeSponsor: null,
 };
 
-function hexToRgba(hex, alpha) {
-  const clean = String(hex || '#FF5964').replace('#', '');
-  if (clean.length !== 6) return `rgba(255, 89, 100, ${alpha})`;
-  const r = parseInt(clean.slice(0, 2), 16);
-  const g = parseInt(clean.slice(2, 4), 16);
-  const b = parseInt(clean.slice(4, 6), 16);
-  if ([r, g, b].some((n) => Number.isNaN(n))) return `rgba(255, 89, 100, ${alpha})`;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 class ChunkErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -1189,15 +1179,6 @@ export default function App() {
     }
   };
 
-  const accentStyle = useMemo(
-    () => ({
-      '--game-accent': activeGamePack.accentColor,
-      '--game-accent-soft': activeGamePack.accentSoft || hexToRgba(activeGamePack.accentColor, 0.14),
-      '--game-accent-ring': hexToRgba(activeGamePack.accentColor, 0.38),
-    }),
-    [activeGamePack.accentColor, activeGamePack.accentSoft]
-  );
-
   const faqCards = useMemo(() => {
     const routeFaqs =
       Array.isArray(activeRoute?.faqs) && activeRoute.faqs.length > 0
@@ -1207,10 +1188,12 @@ export default function App() {
       ...routeFaqs,
       {
         q: `What does the one-time $${runtimeConfig.passPriceUsd} Sync Pass unlock?`,
-        a: `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, CSV/JSON deck export, and 14-day hassle-free refunds.`,
+        a: activeGamePack.isGta6Suite
+          ? `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, CSV/JSON deck export, and 14-day hassle-free refunds.`
+          : `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 120 cross-game pinned builds, 16 cloud profile slots, CSV/JSON deck export, and 14-day hassle-free refunds.`,
       },
     ];
-  }, [activeRoute?.faqs, activeGamePack.faqs, runtimeConfig.passPriceUsd]);
+  }, [activeRoute?.faqs, activeGamePack.faqs, activeGamePack.isGta6Suite, runtimeConfig.passPriceUsd]);
 
   const currentEmbedPath = useMemo(() => {
     if (activeGameId === 'gta-6') {
@@ -1245,7 +1228,28 @@ export default function App() {
     [activeRoute]
   );
 
+  const sameGamePresetLinks = useMemo(
+    () => relatedLinks.filter((r) => r.gameId === activeGameId),
+    [relatedLinks, activeGameId]
+  );
+
   const directoryGroups = useMemo(() => getGroupedDirectoryLinks(), []);
+  const activeGameGroups = useMemo(
+    () =>
+      directoryGroups.filter((group) =>
+        group.links.some((link) => link.gameId === activeGameId)
+      ),
+    [directoryGroups, activeGameId]
+  );
+  const otherGameGroups = useMemo(
+    () =>
+      directoryGroups.filter(
+        (group) => !group.links.some((link) => link.gameId === activeGameId)
+      ),
+    [directoryGroups, activeGameId]
+  );
+  const isDedicatedGamePage = !isNotFound && activeRoute?.path !== '/' && !legalSection;
+  const activeHubPath = GAME_TO_CANONICAL_PATH[activeGamePack.id] || '/';
 
   const handleOpenProTarget = isEmbed
     ? () => {
@@ -1266,7 +1270,7 @@ export default function App() {
 
   if (isEmbed) {
     return (
-      <div style={accentStyle} className="embed-root-wrap">
+      <div data-game={activeGamePack.id} className="embed-root-wrap game-theme-shell">
         <main className="app-shell embed-app-shell">
           <ChunkErrorBoundary resetKey={`embed:${activeGamePack.id}:${activeTab}`}>
             <Suspense
@@ -1385,7 +1389,7 @@ export default function App() {
     !isNotFound && !isEmbed && !legalSection && activeGamePack.isGta6Suite;
 
   return (
-    <div style={accentStyle}>
+    <div data-game={activeGamePack.id} className="game-theme-shell">
       {/* OPTIONAL SPONSOR BAR (HIDDEN WHEN SYNC PASS ACTIVE) */}
       {!deckState.isPro && runtimeConfig.activeSponsor && activeSponsorHref && (
         <div className="sponsor-strip">
@@ -1442,14 +1446,27 @@ export default function App() {
           </div>
 
           <div className="topbar-controls">
-            <div
-              className="nz-hud-pill"
-              title={`Global launch Nov 19, 2026 · Xbox NZ earliest midnight: Nov 18 @ 11:00 UTC (${headerNzClock})`}
-            >
-              <span className="nz-live-dot" />
-              <span className="nz-full-text">GTA VI · Nov 19 ({daysUntilLaunch}d)</span>
-              <span className="nz-compact-text">Nov 19 ({daysUntilLaunch}d)</span>
-            </div>
+            {activeGamePack.isGta6Suite ? (
+              <div
+                className="nz-hud-pill"
+                title={`Global launch Nov 19, 2026 · Xbox NZ earliest midnight: Nov 18 @ 11:00 UTC (${headerNzClock})`}
+              >
+                <span className="nz-live-dot" />
+                <span className="nz-full-text">GTA VI · Nov 19 ({daysUntilLaunch}d)</span>
+                <span className="nz-compact-text">Nov 19 ({daysUntilLaunch}d)</span>
+              </div>
+            ) : (
+              <div
+                className="nz-hud-pill game-context-pill"
+                title={`${activeGamePack.fullTitle} · ${activeGamePack.audienceBadge}`}
+              >
+                <span className="nz-live-dot game-context-dot" />
+                <span className="nz-full-text">
+                  {activeGamePack.shortTitle} · {activeGamePack.audienceBadge}
+                </span>
+                <span className="nz-compact-text">{activeGamePack.shortTitle}</span>
+              </div>
+            )}
 
             <button
               type="button"
@@ -1512,35 +1529,84 @@ export default function App() {
           </div>
         </div>
 
-        {/* SLIM TOP-10 GAME DOCK */}
-        <nav className="quick-game-dock-wrap" aria-label="Quick Top 10 Games">
-          <div className="quick-game-dock">
-            {GAME_PACKS.map((g) => {
-              const isActive = !isNotFound && g.id === activeGameId;
-              const href = GAME_TO_CANONICAL_PATH[g.id] || '/';
-              return (
+        {/* SLIM TOP-10 GAME DOCK ON ROOT HUB */}
+        {!isDedicatedGamePage && (
+          <nav className="quick-game-dock-wrap" aria-label="Quick Top 10 Games">
+            <div className="quick-game-dock">
+              {GAME_PACKS.map((g) => {
+                const isActive = !isNotFound && g.id === activeGameId;
+                const href = GAME_TO_CANONICAL_PATH[g.id] || '/';
+                return (
+                  <a
+                    key={g.id}
+                    href={href}
+                    className={`quick-game-pill ${isActive ? 'active' : ''}`}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSelectGame(g.id);
+                    }}
+                  >
+                    <span
+                      className="quick-game-dot"
+                      style={{ background: g.accentColor }}
+                      aria-hidden="true"
+                    />
+                    <span>{g.shortTitle}</span>
+                  </a>
+                );
+              })}
+            </div>
+          </nav>
+        )}
+      </header>
+
+      {/* GAME-ISOLATED STUDIO SUBBAR (OUTSIDE STICKY HEADER SO MOBILE VIEWPORT STAYS FREE) */}
+      {isDedicatedGamePage && (
+        <nav className="quick-game-dock-wrap game-studio-subbar-wrap" aria-label={`${activeGamePack.shortTitle} Studio Navigation`}>
+          <div className="game-studio-subbar">
+            <div className="game-studio-subbar-left">
+              <a
+                href={activeHubPath}
+                className="game-studio-active-badge"
+                aria-current={activeRoute?.path === activeHubPath ? 'page' : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToPath(activeHubPath, { scrollToTop: true });
+                }}
+              >
+                <span className="quick-game-dot game-context-dot" aria-hidden="true" />
+                <span>{activeGamePack.fullTitle}</span>
+              </a>
+              {sameGamePresetLinks.slice(0, 5).map((rel) => (
                 <a
-                  key={g.id}
-                  href={href}
-                  className={`quick-game-pill ${isActive ? 'active' : ''}`}
-                  aria-current={isActive ? 'page' : undefined}
+                  key={rel.path}
+                  href={rel.path}
+                  className={`quick-game-pill ${activeRoute?.path === rel.path ? 'active' : ''}`}
+                  aria-current={activeRoute?.path === rel.path ? 'page' : undefined}
                   onClick={(e) => {
                     e.preventDefault();
-                    handleSelectGame(g.id);
+                    navigateToPath(rel.path, { scrollToTop: true });
                   }}
                 >
-                  <span
-                    className="quick-game-dot"
-                    style={{ background: g.accentColor }}
-                    aria-hidden="true"
-                  />
-                  <span>{g.shortTitle}</span>
+                  {rel.shortLabel}
                 </a>
-              );
-            })}
+              ))}
+            </div>
+            <button
+              type="button"
+              className="subtle-pill-btn game-studio-all-btn"
+              onClick={() => {
+                playSwitchTick(deckState.soundEnabled, 660);
+                setShowGameModal(true);
+              }}
+            >
+              <Sparkles size={13} aria-hidden="true" />
+              <span>All 10 Games · Ctrl+K</span>
+            </button>
           </div>
         </nav>
-      </header>
+      )}
 
       {/* MAIN STUDIO WORKBENCH */}
       <main className={`app-shell ${showMobileBottomRail ? 'has-mobile-bottom-rail' : ''}`}>
@@ -1692,11 +1758,13 @@ export default function App() {
               </p>
             </div>
           </div>
-          {!activeRoute?.legal && activeRoute?.path !== '/' && relatedLinks.length > 0 && (
+          {!isDedicatedGamePage && !activeRoute?.legal && activeRoute?.path !== '/' && sameGamePresetLinks.length > 0 && (
             <div className="seo-scenario-strip">
-              <span className="seo-strip-label">{isSubpageScenario ? 'Related presets:' : 'Popular presets:'}</span>
+              <span className="seo-strip-label">
+                {isSubpageScenario ? `More ${activeGamePack.shortTitle} presets:` : `Popular ${activeGamePack.shortTitle} presets:`}
+              </span>
               <div className="seo-scenario-chips">
-                {relatedLinks.map((rel) => (
+                {sameGamePresetLinks.map((rel) => (
                   <a
                     key={rel.path}
                     href={rel.path}
@@ -1727,12 +1795,12 @@ export default function App() {
 
         <ChunkErrorBoundary
           resetKey={`${activeGamePack.id}:${activeTab}`}
-          onRecover={() => navigateToPath('/')}
-          recoverLabel="Back to Preload Calculator"
+          onRecover={() => navigateToPath(activeHubPath)}
+          recoverLabel={activeGamePack.isGta6Suite ? 'Back to Preload Calculator' : `Reload ${activeGamePack.shortTitle} Studio`}
         >
           <Suspense
             fallback={
-              <div className="deck-panel" style={{ padding: '24px', color: 'var(--ink-secondary)' }}>
+              <div className="deck-panel gs-fallback-card">
                 Loading calculator module…
               </div>
             }
@@ -1905,12 +1973,20 @@ export default function App() {
         </>
         )}
 
-        {/* SEO INTERNAL LINK DIRECTORY HUB */}
-        <section className="seo-directory-hub" aria-label="Complete Unpause Calculator Directory">
+        {/* SCOPED PER-GAME DIRECTORY + COLLAPSIBLE CROSS-GAME INDEX */}
+        <section className="seo-directory-hub" aria-label="Unpause Calculator Directory">
           <div className="seo-directory-head">
             <div>
-              <h2>Popular Unpause Calculators &amp; Scenario Pages</h2>
-              <p>Instant zero-ad companion pages indexed across GTA VI and Top 9 live games.</p>
+              <h2>
+                {isDedicatedGamePage
+                  ? `${activeGamePack.shortTitle} Calculators & Preset Scenarios`
+                  : 'Popular Unpause Calculators & Scenario Pages'}
+              </h2>
+              <p>
+                {isDedicatedGamePage
+                  ? `Dedicated zero-ad ${activeGamePack.fullTitle} scenario presets and deep links.`
+                  : 'Instant zero-ad companion pages indexed across GTA VI and Top 9 live games.'}
+              </p>
             </div>
             <button
               type="button"
@@ -1925,7 +2001,7 @@ export default function App() {
             </button>
           </div>
           <div className="seo-directory-grid">
-            {directoryGroups.map((group) => (
+            {(isDedicatedGamePage ? activeGameGroups : directoryGroups).map((group) => (
               <div key={group.cluster} className="seo-directory-card">
                 <h3>{group.cluster}</h3>
                 <div className="seo-directory-links">
@@ -1946,6 +2022,37 @@ export default function App() {
               </div>
             ))}
           </div>
+
+          {isDedicatedGamePage && otherGameGroups.length > 0 && (
+            <details className="cross-game-directory-drawer">
+              <summary className="cross-game-directory-summary">
+                <span>Switch or Browse Other Unpause Game Suites (9 More Games)</span>
+                <ChevronDown className="cross-game-drawer-icon" size={16} aria-hidden="true" />
+              </summary>
+              <div className="seo-directory-grid cross-game-directory-inner">
+                {otherGameGroups.map((group) => (
+                  <div key={group.cluster} className="seo-directory-card">
+                    <h3>{group.cluster}</h3>
+                    <div className="seo-directory-links">
+                      {group.links.map((link) => (
+                        <a
+                          key={link.path}
+                          href={link.path}
+                          className={`seo-dir-link ${activeRoute?.path === link.path ? 'active' : ''}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigateToPath(link.path, { scrollToTop: true });
+                          }}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </section>
 
         {/* TRANSPARENT STUDIO FOOTER */}
@@ -2130,8 +2237,9 @@ export default function App() {
                     : `Unpause Sync Pass · $${runtimeConfig.passPriceUsd} Once`}
                 </h2>
                 <p className="selector-modal-sub">
-                  Zero subscriptions. Instant Phone ↔ PC QR sync for 16 console setups, 16 squad crew
-                  rosters, 120 cross-game pins, and extended GTA VI weeknight chains.
+                  {activeGamePack.isGta6Suite
+                    ? 'Zero subscriptions. Instant Phone ↔ PC QR sync for 16 console setups, 16 squad crew rosters, 120 cross-game pins, and extended GTA VI weeknight chains.'
+                    : 'Zero subscriptions. Instant Phone ↔ PC QR sync for 120 cross-game pinned builds, 16 cloud profile slots, and desktop ↔ mobile continuity.'}
                 </p>
               </div>
               <button
@@ -2278,7 +2386,9 @@ export default function App() {
                   </div>
                   <div className="pass-feature-item">
                     <HardDrive size={14} color="var(--teal-dark)" aria-hidden="true" />
-                    <span>16 Console &amp; Squad Presets</span>
+                    <span>
+                      {activeGamePack.isGta6Suite ? '16 Console & Squad Presets' : '16 Cloud Profile Slots'}
+                    </span>
                   </div>
                   <div className="pass-feature-item">
                     <Bookmark size={14} color="var(--gold)" aria-hidden="true" />
@@ -2286,7 +2396,9 @@ export default function App() {
                   </div>
                   <div className="pass-feature-item">
                     <Clock size={14} color="var(--game-accent)" aria-hidden="true" />
-                    <span>90m &amp; 120m Weeknight Routes</span>
+                    <span>
+                      {activeGamePack.isGta6Suite ? '90m & 120m Weeknight Routes' : 'CSV & JSON Preset Export'}
+                    </span>
                   </div>
                 </div>
 
@@ -2308,7 +2420,10 @@ export default function App() {
                   </a>
                 </div>
                 <p className="sync-legal-fineprint">
-                  18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery; GTA VI modules remain pre-launch previews until Nov 19, 2026. Includes 14-day hassle-free refunds.
+                  18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery
+                  {activeGamePack.isGta6Suite
+                    ? '; GTA VI modules remain pre-launch previews until Nov 19, 2026'
+                    : ' across all unlocked cloud sync features'}. Includes 14-day hassle-free refunds.
                 </p>
                 <div className="sync-legal-links-row">
                   <button

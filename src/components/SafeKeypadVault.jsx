@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { playKeypadBeep, playSwitchTick, playUnlockChime, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import { AnimatedValue, SpotlightPanel } from '../utils/motionPrimitives.jsx';
 import { buildSafeCodesSharePath, buildSafeCodesShareUrl } from '../utils/shareUrlHelpers.js';
 
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', '#'];
@@ -244,7 +245,7 @@ export default function SafeKeypadVault({
 
           <div className="hud-readout" aria-live="polite">
             <span>
-              Cleared: <strong className="mono">{crackedCount}</strong> / {safes.length}
+              Cleared: <strong className="mono"><AnimatedValue value={crackedCount} /></strong> / {safes.length}
             </span>
           </div>
         </div>
@@ -259,7 +260,7 @@ export default function SafeKeypadVault({
           </div>
           <div className="hud-readout" aria-live="polite">
             <span>
-              Cleared: <strong className="mono">{crackedCount}</strong> / {safes.length}
+              Cleared: <strong className="mono"><AnimatedValue value={crackedCount} /></strong> / {safes.length}
             </span>
           </div>
         </div>
@@ -437,7 +438,7 @@ export default function SafeKeypadVault({
 
           {/* RIGHT: HARDWARE 10-KEY PAD */}
           <div>
-            <div className="keypad-box" aria-label="Interactive Safe Keypad">
+            <SpotlightPanel className="keypad-box" aria-label="Interactive Safe Keypad">
               <div className="keypad-box-header">
                 <div style={{ minWidth: 0 }}>
                   <div className="mono" style={{ fontSize: '0.71rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
@@ -584,7 +585,7 @@ export default function SafeKeypadVault({
                   </span>
                 </div>
               )}
-            </div>
+            </SpotlightPanel>
           </div>
         </div>
       </div>
