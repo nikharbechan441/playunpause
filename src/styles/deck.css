@@ -3629,6 +3629,234 @@ input[type='range']::-moz-range-thumb {
 }
 
 /* =========================================================================
+   SAVED PROFILES, CONTEXTUAL SYNC BAR, LIVE INVENTORY & PORTABLE BACKUPS
+   ========================================================================= */
+.saved-preset-card {
+  margin-top: 14px;
+  padding: 13px 14px;
+  border-radius: 13px;
+  background: var(--bg-recessed);
+  border: 1px solid var(--border-subtle);
+}
+
+.saved-preset-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.saved-preset-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.saved-preset-empty {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.saved-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-preset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.saved-preset-load-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms var(--ease-out), background-color 140ms var(--ease-out);
+}
+
+.saved-preset-load-btn:hover {
+  border-color: var(--ocean-border);
+  background: var(--bg-elevated);
+}
+
+.saved-preset-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+  overflow-wrap: anywhere;
+}
+
+.saved-preset-meta {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+}
+
+.saved-preset-card .subtle-pill-btn,
+.saved-preset-card .pin-limit-alert button,
+.contextual-sync-bar button,
+.backup-actions-row button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.contextual-sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--ocean-border);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+
+.contextual-sync-bar > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.contextual-sync-bar strong {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.contextual-sync-bar span {
+  font-size: 0.77rem;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+
+.contextual-sync-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pass-live-inventory {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-recessed);
+  border: 1px solid var(--border-subtle);
+}
+
+.pass-inventory-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 9px;
+}
+
+.pass-inventory-total {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ocean);
+}
+
+.pass-inventory-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.pass-inventory-pills span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 5px 9px;
+}
+
+.pass-steps-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.pass-steps-strip span {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 7px 9px;
+  text-align: center;
+}
+
+.backup-section-box {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.backup-actions-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.backup-actions-row .subtle-pill-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .pass-steps-strip,
+  .backup-actions-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .contextual-sync-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .contextual-sync-actions .secondary-key-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* =========================================================================
    FORCED COLORS / WINDOWS HIGH CONTRAST ACCESSIBILITY
    ========================================================================= */
 @media (forced-colors: active) {
@@ -3649,7 +3877,9 @@ input[type='range']::-moz-range-thumb {
   .game-selector-item,
   .safe-card,
   .game-kill-btn,
-  .sacrifice-chip {
+  .sacrifice-chip,
+  .saved-preset-load-btn,
+  .contextual-sync-bar {
     border: 1px solid ButtonText;
   }
 

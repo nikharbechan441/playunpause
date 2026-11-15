@@ -244,7 +244,7 @@ export const gta6Pack = {
     {
       id: 'ch2-shield',
       chapter: 'Act II · Vice Beach Burner Contract Hold',
-      freePreview: false,
+      freePreview: true,
       alertLevel: 'coral',
       triggerWarning: 'Before answering payphone / burner corporate hit contracts in Vice Beach',
       spoilerFreeRule:
@@ -254,7 +254,7 @@ export const gta6Pack = {
     {
       id: 'ch3-shield',
       chapter: 'Act III · Grassrivers & Keys Marina Gate',
-      freePreview: false,
+      freePreview: true,
       alertLevel: 'coral',
       triggerWarning: 'Point-of-no-return staging prompt at the Keys charter dock',
       spoilerFreeRule:

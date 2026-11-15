@@ -22,7 +22,6 @@ export default function LegalComplianceModal({
   const supportEmail = runtimeConfig?.supportEmail || 'hello@playunpause.com';
   const sponsorEmail = runtimeConfig?.sponsorEmail || 'sponsors@playunpause.com';
   const passPrice = runtimeConfig?.passPriceUsd ?? 6.99;
-  const launchPrice = runtimeConfig?.launchPriceUsd ?? 9.99;
   const sponsorPrice = runtimeConfig?.sponsorPriceUsd ?? 149;
   const legalOperatorName =
     runtimeConfig?.legalOperatorName || 'Unpause Interactive (Independent Operator, South Africa)';
@@ -139,14 +138,14 @@ export default function LegalComplianceModal({
               </p>
 
               <h3 className="legal-heading">
-                2. Unpause Sync Pass (${passPrice} Founders / ${launchPrice} Standard)
+                2. Unpause Sync Pass (${passPrice} USD One-Time)
               </h3>
               <ul className="legal-list">
                 <li>
-                  <strong>Merchant of Record &amp; Tax Transparency:</strong> Checkout is processed by <strong>Whop Inc. / Stripe</strong> as Merchant of Record for the <strong>Unpause Sync Pass</strong> (billed USD). Founders pricing ($6.99 USD) shifts to $9.99 USD on November 18, 2026 at 11:00 UTC in a single non-recurring payment (never rebilled). Listed USD prices exclude local VAT/GST/sales tax, which Whop calculates and collects clearly prior to final payment.
+                  <strong>Merchant of Record &amp; Tax Transparency:</strong> Checkout is processed by <strong>Whop Inc. / Stripe</strong> as Merchant of Record for the <strong>Unpause Sync Pass</strong> (${passPrice} USD single non-recurring payment&mdash;never rebilled). Listed USD prices exclude local VAT/GST/sales tax, which Whop calculates and collects clearly prior to final payment.
                 </li>
                 <li>
-                  <strong>Service Scope &amp; Minimum Term (EU DCD 2019/770):</strong> Unlocks instant QR + <code>UP-XXXXXXXX</code> cross-device cloud sync, extended GTA VI weeknight chains, Missables Shield preview, unlimited saved pins, and top sponsor-bar removal. Requires a modern Web browser; backed by a <strong>minimum 12-month operational commitment</strong> and at least 30 days&rsquo; notice prior to any future sunset.
+                  <strong>Service Scope &amp; Minimum Term (EU DCD 2019/770):</strong> Unlocks instant QR + <code>UP-XXXXXXXX</code> cross-device cloud sync, up to 16 saved console SSD setups, 16 squad heist roster presets, extended 90m/120m GTA VI weeknight chains, up to 120 cross-game saved pins, portable JSON/CSV deck export, and top sponsor-bar removal. Requires a modern Web browser; backed by a <strong>minimum 12-month operational commitment</strong> and at least 30 days&rsquo; notice prior to any future sunset.
                 </li>
                 <li>
                   <strong>Pre-Launch Estimates &amp; Non-Financial Gameplay Math:</strong> GTA VI install sizes (212/225 GB), NZ timing estimates, safe keypad previews, heist splits, and story stock flips are simulated UI previews ahead of Nov 18, 2026 (zero leaked publisher material). All calculators (including EA Sports FC™ coin math, CS2/Apex odds summaries, and Roblox DevEx USD estimates) are informational gameplay math only—<strong>not financial, tax, or investment advice, gambling, or RMT</strong>. Roblox DevEx payouts remain governed solely by Roblox Corp.
@@ -184,7 +183,7 @@ export default function LegalComplianceModal({
               </h3>
               <ul className="legal-list">
                 <li>
-                  <strong>Free Calculators (Voluntary · Browser-Only):</strong> Theme, audio mute, Sync state flags (<code>isPro</code>, <code>deckCode</code>), <code>crackedSafeIds</code>, <code>checkedRouteIds</code>, and <code>savedPins</code> are stored strictly in browser <code>localStorage</code> (<code>unpause_deck_state_v5</code>) until you clear them. Zero server data is created for free calculator use.
+                  <strong>Free Calculators (Voluntary · Browser-Only):</strong> Theme, audio mute, Sync state flags (<code>isPro</code>, <code>deckCode</code>), <code>crackedSafeIds</code>, <code>checkedRouteIds</code>, <code>savedPins</code>, <code>storageProfiles</code>, and <code>crewPresets</code> are stored strictly in browser <code>localStorage</code> (<code>unpause_deck_state_v5</code>) until you clear them or export a portable JSON/CSV deck backup. Zero server data is created for free calculator use.
                 </li>
                 <li>
                   <strong>Sync Pass &amp; Cloud Sync (Contract — GDPR Art. 6(1)(b) / POPIA s. 11):</strong> Checkout is processed by <strong>Whop Inc. / Stripe</strong> (US), which indirectly supplies your receipt ID (<code>whop_ref</code>), USD amount, currency, and checkout email via signed webhooks (mandatory to provision &amp; restore a Sync Pass). Our database stores a <strong>keyed HMAC-SHA256 hash</strong> of checkout email (<code>email_hash</code>—never plaintext emails), <code>whop_ref</code>, order ledger metadata, and your synced checklist JSON (<code>sync_decks</code>). Anyone holding your <code>UP-XXXXXXXX</code> bearer code or <code>#sync=</code> QR link can access or edit synced checklists.

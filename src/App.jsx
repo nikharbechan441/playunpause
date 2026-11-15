@@ -19,7 +19,25 @@ import {
   ExternalLink,
   RefreshCw,
   Code2,
+  Download,
+  Upload,
+  FileSpreadsheet,
+  Bookmark,
 } from 'lucide-react';
+import {
+  MAX_FREE_PINS_PER_GAME,
+  MAX_FREE_PROFILES,
+  MAX_SYNC_PINS_TOTAL,
+  MAX_SYNC_PROFILES,
+  buildDeckSpreadsheetCsv,
+  createEmptySyncState,
+  mergeSyncStates,
+  sanitizeCrewPresets,
+  sanitizeSavedPins,
+  sanitizeStorageProfiles,
+  sanitizeStringIdArray,
+  sanitizeSyncState,
+} from './utils/syncState.js';
 import { GAME_PACKS } from './data/games/index.js';
 import {
   CANONICAL_ORIGIN,
@@ -205,50 +223,13 @@ const DEFAULT_DECK_STATE = {
   soundEnabled: true,
   isPro: false,
   deckCode: null,
-  crackedSafeIds: [],
-  checkedRouteIds: [],
-  savedPins: [],
+  ...createEmptySyncState(),
 };
 
 function sanitizeDeckCode(val) {
   if (typeof val !== 'string') return null;
   const trimmed = val.trim().toUpperCase();
   return /^UP-[A-Z0-9]{6,12}$/.test(trimmed) ? trimmed : null;
-}
-
-function sanitizeStringIdArray(val, maxLen = 200) {
-  if (!Array.isArray(val)) return [];
-  const out = [];
-  for (const item of val) {
-    if (typeof item !== 'string') continue;
-    const clean = item.trim().slice(0, 80);
-    if (clean) out.push(clean);
-    if (out.length >= maxLen) break;
-  }
-  return out;
-}
-
-function sanitizeSavedPins(val) {
-  if (!Array.isArray(val)) return [];
-  const out = [];
-  for (const item of val) {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-    if (typeof item.id !== 'string' || typeof item.gameId !== 'string') continue;
-    const id = item.id.trim().slice(0, 80);
-    const gameId = item.gameId.trim().slice(0, 40);
-    if (!id || !gameId) continue;
-    const label =
-      typeof item.label === 'string' && item.label.trim()
-        ? item.label.trim().slice(0, 120)
-        : 'Pinned calculation';
-    const value =
-      typeof item.value === 'string' || (typeof item.value === 'number' && Number.isFinite(item.value))
-        ? String(item.value).slice(0, 140)
-        : '';
-    out.push({ id, gameId, label, value });
-    if (out.length >= 60) break;
-  }
-  return out;
 }
 
 function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode = false } = {}) {
@@ -260,6 +241,8 @@ function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode 
     crackedSafeIds: sanitizeStringIdArray(baseFallback.crackedSafeIds),
     checkedRouteIds: sanitizeStringIdArray(baseFallback.checkedRouteIds),
     savedPins: sanitizeSavedPins(baseFallback.savedPins),
+    storageProfiles: sanitizeStorageProfiles(baseFallback.storageProfiles),
+    crewPresets: sanitizeCrewPresets(baseFallback.crewPresets),
   };
 
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -284,6 +267,12 @@ function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode 
       ? sanitizeStringIdArray(raw.checkedRouteIds)
       : safeBase.checkedRouteIds,
     savedPins: Array.isArray(raw.savedPins) ? sanitizeSavedPins(raw.savedPins) : safeBase.savedPins,
+    storageProfiles: Array.isArray(raw.storageProfiles)
+      ? sanitizeStorageProfiles(raw.storageProfiles)
+      : safeBase.storageProfiles,
+    crewPresets: Array.isArray(raw.crewPresets)
+      ? sanitizeCrewPresets(raw.crewPresets)
+      : safeBase.crewPresets,
   };
 }
 
@@ -415,6 +404,8 @@ export default function App() {
   const [syncToast, setSyncToast] = useState(null);
   const [storageError, setStorageError] = useState('');
   const [pendingSyncCode, setPendingSyncCode] = useState(() => routeState.syncCode || null);
+  const [syncNudgeDismissed, setSyncNudgeDismissed] = useState(false);
+  const [backupNotice, setBackupNotice] = useState(null);
 
   const gameModalRef = useRef(null);
   const proModalRef = useRef(null);
@@ -424,6 +415,8 @@ export default function App() {
   const uiTimerRef = useRef(null);
   const skipNextPersistRef = useRef(false);
   const lastToolPathRef = useRef('/');
+  const backupInputRef = useRef(null);
+  const lastSyncedPayloadRef = useRef('');
 
   useEffect(
     () => () => {
@@ -554,8 +547,9 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Load runtime checkout/sponsor telemetry config from Worker/API
+  // Load runtime checkout/sponsor telemetry config from Worker/API (skip on embeds)
   useEffect(() => {
+    if (isEmbed) return undefined;
     let cancelled = false;
     fetch('/api/config')
       .then((res) => (res.ok ? res.json() : null))
@@ -586,7 +580,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isEmbed]);
 
   // Sync dynamic document title, canonical & robots meta tag during client-side navigation
   useEffect(() => {
@@ -664,19 +658,13 @@ export default function App() {
         shouldScrubHash = true;
         setPendingSyncCode(null);
         const nextCode = sanitizeDeckCode(data.deckCode) || syncCode;
+        const cleanRemote = sanitizeSyncState(data.state);
+        lastSyncedPayloadRef.current = JSON.stringify(cleanRemote);
         setDeckState((prev) => ({
           ...prev,
           isPro: true,
           deckCode: nextCode,
-          crackedSafeIds: Array.isArray(data.state.crackedSafeIds)
-            ? sanitizeStringIdArray(data.state.crackedSafeIds)
-            : prev.crackedSafeIds,
-          checkedRouteIds: Array.isArray(data.state.checkedRouteIds)
-            ? sanitizeStringIdArray(data.state.checkedRouteIds)
-            : prev.checkedRouteIds,
-          savedPins: Array.isArray(data.state.savedPins)
-            ? sanitizeSavedPins(data.state.savedPins)
-            : prev.savedPins,
+          ...mergeSyncStates(prev, cleanRemote),
         }));
         setClaimError('');
         setClaimStatus(`Synced to ${nextCode}`);
@@ -715,32 +703,46 @@ export default function App() {
     restoreSyncPassByCode(syncCode);
   }, []);
 
-  // Debounced cloud state push when Sync Pass active
+  // Debounced cloud state push when Sync Pass active (skips unchanged payloads)
   useEffect(() => {
     if (!deckState.isPro || !deckState.deckCode) return undefined;
+    const payloadObj = sanitizeSyncState({
+      crackedSafeIds: deckState.crackedSafeIds,
+      checkedRouteIds: deckState.checkedRouteIds,
+      savedPins: deckState.savedPins,
+      storageProfiles: deckState.storageProfiles,
+      crewPresets: deckState.crewPresets,
+    });
+    const serialized = JSON.stringify(payloadObj);
+    if (serialized === lastSyncedPayloadRef.current) return undefined;
+
     clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => {
       fetch(`/api/sync/${encodeURIComponent(deckState.deckCode)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          state: {
-            crackedSafeIds: deckState.crackedSafeIds,
-            checkedRouteIds: deckState.checkedRouteIds,
-            savedPins: deckState.savedPins,
-          },
-        }),
+        body: JSON.stringify({ state: payloadObj }),
       })
         .then((res) => {
-          if (res.status === 403) {
+          if (res.ok) {
+            lastSyncedPayloadRef.current = serialized;
+          } else if (res.status === 403) {
             setDeckState((prev) => ({ ...prev, isPro: false, deckCode: null }));
             setClaimError('Sync Pass inactive or refunded.');
           }
         })
         .catch(() => {});
-    }, 600);
+    }, 1000);
     return () => clearTimeout(syncTimerRef.current);
-  }, [deckState.isPro, deckState.deckCode, deckState.crackedSafeIds, deckState.checkedRouteIds, deckState.savedPins]);
+  }, [
+    deckState.isPro,
+    deckState.deckCode,
+    deckState.crackedSafeIds,
+    deckState.checkedRouteIds,
+    deckState.savedPins,
+    deckState.storageProfiles,
+    deckState.crewPresets,
+  ]);
 
   // Keyboard shortcuts: Ctrl/Cmd + K opens Game Selector (unless another modal is active), Escape closes active modal
   useEffect(() => {
@@ -836,6 +838,143 @@ export default function App() {
     }));
   };
 
+  const handleSaveStorageProfile = (profileObj) => {
+    setDeckState((prev) => {
+      const maxProfiles = prev.isPro ? MAX_SYNC_PROFILES : MAX_FREE_PROFILES;
+      const existing = Array.isArray(prev.storageProfiles) ? prev.storageProfiles : [];
+      const filtered = existing.filter((p) => p && p.id !== profileObj?.id);
+      if (!prev.isPro && filtered.length >= MAX_FREE_PROFILES) {
+        return prev;
+      }
+      return {
+        ...prev,
+        storageProfiles: sanitizeStorageProfiles([profileObj, ...filtered], maxProfiles),
+      };
+    });
+  };
+
+  const handleDeleteStorageProfile = (profileId) => {
+    setDeckState((prev) => ({
+      ...prev,
+      storageProfiles: Array.isArray(prev.storageProfiles)
+        ? prev.storageProfiles.filter((p) => p && p.id !== profileId)
+        : [],
+    }));
+  };
+
+  const handleSaveCrewPreset = (presetObj) => {
+    setDeckState((prev) => {
+      const maxProfiles = prev.isPro ? MAX_SYNC_PROFILES : MAX_FREE_PROFILES;
+      const existing = Array.isArray(prev.crewPresets) ? prev.crewPresets : [];
+      const filtered = existing.filter((p) => p && p.id !== presetObj?.id);
+      if (!prev.isPro && filtered.length >= MAX_FREE_PROFILES) {
+        return prev;
+      }
+      return {
+        ...prev,
+        crewPresets: sanitizeCrewPresets([presetObj, ...filtered], maxProfiles),
+      };
+    });
+  };
+
+  const handleDeleteCrewPreset = (presetId) => {
+    setDeckState((prev) => ({
+      ...prev,
+      crewPresets: Array.isArray(prev.crewPresets)
+        ? prev.crewPresets.filter((p) => p && p.id !== presetId)
+        : [],
+    }));
+  };
+
+  const triggerDownloadBlob = (filename, content, mimeType) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const handleExportJson = () => {
+    playSwitchTick(deckState.soundEnabled, 780);
+    const snapshot = sanitizeSyncState(deckState);
+    const exportPayload = {
+      app: 'Unpause',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      ...snapshot,
+    };
+    triggerDownloadBlob(
+      `unpause-deck-backup-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(exportPayload, null, 2),
+      'application/json;charset=utf-8'
+    );
+    setBackupNotice({ tone: 'ok', text: 'JSON backup downloaded (zero tracking, 100% portable).' });
+  };
+
+  const handleExportCsv = () => {
+    playSwitchTick(deckState.soundEnabled, 820);
+    const csv = buildDeckSpreadsheetCsv(deckState);
+    triggerDownloadBlob(
+      `unpause-deck-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv,
+      'text/csv;charset=utf-8'
+    );
+    setBackupNotice({ tone: 'ok', text: 'Formula-safe CSV exported for Excel & Google Sheets.' });
+  };
+
+  const handleImportBackupFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file) return;
+    if (file.size > 512 * 1024) {
+      setBackupNotice({ tone: 'err', text: 'Backup file exceeds 512 KB safety cap.' });
+      return;
+    }
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setBackupNotice({ tone: 'err', text: 'Unrecognized JSON backup structure.' });
+        return;
+      }
+      const sanitizedImport = sanitizeSyncState(parsed);
+      playUnlockChime(deckState.soundEnabled);
+      setDeckState((prev) => {
+        const merged = mergeSyncStates(prev, sanitizedImport);
+        if (prev.isPro) {
+          return { ...prev, ...merged };
+        }
+        const pinCountsByGame = new Map();
+        const cappedPins = [];
+        for (const pin of merged.savedPins) {
+          const c = pinCountsByGame.get(pin.gameId) || 0;
+          if (c < MAX_FREE_PINS_PER_GAME) {
+            pinCountsByGame.set(pin.gameId, c + 1);
+            cappedPins.push(pin);
+          }
+        }
+        return {
+          ...prev,
+          ...merged,
+          storageProfiles: merged.storageProfiles.slice(0, MAX_FREE_PROFILES),
+          crewPresets: merged.crewPresets.slice(0, MAX_FREE_PROFILES),
+          savedPins: cappedPins,
+        };
+      });
+      setBackupNotice({
+        tone: 'ok',
+        text: 'Backup merged into this device (safes, routes, pins, consoles & rosters).',
+      });
+    } catch {
+      setBackupNotice({ tone: 'err', text: 'Could not parse JSON backup file.' });
+    }
+  };
+
   const handleActivatePass = async (e) => {
     e.preventDefault();
     const raw = claimInput.trim();
@@ -876,16 +1015,13 @@ export default function App() {
           return;
         }
         playUnlockChime(deckState.soundEnabled);
-        const safeSafes = sanitizeStringIdArray(data.state?.crackedSafeIds);
-        const safeRoutes = sanitizeStringIdArray(data.state?.checkedRouteIds);
-        const safePins = sanitizeSavedPins(data.state?.savedPins);
+        const cleanRemote = sanitizeSyncState(data.state);
+        lastSyncedPayloadRef.current = JSON.stringify(cleanRemote);
         setDeckState((prev) => ({
           ...prev,
           isPro: true,
           deckCode: nextCode,
-          crackedSafeIds: safeSafes.length ? safeSafes : prev.crackedSafeIds,
-          checkedRouteIds: safeRoutes.length ? safeRoutes : prev.checkedRouteIds,
-          savedPins: safePins.length ? safePins : prev.savedPins,
+          ...mergeSyncStates(prev, cleanRemote),
         }));
         setClaimStatus(`Synced to ${nextCode}`);
         setClaimInput('');
@@ -914,11 +1050,11 @@ export default function App() {
       }
       if (res.ok && data?.ok && data?.state) {
         playSwitchTick(deckState.soundEnabled, 820);
+        const cleanRemote = sanitizeSyncState(data.state);
+        lastSyncedPayloadRef.current = JSON.stringify(cleanRemote);
         setDeckState((prev) => ({
           ...prev,
-          crackedSafeIds: sanitizeStringIdArray(data.state.crackedSafeIds),
-          checkedRouteIds: sanitizeStringIdArray(data.state.checkedRouteIds),
-          savedPins: sanitizeSavedPins(data.state.savedPins),
+          ...cleanRemote,
         }));
         setClaimStatus('Synced latest state from cloud.');
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
@@ -951,20 +1087,20 @@ export default function App() {
     } catch {
       // Ignore storage access restrictions
     }
+    lastSyncedPayloadRef.current = '';
     setDeckState({
       theme: deckState.theme,
       soundEnabled: deckState.soundEnabled,
       isPro: false,
       deckCode: null,
-      crackedSafeIds: [],
-      checkedRouteIds: [],
-      savedPins: [],
+      ...createEmptySyncState(),
     });
     setClaimInput('');
     setClaimReceiptInput('');
     setClaimError('');
     setClaimStatus('');
     setSyncToast(null);
+    setBackupNotice(null);
     setLocalDataCleared(true);
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
     uiTimerRef.current = setTimeout(() => setLocalDataCleared(false), 3000);
@@ -978,6 +1114,30 @@ export default function App() {
         : 'https://playunpause.com';
     return `${origin}/#sync=${deckState.deckCode}`;
   }, [deckState.deckCode]);
+
+  const syncInventory = useMemo(() => {
+    const safesCount = Array.isArray(deckState.crackedSafeIds) ? deckState.crackedSafeIds.length : 0;
+    const routesCount = Array.isArray(deckState.checkedRouteIds) ? deckState.checkedRouteIds.length : 0;
+    const pinsCount = Array.isArray(deckState.savedPins) ? deckState.savedPins.length : 0;
+    const consolesCount = Array.isArray(deckState.storageProfiles)
+      ? deckState.storageProfiles.length
+      : 0;
+    const rostersCount = Array.isArray(deckState.crewPresets) ? deckState.crewPresets.length : 0;
+    return {
+      safesCount,
+      routesCount,
+      pinsCount,
+      consolesCount,
+      rostersCount,
+      totalSavedCount: safesCount + routesCount + pinsCount + consolesCount + rostersCount,
+    };
+  }, [
+    deckState.crackedSafeIds,
+    deckState.checkedRouteIds,
+    deckState.savedPins,
+    deckState.storageProfiles,
+    deckState.crewPresets,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1047,7 +1207,7 @@ export default function App() {
       ...routeFaqs,
       {
         q: `What does the one-time $${runtimeConfig.passPriceUsd} Sync Pass unlock?`,
-        a: `All calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 90m/120m extended weeknight chains, unlimited pinned calcs, and 14-day hassle-free refunds.`,
+        a: `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, CSV/JSON deck export, and 14-day hassle-free refunds.`,
       },
     ];
   }, [activeRoute?.faqs, activeGamePack.faqs, runtimeConfig.passPriceUsd]);
@@ -1616,6 +1776,10 @@ export default function App() {
                   runtimeConfig={runtimeConfig}
                   soundEnabled={deckState.soundEnabled}
                   nowMs={nowMs}
+                  isPro={deckState.isPro}
+                  storageProfiles={deckState.storageProfiles}
+                  onSaveStorageProfile={handleSaveStorageProfile}
+                  onDeleteStorageProfile={handleDeleteStorageProfile}
                   onOpenProModal={() => setShowProModal(true)}
                   initialPreset={routeState.preset}
                   presetKey={routeState.presetKey}
@@ -1642,6 +1806,11 @@ export default function App() {
                   gamePack={activeGamePack}
                   soundEnabled={deckState.soundEnabled}
                   isPreLaunch={isPreLaunch}
+                  isPro={deckState.isPro}
+                  crewPresets={deckState.crewPresets}
+                  onSaveCrewPreset={handleSaveCrewPreset}
+                  onDeleteCrewPreset={handleDeleteCrewPreset}
+                  onOpenProModal={() => setShowProModal(true)}
                   initialPreset={routeState.preset}
                   presetKey={routeState.presetKey}
                 />
@@ -1681,6 +1850,48 @@ export default function App() {
         )}
           </Suspense>
         </ChunkErrorBoundary>
+
+        {!isNotFound &&
+          !legalSection &&
+          !deckState.isPro &&
+          !syncNudgeDismissed &&
+          syncInventory.totalSavedCount >= 2 && (
+            <aside className="contextual-sync-bar" aria-label="Cross-device Sync reminder">
+              <div>
+                <strong>
+                  {syncInventory.totalSavedCount} items saved on this browser only
+                </strong>
+                <span>
+                  {syncInventory.consolesCount} consoles · {syncInventory.rostersCount} rosters ·{' '}
+                  {syncInventory.pinsCount} pins · {syncInventory.safesCount} safes. Sync to your phone for ${runtimeConfig.passPriceUsd} once or export free CSV/JSON.
+                </span>
+              </div>
+              <div className="contextual-sync-actions">
+                <button
+                  type="button"
+                  className="secondary-key-btn"
+                  onClick={() => {
+                    playSwitchTick(deckState.soundEnabled, 740);
+                    setShowProModal(true);
+                  }}
+                >
+                  <QrCode size={14} aria-hidden="true" />
+                  <span>Sync Across Devices</span>
+                </button>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  aria-label="Dismiss sync reminder"
+                  onClick={() => {
+                    playSwitchTick(deckState.soundEnabled, 560);
+                    setSyncNudgeDismissed(true);
+                  }}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </div>
+            </aside>
+          )}
 
         {/* TRUST / GAME DOMAIN FAQ GRID */}
         <section className="trust-faq-grid" aria-label="Quick Reference FAQs">
@@ -1919,8 +2130,8 @@ export default function App() {
                     : `Unpause Sync Pass · $${runtimeConfig.passPriceUsd} Once`}
                 </h2>
                 <p className="selector-modal-sub">
-                  Zero subscriptions. Instant Phone ↔ PC QR sync, extended GTA VI weeknight chains, and
-                  unlimited multi-game saved pins across CoD: MW4, EA FC 27, Minecraft &amp; Valorant.
+                  Zero subscriptions. Instant Phone ↔ PC QR sync for 16 console setups, 16 squad crew
+                  rosters, 120 cross-game pins, and extended GTA VI weeknight chains.
                 </p>
               </div>
               <button
@@ -1931,6 +2142,37 @@ export default function App() {
               >
                 <X size={16} aria-hidden="true" />
               </button>
+            </div>
+
+            <div className="pass-live-inventory" aria-label="On This Device Right Now">
+              <div className="pass-inventory-head">
+                <span className="section-label">On This Device Right Now</span>
+                <span className="mono pass-inventory-total">
+                  {syncInventory.totalSavedCount} saved{' '}
+                  {syncInventory.totalSavedCount === 1 ? 'item' : 'items'}
+                </span>
+              </div>
+              <div className="pass-inventory-pills">
+                <span>
+                  <HardDrive size={12} aria-hidden="true" />
+                  {syncInventory.consolesCount}{' '}
+                  {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Consoles
+                </span>
+                <span>
+                  <Users size={12} aria-hidden="true" />
+                  {syncInventory.rostersCount}{' '}
+                  {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Rosters
+                </span>
+                <span>
+                  <Bookmark size={12} aria-hidden="true" />
+                  {syncInventory.pinsCount}{' '}
+                  {deckState.isPro ? `/ ${MAX_SYNC_PINS_TOTAL}` : 'Pins (5/game free)'}
+                </span>
+                <span>
+                  <KeyRound size={12} aria-hidden="true" />
+                  {syncInventory.safesCount} Safes · {syncInventory.routesCount} Routes
+                </span>
+              </div>
             </div>
 
             {deckState.isPro && deckState.deckCode ? (
@@ -2032,20 +2274,26 @@ export default function App() {
                 <div className="pass-feature-grid">
                   <div className="pass-feature-item">
                     <QrCode size={14} color="var(--ocean)" aria-hidden="true" />
-                    <span>Phone ↔ PC QR Sync</span>
+                    <span>Phone ↔ PC Instant QR Sync</span>
                   </div>
                   <div className="pass-feature-item">
-                    <Clock size={14} color="var(--teal-dark)" aria-hidden="true" />
+                    <HardDrive size={14} color="var(--teal-dark)" aria-hidden="true" />
+                    <span>16 Console &amp; Squad Presets</span>
+                  </div>
+                  <div className="pass-feature-item">
+                    <Bookmark size={14} color="var(--gold)" aria-hidden="true" />
+                    <span>120 Cross-Game Saved Pins</span>
+                  </div>
+                  <div className="pass-feature-item">
+                    <Clock size={14} color="var(--game-accent)" aria-hidden="true" />
                     <span>90m &amp; 120m Weeknight Routes</span>
                   </div>
-                  <div className="pass-feature-item">
-                    <Sparkles size={14} color="var(--gold)" aria-hidden="true" />
-                    <span>Acts II–III Missables Shield</span>
-                  </div>
-                  <div className="pass-feature-item">
-                    <Check size={14} color="var(--game-accent)" aria-hidden="true" />
-                    <span>Unlimited Pins &amp; No Sponsor Bar</span>
-                  </div>
+                </div>
+
+                <div className="pass-steps-strip" aria-label="How Sync Pass works">
+                  <span>1. Buy once (${runtimeConfig.passPriceUsd})</span>
+                  <span>2. Scan QR / UP- code</span>
+                  <span>3. Instant Phone ↔ PC sync</span>
                 </div>
 
                 <div className="sync-actions-row">
@@ -2150,6 +2398,53 @@ export default function App() {
                 )}
               </div>
             </form>
+
+            <div className="backup-section-box">
+              <div className="section-label">
+                Portable Device Backup (Free Forever · Zero Account Needed)
+              </div>
+              <div className="backup-actions-row">
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={handleExportCsv}
+                >
+                  <FileSpreadsheet size={14} aria-hidden="true" />
+                  <span>Export CSV</span>
+                </button>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={handleExportJson}
+                >
+                  <Download size={14} aria-hidden="true" />
+                  <span>Export JSON</span>
+                </button>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={() => backupInputRef.current?.click()}
+                >
+                  <Upload size={14} aria-hidden="true" />
+                  <span>Import JSON</span>
+                </button>
+                <input
+                  ref={backupInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  hidden
+                  aria-label="Import Unpause JSON backup file"
+                  onChange={handleImportBackupFile}
+                />
+              </div>
+              <div role="status" aria-live="polite">
+                {backupNotice && (
+                  <div className={`inline-status-note ${backupNotice.tone}`}>
+                    {backupNotice.text}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

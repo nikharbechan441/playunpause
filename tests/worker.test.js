@@ -505,7 +505,7 @@ test('Cloudflare Worker enforces replay protection, SSRF blocking, sponsor refun
   assert.equal(scrubbedWorkerDeck.email_hash, null);
   assert.equal(
     scrubbedWorkerDeck.state_json,
-    '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[]}'
+    '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[],"storageProfiles":[],"crewPresets":[]}'
   );
 
   // Attempt resurrection with a brand-new webhook payment event referencing the refunded membership_id
@@ -827,4 +827,209 @@ test('Worker security hardening: non-object webhooks, timestamp-bound HMAC, LRU 
   const wwwDoubleSlash = await worker.fetch(new Request('https://www.playunpause.com//evil.com'), baseEnv);
   assert.equal(wwwDoubleSlash.status, 301);
   assert.equal(wwwDoubleSlash.headers.get('location'), 'https://playunpause.com/evil.com');
+});
+
+test('Worker persists storageProfiles & crewPresets, fixes $6.99 pricing, caches sponsor 60s, and survives uninitialized D1 tables', async () => {
+  const secret = 'ws_b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1';
+  const db = createMockD1();
+  const assets = createMockAssets();
+  const env = {
+    DB: db,
+    ASSETS: assets,
+    NODE_ENV: 'production',
+    ALLOW_DEMO_UNLOCK: 'false',
+    WHOP_PASS_PLAN_ID: 'prod_oMcH19N9BCoDO',
+    WHOP_SPONSOR_PLAN_ID: 'prod_spon_cache_test',
+    WHOP_WEBHOOK_SECRET: secret,
+    ADMIN_API_KEY: 'admin-worker-cache-test',
+  };
+  const sign = (id, ts, raw) => {
+    const h = crypto
+      .createHmac('sha256', Buffer.from(secret.slice(3), 'base64'))
+      .update(`${id}.${ts}.${raw}`, 'utf8')
+      .digest('base64');
+    return `v1,${h}`;
+  };
+
+  // 1. Fresh / uninitialized D1 mock throwing missing-table error must still serve HTTP 200 on /api/config
+  const brokenDbEnv = {
+    ASSETS: assets,
+    DB: {
+      prepare() {
+        return {
+          bind() {
+            return {
+              first: async () => {
+                throw new Error('D1_ERROR: no such table: sponsors');
+              },
+              run: async () => {
+                throw new Error('D1_ERROR: no such table');
+              },
+              all: async () => ({ results: [] }),
+            };
+          },
+          first: async () => {
+            throw new Error('D1_ERROR: no such table: sponsors');
+          },
+        };
+      },
+    },
+  };
+  const brokenCfgRes = await worker.fetch(
+    new Request('https://playunpause.com/api/config', {
+      headers: { 'cf-connecting-ip': '198.51.100.150' },
+    }),
+    brokenDbEnv
+  );
+  assert.equal(brokenCfgRes.status, 200);
+  const brokenCfg = await brokenCfgRes.json();
+  assert.equal(brokenCfg.passPriceUsd, 6.99);
+  assert.equal(brokenCfg.launchPriceUsd, 6.99);
+  assert.equal(brokenCfg.activeSponsor, null);
+
+  // 2. /api/config fixes $6.99 pricing and sponsor cache invalidates immediately on POST /api/admin/sponsor
+  const ts = String(Math.floor(Date.now() / 1000));
+  const passBody = JSON.stringify({
+    type: 'payment.succeeded',
+    data: {
+      id: 'pay_squad_699_test',
+      final_amount: 6.99,
+      currency: 'usd',
+      product: { id: 'prod_oMcH19N9BCoDO' },
+      membership_id: 'mem_squad_699_test',
+      user: { email: 'roster@example.com' },
+    },
+  });
+  const hookRes = await worker.fetch(
+    new Request('https://playunpause.com/api/webhooks/whop', {
+      method: 'POST',
+      headers: {
+        'webhook-id': 'msg_699_sync_test',
+        'webhook-timestamp': ts,
+        'webhook-signature': sign('msg_699_sync_test', ts, passBody),
+        'content-type': 'application/json',
+        'cf-connecting-ip': '198.51.100.151',
+      },
+      body: passBody,
+    }),
+    env
+  );
+  assert.equal(hookRes.status, 200);
+
+  const actRes = await worker.fetch(
+    new Request('https://playunpause.com/api/pass/activate', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'cf-connecting-ip': '198.51.100.152',
+      },
+      body: JSON.stringify({
+        codeOrEmail: 'roster@example.com',
+        receiptRef: 'mem_squad_699_test',
+      }),
+    }),
+    env
+  );
+  assert.equal(actRes.status, 200);
+  const { deckCode } = await actRes.json();
+  assert.match(deckCode, /^UP-/);
+
+  const putRes = await worker.fetch(
+    new Request(`https://playunpause.com/api/sync/${deckCode}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        'cf-connecting-ip': '198.51.100.152',
+      },
+      body: JSON.stringify({
+        state: {
+          crackedSafeIds: ['pg-pawn-backroom'],
+          checkedRouteIds: ['r1-stop1'],
+          savedPins: [{ id: 'p1', gameId: 'gta-6', label: 'Safe Note', value: '42-11-08' }],
+          storageProfiles: [
+            {
+              id: 'sp-living-room',
+              label: 'PS5 Pro · Ready',
+              consoleId: 'ps5-pro',
+              freeGb: 185,
+              includePatch: true,
+              mbps: 250,
+              customOffsetGb: 0,
+              sacrificedIds: ['cod-bo7'],
+            },
+          ],
+          crewPresets: [
+            {
+              id: 'cp-friday',
+              label: 'Friday Crew',
+              grossDollars: 2400000,
+              supportFeePct: 10,
+              crew: [
+                { id: 'p1', name: 'Jason', role: 'DRIVER', pct: 60, locked: true },
+                { id: 'p2', name: 'Lucia', role: 'HACKER', pct: 40, locked: false },
+              ],
+            },
+          ],
+        },
+      }),
+    }),
+    env
+  );
+  assert.equal(putRes.status, 200);
+
+  const getRes = await worker.fetch(
+    new Request(`https://playunpause.com/api/sync/${deckCode}`, {
+      headers: { 'cf-connecting-ip': '198.51.100.153' },
+    }),
+    env
+  );
+  assert.equal(getRes.status, 200);
+  const synced = (await getRes.json()).state;
+  assert.equal(synced.storageProfiles.length, 1);
+  assert.equal(synced.storageProfiles[0].consoleId, 'ps5-pro');
+  assert.equal(synced.crewPresets.length, 1);
+  assert.equal(synced.crewPresets[0].label, 'Friday Crew');
+
+  // Seed cache on /api/config, then update sponsor and confirm immediate invalidation
+  const cfgBefore = await (
+    await worker.fetch(
+      new Request('https://playunpause.com/api/config', {
+        headers: { 'cf-connecting-ip': '198.51.100.154' },
+      }),
+      env
+    )
+  ).json();
+  assert.equal(cfgBefore.activeSponsor, null);
+
+  const setSpon = await worker.fetch(
+    new Request('https://playunpause.com/api/admin/sponsor', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-admin-key': 'admin-worker-cache-test',
+        'cf-connecting-ip': '198.51.100.155',
+      },
+      body: JSON.stringify({ badgeText: 'WD_BLACK 4TB SSD', targetUrl: 'https://example.com/ssd' }),
+    }),
+    env
+  );
+  assert.equal(setSpon.status, 200);
+
+  const cfgAfter = await (
+    await worker.fetch(
+      new Request('https://playunpause.com/api/config', {
+        headers: { 'cf-connecting-ip': '198.51.100.156' },
+      }),
+      env
+    )
+  ).json();
+  assert.equal(cfgAfter.activeSponsor?.badgeText, 'WD_BLACK 4TB SSD');
+  assert.equal(cfgAfter.passPriceUsd, 6.99);
+
+  const termsRes = await worker.fetch(new Request('https://playunpause.com/legal/terms'), env);
+  assert.equal(termsRes.status, 200);
+  const termsHtml = await termsRes.text();
+  assert.ok(termsHtml.includes('$6.99'));
+  assert.equal(termsHtml.includes('9.99'), false);
+  assert.equal(/Founders/i.test(termsHtml), false);
 });

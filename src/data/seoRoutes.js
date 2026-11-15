@@ -43,7 +43,7 @@ export const LEGAL_META = {
     description:
       'Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, Whop billing, and Nov 2026 preview terms. Support: hello@playunpause.com.',
     h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. Users must be 18+ or have verifiable parent/guardian consent. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. The Unpause One-Time Sync Pass ($6.99 USD Founders until Nov 18 2026 11:00 UTC, then $9.99 USD; plus VAT/sales tax via Whop Merchant of Record) unlocks cross-device cloud sync and extended routes during service lifetime (minimum 12 months digital conformity commitment / 30 days shutdown notice). Support: hello@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. Users must be 18+ or have verifiable parent/guardian consent. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. The Unpause One-Time Sync Pass ($6.99 USD one-time plus applicable VAT/sales tax via Whop Merchant of Record) unlocks cross-device cloud sync for saved console SSD setups, squad heist roster presets, up to 120 cross-game pins, 90m/120m weeknight routes, and portable CSV/JSON export during service lifetime (minimum 12 months digital conformity commitment / 30 days shutdown notice). Support: hello@playunpause.com.',
   },
   privacy: {
     path: '/legal/privacy',

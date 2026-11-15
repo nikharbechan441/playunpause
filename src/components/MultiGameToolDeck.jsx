@@ -2277,7 +2277,7 @@ export default function MultiGameToolDeck({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 700, fontSize: '0.9rem' }}>
                 <Compass size={15} color="var(--ocean)" aria-hidden="true" />
-                <span>Saved {game.shortTitle} Pins ({gamePins.length}{isPro ? '' : ' / 5 Free'})</span>
+                <span>Saved {game.shortTitle} Pins ({gamePins.length}{isPro ? ' · Cloud Synced' : ' / 5 Free'})</span>
               </div>
               {!isPro && (
                 <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>

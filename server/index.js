@@ -12,6 +12,7 @@ import {
   sanitizeSponsorBadgeText,
   checkAndSweepRateLimit,
 } from './securityHelpers.js';
+import { createEmptySyncState, sanitizeSyncState } from '../src/utils/syncState.js';
 import { resolveSeoRequest } from '../src/data/seoRoutes.js';
 import {
   applyHttpSecurityHeaders,
@@ -47,69 +48,15 @@ function loadDotEnvIfPresent(envPath) {
 loadDotEnvIfPresent(path.join(__dirname, '..', '.env'));
 
 const DECK_CODE_REGEX = /^UP-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8,12}$/;
-const DEFAULT_LAUNCH_CUTOFF_ISO = '2026-11-18T11:00:00Z';
 
-export function sanitizeSyncState(rawState) {
-  if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
-    return null;
-  }
-
-  const cleanList = (arr) => {
-    if (!Array.isArray(arr)) return [];
-    const seen = new Set();
-    const out = [];
-    const maxScan = Math.min(arr.length, 1000);
-    for (let i = 0; i < maxScan; i += 1) {
-      const item = arr[i];
-      if (typeof item !== 'string') continue;
-      const trimmed = item.trim().slice(0, 64);
-      if (!trimmed || seen.has(trimmed)) continue;
-      seen.add(trimmed);
-      out.push(trimmed);
-      if (out.length >= 500) break;
-    }
-    return out;
-  };
-
-  const cleanPins = (arr) => {
-    if (!Array.isArray(arr)) return [];
-    const seen = new Set();
-    const out = [];
-    const maxScan = Math.min(arr.length, 250);
-    for (let i = 0; i < maxScan; i += 1) {
-      const item = arr[i];
-      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-      const id = typeof item.id === 'string' ? item.id.trim().slice(0, 48) : '';
-      const gameId = typeof item.gameId === 'string' ? item.gameId.trim().slice(0, 32) : '';
-      const label = typeof item.label === 'string' ? item.label.trim().slice(0, 80) : '';
-      const value = typeof item.value === 'string' ? item.value.trim().slice(0, 140) : '';
-      if (!id || !gameId || !label || !value || seen.has(id)) continue;
-      seen.add(id);
-      out.push({ id, gameId, label, value });
-      if (out.length >= 50) break;
-    }
-    return out;
-  };
-
-  const rawSafes = Array.isArray(rawState.crackedSafeIds)
-    ? rawState.crackedSafeIds
-    : Array.isArray(rawState.crackedSafes)
-      ? rawState.crackedSafes
-      : [];
-
-  return {
-    crackedSafeIds: cleanList(rawSafes),
-    checkedRouteIds: cleanList(rawState.checkedRouteIds),
-    savedPins: cleanPins(rawState.savedPins),
-  };
-}
+export { sanitizeSyncState };
 
 function parseStoredState(jsonStr) {
   try {
     const parsed = JSON.parse(jsonStr || '{}');
-    return sanitizeSyncState(parsed) || { crackedSafeIds: [], checkedRouteIds: [], savedPins: [] };
+    return sanitizeSyncState(parsed) || createEmptySyncState();
   } catch {
-    return { crackedSafeIds: [], checkedRouteIds: [], savedPins: [] };
+    return createEmptySyncState();
   }
 }
 
@@ -258,11 +205,10 @@ export function createApp({ dbPath, env = process.env } = {}) {
     return crypto.createHmac('sha256', emailPepper).update(clean).digest('hex');
   }
 
-  function computePassPriceUsd(nowMs = Date.now()) {
-    const cutoffIso = env.LAUNCH_CUTOFF_ISO || DEFAULT_LAUNCH_CUTOFF_ISO;
-    const cutoffMs = Date.parse(cutoffIso);
-    if (Number.isFinite(cutoffMs) && nowMs >= cutoffMs) {
-      return 9.99;
+  function computePassPriceUsd() {
+    const configured = Number(env.PASS_PRICE_USD);
+    if (Number.isFinite(configured) && configured > 0) {
+      return Number(configured.toFixed(2));
     }
     return 6.99;
   }
@@ -287,7 +233,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
     }
 
     const now = Date.now();
-    const initialJson = JSON.stringify({ crackedSafeIds: [], checkedRouteIds: [], savedPins: [] });
+    const initialJson = JSON.stringify(createEmptySyncState());
     const insertStmt = db.prepare(`
       INSERT INTO sync_decks (deck_code, tier, email_hash, whop_ref, state_json, active, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, 1, ?, ?)
@@ -423,11 +369,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
           }
         }
 
-        const emptyState = JSON.stringify({
-          crackedSafeIds: [],
-          checkedRouteIds: [],
-          savedPins: [],
-        });
+        const emptyState = JSON.stringify(createEmptySyncState());
         db.exec('BEGIN IMMEDIATE');
         try {
           if (revokedDeck) {
@@ -625,22 +567,26 @@ export function createApp({ dbPath, env = process.env } = {}) {
   // 2. Public Runtime Config & Active Sponsor Slot
   app.get('/api/config', rateLimit(120, 'config'), (req, res) => {
     const now = Date.now();
-    const rawSponsor = db
-      .prepare(
-        'SELECT badge_text, target_url, expires_at FROM sponsors WHERE active = 1 AND starts_at <= ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
-      )
-      .get(now, now);
-
     let activeSponsor = null;
-    if (rawSponsor) {
-      const urlCheck = isSafePublicHttpsUrl(rawSponsor.target_url);
-      if (urlCheck.ok) {
-        activeSponsor = {
-          badgeText: rawSponsor.badge_text,
-          targetUrl: urlCheck.normalizedUrl,
-          expiresAt: rawSponsor.expires_at,
-        };
+    try {
+      const rawSponsor = db
+        .prepare(
+          'SELECT badge_text, target_url, expires_at FROM sponsors WHERE active = 1 AND starts_at <= ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
+        )
+        .get(now, now);
+
+      if (rawSponsor) {
+        const urlCheck = isSafePublicHttpsUrl(rawSponsor.target_url);
+        if (urlCheck.ok) {
+          activeSponsor = {
+            badgeText: rawSponsor.badge_text,
+            targetUrl: urlCheck.normalizedUrl,
+            expiresAt: rawSponsor.expires_at,
+          };
+        }
       }
+    } catch {
+      activeSponsor = null;
     }
 
     const defaultPassCheckout = 'https://whop.com/playunpause/unpause-one-time-all-access-pass/';
@@ -648,6 +594,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
       'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/';
     const passUrlCheck = isSafePublicHttpsUrl(env.WHOP_PASS_CHECKOUT_URL);
     const sponsorUrlCheck = isSafePublicHttpsUrl(env.WHOP_SPONSOR_CHECKOUT_URL);
+    const passPriceUsd = computePassPriceUsd();
 
     res.setHeader('Cache-Control', 'no-store');
     res.json({
@@ -658,8 +605,8 @@ export function createApp({ dbPath, env = process.env } = {}) {
       legalOperatorName: env.LEGAL_OPERATOR_NAME || '',
       legalServiceAddress: env.LEGAL_SERVICE_ADDRESS || '',
       legalContactPhone: env.LEGAL_CONTACT_PHONE || '',
-      passPriceUsd: computePassPriceUsd(now),
-      launchPriceUsd: 9.99,
+      passPriceUsd,
+      launchPriceUsd: passPriceUsd,
       sponsorPriceUsd: 149,
       passCheckoutUrl: passUrlCheck.ok ? passUrlCheck.normalizedUrl : defaultPassCheckout,
       sponsorCheckoutUrl: sponsorUrlCheck.ok
@@ -944,11 +891,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
     }
 
     const now = Date.now();
-    const emptyState = JSON.stringify({
-      crackedSafeIds: [],
-      checkedRouteIds: [],
-      savedPins: [],
-    });
+    const emptyState = JSON.stringify(createEmptySyncState());
     db.exec('BEGIN IMMEDIATE');
     try {
       db.prepare(

@@ -191,7 +191,7 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
 
   const syncFaq = {
     q: `What does the one-time $${passPriceUsd} Sync Pass unlock?`,
-    a: `All calculators stay free forever with zero ads. One-time $${passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 90m/120m extended weeknight chains, unlimited pinned calcs, and 14-day hassle-free refunds.`,
+    a: `All 10 game calculators stay free forever with zero ads. One-time $${passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, CSV/JSON deck export, and 14-day hassle-free refunds.`,
   };
 
   const faqEntities = route.legal

@@ -494,32 +494,12 @@ export default function NightRunProDeck({
                 <ShieldAlert size={14} style={{ marginRight: '5px', verticalAlign: '-2px', color: 'var(--gold)' }} />
                 Spoiler-Free Missables Shield
               </span>
-              <span className="district-pill">Act I Free · II–III w/ Pass</span>
+              <span className="district-pill">
+                {isPreLaunch ? 'All 3 Acts Free (Preview)' : 'All 3 Acts Included Free'}
+              </span>
             </div>
 
             {missables.map((item) => {
-              const unlocked = isPro || item.freePreview;
-              if (!unlocked) {
-                return (
-                  <div key={item.id} className="mg-subcard" style={{ marginBottom: '10px' }}>
-                    <div className="mg-subcard-head" style={{ marginBottom: '6px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{item.chapter}</span>
-                      <span className="district-pill" style={{ color: 'var(--coral)' }}>
-                        {isPreLaunch ? `Est. ${item.itemsAtRisk} Slots (Preview)` : `${item.itemsAtRisk} Missables Protected`}
-                      </span>
-                    </div>
-                    <p style={{ margin: '0 0 10px', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
-                      {isPreLaunch
-                        ? 'Pre-launch preview template — updates with verified trigger alerts at release with Unpause Sync Pass.'
-                        : 'Trigger alert & pre-mission checklist rule included with Unpause Sync Pass.'}
-                    </p>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', fontWeight: 600, color: 'var(--ink-secondary)' }}>
-                      <Lock size={12} color="var(--game-accent)" />
-                      <span>Included with Sync Pass below</span>
-                    </div>
-                  </div>
-                );
-              }
               return (
                 <div key={item.id} className="mg-subcard" style={{ marginBottom: '10px' }}>
                   <div className="mg-subcard-head" style={{ marginBottom: '6px' }}>
@@ -555,19 +535,19 @@ export default function NightRunProDeck({
               <div className="pass-feature-grid">
                 <div className="pass-feature-item">
                   <QrCode size={14} color="var(--ocean)" />
-                  <span>Phone ↔ PC QR Sync</span>
+                  <span>Phone ↔ PC Instant QR Sync</span>
                 </div>
                 <div className="pass-feature-item">
-                  <Clock size={14} color="var(--teal-dark)" />
-                  <span>90m &amp; 120m Chains</span>
-                </div>
-                <div className="pass-feature-item">
-                  <ShieldAlert size={14} color="var(--gold)" />
-                  <span>{isPreLaunch ? 'Act I–III Shield (Live Nov 18)' : 'Full Act I–III Shield'}</span>
+                  <Sparkles size={14} color="var(--gold)" />
+                  <span>16 Console &amp; Squad Presets</span>
                 </div>
                 <div className="pass-feature-item">
                   <CheckCircle2 size={14} color="var(--game-accent)" />
-                  <span>Unlimited Cross-Game Pins</span>
+                  <span>120 Cross-Game Saved Pins</span>
+                </div>
+                <div className="pass-feature-item">
+                  <Clock size={14} color="var(--teal-dark)" />
+                  <span>90m &amp; 120m Extended Routes</span>
                 </div>
               </div>
 

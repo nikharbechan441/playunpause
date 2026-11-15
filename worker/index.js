@@ -7,6 +7,7 @@ import {
   sanitizeSponsorBadgeText,
   checkAndSweepRateLimit,
 } from '../server/securityHelpers.js';
+import { createEmptySyncState, sanitizeSyncState } from '../src/utils/syncState.js';
 import { resolveSeoRequest } from '../src/data/seoRoutes.js';
 import {
   applyHttpSecurityHeaders,
@@ -18,69 +19,15 @@ import {
 } from '../src/data/ssrHtml.js';
 
 const DECK_CODE_REGEX = /^UP-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8,12}$/;
-const DEFAULT_LAUNCH_CUTOFF_ISO = '2026-11-18T11:00:00Z';
 
-export function sanitizeSyncState(rawState) {
-  if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
-    return null;
-  }
-
-  const cleanList = (arr) => {
-    if (!Array.isArray(arr)) return [];
-    const seen = new Set();
-    const out = [];
-    const maxScan = Math.min(arr.length, 1000);
-    for (let i = 0; i < maxScan; i += 1) {
-      const item = arr[i];
-      if (typeof item !== 'string') continue;
-      const trimmed = item.trim().slice(0, 64);
-      if (!trimmed || seen.has(trimmed)) continue;
-      seen.add(trimmed);
-      out.push(trimmed);
-      if (out.length >= 500) break;
-    }
-    return out;
-  };
-
-  const cleanPins = (arr) => {
-    if (!Array.isArray(arr)) return [];
-    const seen = new Set();
-    const out = [];
-    const maxScan = Math.min(arr.length, 250);
-    for (let i = 0; i < maxScan; i += 1) {
-      const item = arr[i];
-      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-      const id = typeof item.id === 'string' ? item.id.trim().slice(0, 48) : '';
-      const gameId = typeof item.gameId === 'string' ? item.gameId.trim().slice(0, 32) : '';
-      const label = typeof item.label === 'string' ? item.label.trim().slice(0, 80) : '';
-      const value = typeof item.value === 'string' ? item.value.trim().slice(0, 140) : '';
-      if (!id || !gameId || !label || !value || seen.has(id)) continue;
-      seen.add(id);
-      out.push({ id, gameId, label, value });
-      if (out.length >= 50) break;
-    }
-    return out;
-  };
-
-  const rawSafes = Array.isArray(rawState.crackedSafeIds)
-    ? rawState.crackedSafeIds
-    : Array.isArray(rawState.crackedSafes)
-      ? rawState.crackedSafes
-      : [];
-
-  return {
-    crackedSafeIds: cleanList(rawSafes),
-    checkedRouteIds: cleanList(rawState.checkedRouteIds),
-    savedPins: cleanPins(rawState.savedPins),
-  };
-}
+export { sanitizeSyncState };
 
 function parseStoredState(jsonStr) {
   try {
     const parsed = JSON.parse(jsonStr || '{}');
-    return sanitizeSyncState(parsed) || { crackedSafeIds: [], checkedRouteIds: [], savedPins: [] };
+    return sanitizeSyncState(parsed) || createEmptySyncState();
   } catch {
-    return { crackedSafeIds: [], checkedRouteIds: [], savedPins: [] };
+    return createEmptySyncState();
   }
 }
 
@@ -126,6 +73,7 @@ function checkRateLimit(request, maxPerMinute = 90, scope = 'global', env = {}) 
 }
 
 const initializedDbs = new WeakSet();
+const sponsorCacheByDb = new WeakMap();
 
 async function ensureSchema(db) {
   if (!db || initializedDbs.has(db)) return;
@@ -136,7 +84,7 @@ async function ensureSchema(db) {
         tier TEXT NOT NULL DEFAULT 'pro',
         email_hash TEXT,
         whop_ref TEXT,
-        state_json TEXT NOT NULL DEFAULT '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[]}',
+        state_json TEXT NOT NULL DEFAULT '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[],"storageProfiles":[],"crewPresets":[]}',
         active INTEGER NOT NULL DEFAULT 1,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
@@ -206,11 +154,10 @@ function hashIdentifier(value, env = {}) {
   return crypto.createHmac('sha256', pepper).update(clean).digest('hex');
 }
 
-function computePassPriceUsd(env = {}, nowMs = Date.now()) {
-  const cutoffIso = env.LAUNCH_CUTOFF_ISO || DEFAULT_LAUNCH_CUTOFF_ISO;
-  const cutoffMs = Date.parse(cutoffIso);
-  if (Number.isFinite(cutoffMs) && nowMs >= cutoffMs) {
-    return 9.99;
+function computePassPriceUsd(env = {}) {
+  const configured = Number(env.PASS_PRICE_USD);
+  if (Number.isFinite(configured) && configured > 0) {
+    return Number(configured.toFixed(2));
   }
   return 6.99;
 }
@@ -237,7 +184,7 @@ async function issueOrReuseDeckCode(db, { tier = 'pro', emailHash = null, whopRe
   }
 
   const now = Date.now();
-  const initialJson = JSON.stringify({ crackedSafeIds: [], checkedRouteIds: [], savedPins: [] });
+  const initialJson = JSON.stringify(createEmptySyncState());
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const code = generateDeckCode(8);
     try {
@@ -464,11 +411,7 @@ async function handleWorkerRequest(request, env = {}) {
           }
         }
 
-        const emptyState = JSON.stringify({
-          crackedSafeIds: [],
-          checkedRouteIds: [],
-          savedPins: [],
-        });
+        const emptyState = JSON.stringify(createEmptySyncState());
         const revokeStmts = [];
         if (revokedDeck) {
           revokeStmts.push(
@@ -495,6 +438,9 @@ async function handleWorkerRequest(request, env = {}) {
           )
         );
         await env.DB.batch(revokeStmts);
+        if (sponsorRevokeRefs.length > 0 && env.DB) {
+          sponsorCacheByDb.delete(env.DB);
+        }
 
         return jsonResponse(
           {
@@ -668,21 +614,33 @@ async function handleWorkerRequest(request, env = {}) {
       const now = Date.now();
       let activeSponsor = null;
       if (env.DB) {
-        await ensureSchema(env.DB);
-        const rawSponsor = await env.DB.prepare(
-          'SELECT badge_text, target_url, expires_at FROM sponsors WHERE active = 1 AND starts_at <= ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
-        )
-          .bind(now, now)
-          .first();
-        if (rawSponsor) {
-          const urlCheck = isSafePublicHttpsUrl(rawSponsor.target_url);
-          if (urlCheck.ok) {
-            activeSponsor = {
-              badgeText: rawSponsor.badge_text,
-              targetUrl: urlCheck.normalizedUrl,
-              expiresAt: rawSponsor.expires_at,
-            };
+        const cached = sponsorCacheByDb.get(env.DB);
+        if (cached && cached.expiresAtMs > now) {
+          activeSponsor = cached.value && cached.value.expiresAt > now ? cached.value : null;
+        } else {
+          try {
+            const rawSponsor = await env.DB.prepare(
+              'SELECT badge_text, target_url, expires_at FROM sponsors WHERE active = 1 AND starts_at <= ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
+            )
+              .bind(now, now)
+              .first();
+            if (rawSponsor) {
+              const urlCheck = isSafePublicHttpsUrl(rawSponsor.target_url);
+              if (urlCheck.ok) {
+                activeSponsor = {
+                  badgeText: rawSponsor.badge_text,
+                  targetUrl: urlCheck.normalizedUrl,
+                  expiresAt: rawSponsor.expires_at,
+                };
+              }
+            }
+          } catch {
+            activeSponsor = null;
           }
+          sponsorCacheByDb.set(env.DB, {
+            value: activeSponsor,
+            expiresAtMs: now + 60_000,
+          });
         }
       }
 
@@ -691,6 +649,7 @@ async function handleWorkerRequest(request, env = {}) {
         'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/';
       const passUrlCheck = isSafePublicHttpsUrl(env.WHOP_PASS_CHECKOUT_URL);
       const sponsorUrlCheck = isSafePublicHttpsUrl(env.WHOP_SPONSOR_CHECKOUT_URL);
+      const passPriceUsd = computePassPriceUsd(env);
 
       return jsonResponse(
         {
@@ -701,8 +660,8 @@ async function handleWorkerRequest(request, env = {}) {
           legalOperatorName: env.LEGAL_OPERATOR_NAME || '',
           legalServiceAddress: env.LEGAL_SERVICE_ADDRESS || '',
           legalContactPhone: env.LEGAL_CONTACT_PHONE || '',
-          passPriceUsd: computePassPriceUsd(env, now),
-          launchPriceUsd: 9.99,
+          passPriceUsd,
+          launchPriceUsd: passPriceUsd,
           sponsorPriceUsd: 149,
           passCheckoutUrl: passUrlCheck.ok ? passUrlCheck.normalizedUrl : defaultPassCheckout,
           sponsorCheckoutUrl: sponsorUrlCheck.ok
@@ -1103,11 +1062,7 @@ async function handleWorkerRequest(request, env = {}) {
         }
 
         const now = Date.now();
-        const emptyState = JSON.stringify({
-          crackedSafeIds: [],
-          checkedRouteIds: [],
-          savedPins: [],
-        });
+        const emptyState = JSON.stringify(createEmptySyncState());
         await env.DB.batch([
           env.DB.prepare(
             'UPDATE sync_decks SET email_hash = NULL, whop_ref = NULL, state_json = ?, active = 0, updated_at = ? WHERE deck_code = ?'
@@ -1171,6 +1126,7 @@ async function handleWorkerRequest(request, env = {}) {
       )
         .bind(badgeText, normalizedTargetUrl, whopRef, now, expiresAt)
         .run();
+      sponsorCacheByDb.delete(env.DB);
 
       return jsonResponse({ ok: true, badgeText, targetUrl: normalizedTargetUrl, expiresAt }, 200, env);
     }

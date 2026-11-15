@@ -11,6 +11,7 @@ import {
   Globe,
   Cpu,
   Trash2,
+  Bookmark,
 } from 'lucide-react';
 import {
   computeStorageDiagnosis,
@@ -20,6 +21,7 @@ import {
 } from '../utils/canvasCards.js';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import { MAX_FREE_PROFILES, MAX_SYNC_PROFILES } from '../utils/syncState.js';
 import {
   formatDurationMinutes,
   formatCountdownMs,
@@ -35,6 +37,10 @@ export default function StorageUnlockDeck({
   soundEnabled,
   nowMs,
   isEmbed = false,
+  isPro = false,
+  storageProfiles = [],
+  onSaveStorageProfile,
+  onDeleteStorageProfile,
   onOpenProModal,
   initialPreset = null,
   presetKey = '',
@@ -59,7 +65,15 @@ export default function StorageUnlockDeck({
   const [actionToast, setActionToast] = useState('');
   const [shareFallbackUrl, setShareFallbackUrl] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [profileNotice, setProfileNotice] = useState('');
+  const [profileLimitAlert, setProfileLimitAlert] = useState(false);
   const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (isPro || storageProfiles.length < MAX_FREE_PROFILES) {
+      setProfileLimitAlert(false);
+    }
+  }, [isPro, storageProfiles.length]);
 
   useEffect(
     () => () => {
@@ -243,6 +257,56 @@ export default function StorageUnlockDeck({
         flashToast('Clipboard blocked — copy the preset URL below.');
       }
     });
+  };
+
+  const handleSaveProfile = () => {
+    if (!onSaveStorageProfile) return;
+    if (!isPro && storageProfiles.length >= MAX_FREE_PROFILES) {
+      playSwitchTick(soundEnabled, 660);
+      setProfileLimitAlert(true);
+      setProfileNotice(
+        `Free tier saves ${MAX_FREE_PROFILES} console setups locally (e.g. Living Room + Bedroom). Unlock ${MAX_SYNC_PROFILES} cloud-synced setups with Sync Pass.`
+      );
+      return;
+    }
+    if (isPro && storageProfiles.length >= MAX_SYNC_PROFILES) {
+      playSwitchTick(soundEnabled, 640);
+      setProfileLimitAlert(false);
+      setProfileNotice(`Reached ${MAX_SYNC_PROFILES} synced console setups — remove an older setup first.`);
+      return;
+    }
+    playSwitchTick(soundEnabled, 820);
+    triggerHaptic(10);
+    const statusSummary = fits ? `+${surplusGb} GB Ready` : `-${shortfallGb} GB Short`;
+    onSaveStorageProfile({
+      id: `sp-${Date.now().toString(36)}`,
+      label: `${selectedConsole.shortName} · ${statusSummary}`,
+      consoleId: selectedConsoleId,
+      freeGb: clampedFreeGb,
+      includePatch: includeDayOnePatch,
+      mbps,
+      customOffsetGb,
+      sacrificedIds,
+    });
+    setProfileLimitAlert(false);
+    setProfileNotice('Console setup saved.');
+    flashToast('Console setup saved.');
+  };
+
+  const handleLoadProfile = (prof) => {
+    if (!prof) return;
+    playSwitchTick(soundEnabled, 720);
+    triggerHaptic(8);
+    if (prof.consoleId) setSelectedConsoleId(prof.consoleId);
+    if (typeof prof.freeGb === 'number') setAlreadyFreeGb(prof.freeGb);
+    setIncludeDayOnePatch(Boolean(prof.includePatch));
+    if (typeof prof.mbps === 'number') setMbps(prof.mbps);
+    setCustomOffsetGb(typeof prof.customOffsetGb === 'number' ? prof.customOffsetGb : 0);
+    setSacrificedIds(Array.isArray(prof.sacrificedIds) ? prof.sacrificedIds : []);
+    setShareFallbackUrl('');
+    setProfileLimitAlert(false);
+    setProfileNotice(`Loaded ${prof.label}.`);
+    flashToast(`Loaded ${prof.label}.`);
   };
 
   return (
@@ -700,15 +764,100 @@ export default function StorageUnlockDeck({
               </div>
             )}
 
+            {!isEmbed && onSaveStorageProfile && (
+              <div className="saved-preset-card">
+                <div className="saved-preset-head">
+                  <div className="saved-preset-title">
+                    <Bookmark size={14} color="var(--ocean)" aria-hidden="true" />
+                    <span>
+                      Saved Console Setups ({storageProfiles.length}
+                      {isPro ? ` / ${MAX_SYNC_PROFILES} Synced` : ` / ${MAX_FREE_PROFILES} Free`})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={handleSaveProfile}
+                  >
+                    <Bookmark size={13} aria-hidden="true" />
+                    <span>Save Setup</span>
+                  </button>
+                </div>
+
+                <div role="status" aria-live="polite">
+                  {profileLimitAlert && !isPro ? (
+                    <div className="pin-limit-alert">
+                      <span>{profileNotice}</span>
+                      {onOpenProModal && (
+                        <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
+                          Unlock Sync Pass
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    profileNotice && (
+                      <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
+                        {profileNotice}
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {storageProfiles.length === 0 ? (
+                  <p className="saved-preset-empty">
+                    Save PS5 or Xbox storage setups to switch consoles fast or sync between phone &amp; PC.
+                  </p>
+                ) : (
+                  <div className="saved-preset-list">
+                    {storageProfiles.map((prof) => {
+                      const uninstallCount = Array.isArray(prof.sacrificedIds)
+                        ? prof.sacrificedIds.length
+                        : 0;
+                      const detailText = `${prof.freeGb} GB free · ${prof.mbps} Mbps${uninstallCount ? ` · -${uninstallCount} queued` : ''}`;
+                      return (
+                        <div key={prof.id} className="saved-preset-row">
+                          <button
+                            type="button"
+                            className="saved-preset-load-btn"
+                            onClick={() => handleLoadProfile(prof)}
+                          >
+                            <span className="saved-preset-label">{prof.label}</span>
+                            <span className="saved-preset-meta mono">{detailText}</span>
+                          </button>
+                          {onDeleteStorageProfile && (
+                            <button
+                              type="button"
+                              className="subtle-pill-btn"
+                              aria-label={`Remove saved setup ${prof.label}`}
+                              onClick={() => {
+                                playSwitchTick(soundEnabled, 580);
+                                onDeleteStorageProfile(prof.id);
+                              }}
+                            >
+                              <Trash2 size={14} aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {onOpenProModal && (
               <div className="sync-quiet-note">
-                <span>Save &amp; sync your storage list between phone and PC</span>
+                <span>
+                  {isPro
+                    ? 'Synced to Cloud · Console setups follow your UP- code'
+                    : 'Switch between couch phone & desktop? Sync setups via QR'}
+                </span>
                 <button
                   type="button"
                   className="sync-quiet-btn"
                   onClick={onOpenProModal}
                 >
-                  Phone ↔ PC Sync
+                  {isPro ? 'Manage Sync' : 'Phone ↔ PC Sync'}
                 </button>
               </div>
             )}

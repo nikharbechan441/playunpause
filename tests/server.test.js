@@ -48,7 +48,7 @@ test('computeHeistSplit & normalizePercentages enforce exact 100% sum, clamp bou
   assert.throws(() => computeHeistSplit({ grossTakeDollars: -500 }), /Invalid gross take/);
 });
 
-test('sanitizeSyncState strips poisoned non-array payloads and enforces string bounds', () => {
+test('sanitizeSyncState strips poisoned non-array payloads and enforces string bounds', async () => {
   assert.equal(sanitizeSyncState(null), null);
   assert.equal(sanitizeSyncState(['not-an-object']), null);
 
@@ -69,7 +69,104 @@ test('sanitizeSyncState strips poisoned non-array payloads and enforces string b
     savedPins: [
       { id: 'pin-mc-1', gameId: 'minecraft', label: 'Base Nether Portal', value: 'X: 160 Y: 64 Z: -105' },
     ],
+    storageProfiles: [],
+    crewPresets: [],
   });
+
+  const {
+    MAX_SYNC_PINS_TOTAL,
+    MAX_SYNC_PROFILES,
+    mergeSyncStates,
+    escapeCsvCell,
+    buildDeckSpreadsheetCsv,
+  } = await import('../src/utils/syncState.js');
+
+  const populated = sanitizeSyncState({
+    storageProfiles: Array.from({ length: 20 }, (_, idx) => ({
+      id: `sp-${idx}`,
+      label: `Console ${idx}`,
+      consoleId: idx === 1 ? 'invalid-console-id' : 'ps5-slim',
+      freeGb: 90,
+      includePatch: true,
+      mbps: 150,
+      customOffsetGb: 10,
+      sacrificedIds: ['cod-bo7', 'cod-bo7'],
+    })),
+    crewPresets: [
+      {
+        id: 'cp-1',
+        label: 'Weekend Squad',
+        grossDollars: 1500000,
+        supportFeePct: 12,
+        crew: [
+          { id: 'p1', name: 'Host', role: 'DRIVER', pct: 60, locked: true },
+          { id: 'p2', name: 'Teammate', role: 'HACKER', pct: 40, locked: false },
+        ],
+      },
+      {
+        id: 'cp-bad-sum',
+        label: 'Bad Sum Ignored',
+        grossDollars: 1000000,
+        supportFeePct: 10,
+        crew: [
+          { id: 'p1', name: 'Host', role: 'DRIVER', pct: 40, locked: true },
+          { id: 'p2', name: 'Teammate', role: 'HACKER', pct: 20, locked: false },
+        ],
+      },
+    ],
+    savedPins: Array.from({ length: 140 }, (_, i) => ({
+      id: `pin-${i}`,
+      gameId: 'minecraft',
+      label: `Pin ${i}`,
+      value: `${i}`,
+    })),
+  });
+  assert.equal(populated.storageProfiles.length, MAX_SYNC_PROFILES);
+  assert.equal(populated.storageProfiles[0].consoleId, 'ps5-slim');
+  assert.equal(populated.storageProfiles.some((p) => p.id === 'sp-1'), false);
+  assert.deepEqual(populated.storageProfiles[0].sacrificedIds, ['cod-bo7']);
+  assert.equal(populated.crewPresets.length, 1);
+  assert.equal(
+    populated.crewPresets[0].crew.reduce((sum, m) => sum + m.pct, 0),
+    100
+  );
+  assert.equal(populated.savedPins.length, MAX_SYNC_PINS_TOTAL);
+
+  const merged = mergeSyncStates(
+    {
+      crackedSafeIds: ['safe-a'],
+      checkedRouteIds: ['route-1'],
+      savedPins: [{ id: 'p-local', gameId: 'gta-6', label: 'Local', value: '1' }],
+      storageProfiles: [{ id: 'sp-local', label: 'Living Room', consoleId: 'ps5-pro', freeGb: 100 }],
+      crewPresets: [],
+    },
+    {
+      crackedSafeIds: ['safe-a', 'safe-b'],
+      checkedRouteIds: ['route-2'],
+      savedPins: [{ id: 'p-cloud', gameId: 'cs2', label: 'Cloud', value: '2' }],
+      storageProfiles: [{ id: 'sp-cloud', label: 'Bedroom', consoleId: 'xsx-1tb', freeGb: 80 }],
+      crewPresets: [],
+    }
+  );
+  assert.deepEqual(merged.crackedSafeIds, ['safe-a', 'safe-b']);
+  assert.deepEqual(merged.checkedRouteIds, ['route-2', 'route-1']);
+  assert.equal(merged.savedPins.length, 2);
+  assert.equal(merged.storageProfiles.length, 2);
+
+  const csv = buildDeckSpreadsheetCsv({
+    savedPins: [
+      { id: 'f1', gameId: 'cs2', label: '=CMD|" /C calc"!A0', value: '+SUM(1,2)' },
+      { id: 'f2', gameId: 'valorant', label: '-1+1', value: '@IMPORT("x")' },
+      { id: 'f3', gameId: 'minecraft', label: '\t=HYPERLINK("x")', value: 'Safe' },
+    ],
+  });
+  assert.ok(csv.includes("'=CMD|"));
+  assert.ok(csv.includes("'+SUM(1,2)"));
+  assert.ok(csv.includes("'-1+1"));
+  assert.ok(csv.includes("'@IMPORT("));
+  assert.ok(csv.includes("'=HYPERLINK("));
+  assert.ok(escapeCsvCell('\t=HYPERLINK("x")').includes("'\t=HYPERLINK"));
+  assert.ok(escapeCsvCell('  =CMD()').includes("'  =CMD()"));
 });
 
 test('Whop Webhook enforces amount/currency/plan guards, deduplicates membership events, and isolates rate limits', async () => {
@@ -281,6 +378,8 @@ test('Whop Webhook enforces amount/currency/plan guards, deduplicates membership
       crackedSafeIds: ['pg-pawn-backroom'],
       checkedRouteIds: ['r90-1'],
       savedPins: [{ id: 'pin-1', gameId: 'fortnite', label: 'Season Goal', value: '140,000 XP/day' }],
+      storageProfiles: [],
+      crewPresets: [],
     });
 
     // 7. Refund webhook revokes sync deck access immediately (403 on activate and sync)
@@ -302,7 +401,7 @@ test('Whop Webhook enforces amount/currency/plan guards, deduplicates membership
     assert.equal(scrubbedAfterRefund.email_hash, null);
     assert.equal(
       scrubbedAfterRefund.state_json,
-      '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[]}'
+      '{"crackedSafeIds":[],"checkedRouteIds":[],"savedPins":[],"storageProfiles":[],"crewPresets":[]}'
     );
 
     const revokedActivateRes = await fetch(`${baseUrl}/api/pass/activate`, {
@@ -341,6 +440,8 @@ test('Production kill-switch blocks ALLOW_DEMO_UNLOCK and admin sponsor rejects 
     const cfgRes = await fetch(`${baseUrl}/api/config`);
     const cfgJson = await cfgRes.json();
     assert.equal(cfgJson.demoUnlockEnabled, false);
+    assert.equal(cfgJson.passPriceUsd, 6.99);
+    assert.equal(cfgJson.launchPriceUsd, 6.99);
     const csp = cfgRes.headers.get('content-security-policy') || '';
     assert.ok(csp.includes("script-src 'self'"));
     assert.ok(!csp.includes("script-src 'self' 'unsafe-inline'"));

@@ -10,6 +10,8 @@ import {
   Link2,
   Plus,
   Minus,
+  Bookmark,
+  Trash2,
 } from 'lucide-react';
 import {
   computeHostGreedLabel,
@@ -19,6 +21,7 @@ import {
 } from '../utils/canvasCards.js';
 import { playSwitchTick, triggerHaptic } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
+import { MAX_FREE_PROFILES, MAX_SYNC_PROFILES } from '../utils/syncState.js';
 import {
   DEFAULT_HEIST_CREW,
   normalizeHeistSubTab,
@@ -77,6 +80,11 @@ export default function SquadHeistMarketDeck({
   soundEnabled,
   isPreLaunch = false,
   isEmbed = false,
+  isPro = false,
+  crewPresets = [],
+  onSaveCrewPreset,
+  onDeleteCrewPreset,
+  onOpenProModal,
   initialPreset = null,
   presetKey = '',
 }) {
@@ -101,7 +109,15 @@ export default function SquadHeistMarketDeck({
   const [slipToast, setSlipToast] = useState('');
   const [shareFallbackUrl, setShareFallbackUrl] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [presetNotice, setPresetNotice] = useState('');
+  const [presetLimitAlert, setPresetLimitAlert] = useState(false);
   const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (isPro || crewPresets.length < MAX_FREE_PROFILES) {
+      setPresetLimitAlert(false);
+    }
+  }, [isPro, crewPresets.length]);
 
   useEffect(
     () => () => {
@@ -300,6 +316,71 @@ export default function SquadHeistMarketDeck({
     const ok = await copyCanvasToClipboard(canvas);
     setIsExporting(false);
     flashToast(ok ? 'Payout image copied!' : 'Clipboard PNG unsupported — use Save Slip PNG.');
+  };
+
+  const handleSaveCrewPreset = () => {
+    if (!onSaveCrewPreset) return;
+    if (!isPro && crewPresets.length >= MAX_FREE_PROFILES) {
+      playSwitchTick(soundEnabled, 660);
+      setPresetLimitAlert(true);
+      setPresetNotice(
+        `Free tier saves ${MAX_FREE_PROFILES} squad rosters locally. Unlock ${MAX_SYNC_PROFILES} cloud-synced rosters with Sync Pass.`
+      );
+      return;
+    }
+    if (isPro && crewPresets.length >= MAX_SYNC_PROFILES) {
+      playSwitchTick(soundEnabled, 640);
+      setPresetLimitAlert(false);
+      setPresetNotice(`Reached ${MAX_SYNC_PROFILES} synced squad rosters — remove an older roster first.`);
+      return;
+    }
+
+    const cleanCrew = crew.map((m, idx) => ({
+      id: m.id || `p${idx + 1}`,
+      name: (m.name || '').replace(/[<>]/g, '').trim().slice(0, 24) || `Player ${idx + 1}`,
+      role: (m.role || '').replace(/[<>]/g, '').trim().slice(0, 24) || `CREW #${idx + 1}`,
+      pct: Math.max(0, Math.min(100, Math.round(Number(m.pct) || 0))),
+      locked: Boolean(m.locked),
+    }));
+    const pctSum = cleanCrew.reduce((s, m) => s + m.pct, 0);
+    if (pctSum !== 100 && cleanCrew.length > 0) {
+      cleanCrew[0].pct = Math.max(0, Math.min(100, cleanCrew[0].pct + (100 - pctSum)));
+    }
+    const namesJoined = cleanCrew.map((m) => m.name).join(' · ');
+    const cutsJoined = cleanCrew.map((m) => m.pct).join('/');
+    const label = `${namesJoined} (${cutsJoined})`.slice(0, 80);
+
+    playSwitchTick(soundEnabled, 820);
+    triggerHaptic(10);
+    onSaveCrewPreset({
+      id: `cr-${Date.now().toString(36)}`,
+      label,
+      presetId: selectedPresetId,
+      grossDollars,
+      supportFeePct,
+      crew: cleanCrew,
+    });
+    setPresetLimitAlert(false);
+    setPresetNotice('Squad roster saved.');
+    flashToast('Squad roster saved.');
+  };
+
+  const handleLoadCrewPreset = (preset) => {
+    if (!preset) return;
+    playSwitchTick(soundEnabled, 720);
+    triggerHaptic(8);
+    if (preset.presetId) setSelectedPresetId(preset.presetId);
+    const nextGross = typeof preset.grossDollars === 'number' ? preset.grossDollars : defaultGross;
+    setGrossDollars(nextGross);
+    setGrossInput(String(nextGross));
+    setSupportFeePct(typeof preset.supportFeePct === 'number' ? preset.supportFeePct : 12);
+    if (Array.isArray(preset.crew) && preset.crew.length >= 2) {
+      setCrew(preset.crew.map((m) => ({ ...m })));
+    }
+    setShareFallbackUrl('');
+    setPresetLimitAlert(false);
+    setPresetNotice(`Loaded ${preset.label}.`);
+    flashToast('Loaded squad roster.');
   };
 
   const handleSubTabKeyDown = (e) => {
@@ -775,6 +856,83 @@ export default function SquadHeistMarketDeck({
                     </div>
                   )}
                 </div>
+
+                {!isEmbed && onSaveCrewPreset && (
+                  <div className="saved-preset-card" style={{ marginTop: '14px' }}>
+                    <div className="saved-preset-head">
+                      <div className="saved-preset-title">
+                        <Bookmark size={14} color="var(--ocean)" aria-hidden="true" />
+                        <span>
+                          Saved Squad Rosters ({crewPresets.length}
+                          {isPro ? ` / ${MAX_SYNC_PROFILES} Synced` : ` / ${MAX_FREE_PROFILES} Free`})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="subtle-pill-btn"
+                        onClick={handleSaveCrewPreset}
+                      >
+                        <Bookmark size={13} aria-hidden="true" />
+                        <span>Save Roster</span>
+                      </button>
+                    </div>
+
+                    <div role="status" aria-live="polite">
+                      {presetLimitAlert && !isPro ? (
+                        <div className="pin-limit-alert">
+                          <span>{presetNotice}</span>
+                          {onOpenProModal && (
+                            <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
+                              Unlock Sync Pass
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        presetNotice && (
+                          <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
+                            {presetNotice}
+                          </div>
+                        )
+                      )}
+                    </div>
+
+                    {crewPresets.length === 0 ? (
+                      <p className="saved-preset-empty">
+                        Save regular heist friends &amp; cut rules so your squad split loads in one tap on any device.
+                      </p>
+                    ) : (
+                      <div className="saved-preset-list">
+                        {crewPresets.map((preset) => (
+                          <div key={preset.id} className="saved-preset-row">
+                            <button
+                              type="button"
+                              className="saved-preset-load-btn"
+                              onClick={() => handleLoadCrewPreset(preset)}
+                            >
+                              <span className="saved-preset-label">{preset.label}</span>
+                              <span className="saved-preset-meta mono">
+                                ${(preset.grossDollars || 0).toLocaleString('en-US')} gross · {preset.supportFeePct}% NPC
+                              </span>
+                            </button>
+                            {onDeleteCrewPreset && (
+                              <button
+                                type="button"
+                                className="subtle-pill-btn"
+                                aria-label={`Remove saved roster ${preset.label}`}
+                                onClick={() => {
+                                  playSwitchTick(soundEnabled, 580);
+                                  onDeleteCrewPreset(preset.id);
+                                }}
+                              >
+                                <Trash2 size={14} aria-hidden="true" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

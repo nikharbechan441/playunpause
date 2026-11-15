@@ -285,6 +285,13 @@ test('Generated PNG OG assets, sitemap.xml, robots.txt, llms*.txt, IndexNow, and
   const llmsTxt = fs.readFileSync(path.join(PUBLIC_DIR, 'llms.txt'), 'utf8');
   assert.equal(llmsTxt.includes('?game='), false);
   assert.ok(llmsTxt.includes('NOT AN OFFICIAL MINECRAFT PRODUCT'));
+  assert.ok(llmsTxt.includes('$6.99'));
+  assert.equal(llmsTxt.includes('9.99'), false);
+  assert.equal(/Founders/i.test(llmsTxt), false);
+
+  const llmsFullTxt = fs.readFileSync(path.join(PUBLIC_DIR, 'llms-full.txt'), 'utf8');
+  assert.equal(llmsFullTxt.includes('9.99'), false);
+  assert.equal(/Founders/i.test(llmsFullTxt), false);
 
   const llmsFull = fs.readFileSync(path.join(PUBLIC_DIR, 'llms-full.txt'), 'utf8');
   assert.equal(llmsFull.includes('?game='), false);
