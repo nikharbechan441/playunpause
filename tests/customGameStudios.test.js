@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { TOP_GAMES } from '../src/data/games/allGames.js';
 import { CORE_ROUTES, resolveSeoRequest } from '../src/data/seoRoutes.js';
 import { escapeHtml, renderSeoHtmlDocument } from '../src/data/ssrHtml.js';
+import { formatDiscordSummary, renderStudioSpecCardCanvas } from '../src/utils/shareCardEngine.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -607,4 +608,209 @@ test('gameTypography.css covers all 10 worlds cleanly with zero external URLs an
   const typoImportIdx = mainSrc.indexOf("import './styles/gameTypography.css'");
   assert.ok(typoImportIdx !== -1, 'main.jsx must import gameTypography.css');
   assert.ok(typoImportIdx > graphicsImportIdx, 'main.jsx must import gameTypography.css after gameWorldGraphics.css');
+});
+
+test('Discord summary includes live shareUrl + clanTag and renderStudioSpecCardCanvas stamps QR badge safely', () => {
+  const baseline = formatDiscordSummary(null);
+  assert.equal(baseline.includes('playunpause.com'), true);
+
+  const deepUrl = 'https://playunpause.com/valorant?cred=2900&loss=1';
+  const withShare = formatDiscordSummary({
+    gameTitle: 'Valorant',
+    headline: 'Buy Matrix Spec',
+    heroLabel: 'NEXT ROUND IF LOST',
+    heroValue: '3,900 Creds',
+    rows: [{ label: 'Spend', value: '2,900 Creds' }],
+    shareUrl: deepUrl,
+    clanTag: 'vct',
+  });
+  assert.ok(withShare.includes('[CLAN: VCT]'));
+  assert.ok(withShare.includes(`Load & tweak live: ${deepUrl}`));
+
+  const xssShare = formatDiscordSummary({
+    gameTitle: 'Valorant',
+    shareUrl: 'javascript:alert(1)',
+  });
+  assert.equal(xssShare.includes('javascript:'), false);
+  assert.equal(xssShare.includes('playunpause.com'), true);
+
+  const drawnTexts = [];
+  let rectCount = 0;
+  const prevDoc = globalThis.document;
+  globalThis.document = {
+    createElement(tag) {
+      assert.equal(tag, 'canvas');
+      return {
+        width: 0,
+        height: 0,
+        getContext() {
+          return {
+            fillStyle: '',
+            strokeStyle: '',
+            lineWidth: 1,
+            font: '',
+            textAlign: 'left',
+            createLinearGradient: () => ({ addColorStop() {} }),
+            createRadialGradient: () => ({ addColorStop() {} }),
+            fillRect() {
+              rectCount += 1;
+            },
+            beginPath() {},
+            moveTo() {},
+            lineTo() {},
+            quadraticCurveTo() {},
+            closePath() {},
+            fill() {},
+            stroke() {},
+            measureText: (t) => ({ width: String(t || '').length * 8 }),
+            fillText(t) {
+              drawnTexts.push(String(t));
+            },
+          };
+        },
+      };
+    },
+  };
+
+  try {
+    const canvas = renderStudioSpecCardCanvas({
+      gameTitle: 'Valorant',
+      toolTitle: 'Buy Matrix',
+      heroLabel: 'NEXT ROUND',
+      heroValue: '3,900 Creds',
+      accentColor: '#FF4655',
+      canvasBgHex: '#0F1923',
+      themePersonaLabel: 'TACTICAL PROTOCOL BUY LAB',
+      clanTag: 'vct',
+      shareUrl: 'https://playunpause.com/valorant?c=2900',
+      rows: [{ label: 'Gun', value: 'Vandal' }],
+    });
+    assert.ok(canvas);
+    assert.ok(rectCount > 100, `Expected QR module rects to render cleanly (got ${rectCount})`);
+    assert.ok(drawnTexts.some((t) => t.includes('TACTICAL PROTOCOL BUY LAB')));
+    assert.ok(drawnTexts.some((t) => t.includes('[CLAN: VCT]')));
+    assert.ok(drawnTexts.some((t) => t.includes('LIVE PRESET:')));
+
+    // Exceeds 78-byte QR ceiling: must degrade gracefully to origin+pathname without RangeError
+    const longUrl = `https://playunpause.com/cod-warzone?tab=duel&wa=xm4-ar&wb=raal-mg&pad=${'x'.repeat(120)}`;
+    const longCanvas = renderStudioSpecCardCanvas({
+      gameTitle: 'CoD',
+      shareUrl: longUrl,
+    });
+    assert.ok(longCanvas);
+  } finally {
+    globalThis.document = prevDoc;
+  }
+
+  const dockSrc = fs.readFileSync(path.join(ROOT, 'src/components/games/GameStudioDock.jsx'), 'utf8');
+  assert.match(dockSrc, /shareUrl:\s*currentShareUrl/);
+  assert.match(dockSrc, /canvasBgHex:\s*game\.canvasHexObsidian/);
+  assert.match(dockSrc, /themePersonaLabel:\s*game\.themePersonaLabel/);
+  assert.match(dockSrc, /onOpenEmbedModal/);
+  assert.match(dockSrc, /rel="sponsored nofollow noopener noreferrer"/);
+});
+
+test('Youth Firewall enforces gearOffer === null on Minecraft/Roblox/Fortnite while adult hubs disclose affiliates cleanly', () => {
+  const youthGames = new Set(['minecraft', 'roblox', 'fortnite']);
+  for (const pack of TOP_GAMES) {
+    if (youthGames.has(pack.id)) {
+      assert.equal(
+        pack.gearOffer,
+        null,
+        `Youth Compliance Firewall violation: ${pack.id} must have gearOffer === null`
+      );
+    } else {
+      assert.ok(
+        pack.gearOffer && typeof pack.gearOffer === 'object',
+        `Expected gearOffer metadata for adult/competitive pack ${pack.id}`
+      );
+      for (const field of ['label', 'title', 'sub', 'urlKey', 'disclosure']) {
+        assert.equal(typeof pack.gearOffer[field], 'string');
+        assert.ok(pack.gearOffer[field].trim().length > 0, `Missing ${field} on ${pack.id}.gearOffer`);
+      }
+      assert.ok(
+        pack.gearOffer.disclosure.includes('As an Amazon Associate I earn from qualifying purchases.')
+      );
+    }
+  }
+
+  const dockSrc = fs.readFileSync(path.join(ROOT, 'src/components/games/GameStudioDock.jsx'), 'utf8');
+  assert.match(dockSrc, /YOUTH_FIREWALL_GAMES\s*=\s*new Set\(\['minecraft',\s*'roblox',\s*'fortnite'\]\)/);
+  assert.match(dockSrc, /!YOUTH_FIREWALL_GAMES\.has\(game\?\.id\)/);
+
+  for (const rel of ['worker/index.js', 'server/index.js']) {
+    const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    for (const key of ['fpsMouseUrl', 'heKeyboardUrl', 'proControllerUrl', 'monitor240Url']) {
+      assert.ok(src.includes(key), `${rel} missing affiliate key ${key}`);
+    }
+    assert.doesNotMatch(src, /loaded\.com/i, `${rel} must not use loaded.com default affiliate fallback`);
+  }
+});
+
+test('patchMeta feeds dynamic sitemap.xml lastmod and WebPage JSON-LD dateModified across all 10 games', () => {
+  const baseHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  for (const gameId of GAME_IDS) {
+    const pack = TOP_GAMES.find((g) => g.id === gameId);
+    assert.ok(pack?.patchMeta && typeof pack.patchMeta === 'object', `Missing patchMeta on ${gameId}`);
+    assert.match(pack.patchMeta.patchUpdatedIso || '', /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(typeof pack.patchMeta.patchVersion === 'string' && pack.patchMeta.patchVersion.length > 0);
+    assert.ok(typeof pack.patchMeta.seasonLabel === 'string' && pack.patchMeta.seasonLabel.length > 0);
+
+    const route = CORE_ROUTES.find((r) => r.gameId === gameId && !r.legal);
+    assert.ok(route, `Missing core route for ${gameId}`);
+    assert.match(route.lastmod || '', /^\d{4}-\d{2}-\d{2}$/);
+
+    const html = renderSeoHtmlDocument(baseHtml, resolveSeoRequest(route.path));
+    assert.match(html, /"@type":"WebPage"/);
+    assert.ok(
+      html.includes(`"dateModified":"${route.lastmod}"`),
+      `SSR WebPage JSON-LD dateModified missing ${route.lastmod} for ${route.path}`
+    );
+  }
+
+  const genSrc = fs.readFileSync(path.join(ROOT, 'tools/generate_seo_files.mjs'), 'utf8');
+  assert.match(genSrc, /patchMeta\?\.patchUpdatedIso/);
+
+  const sitemapXml = fs.readFileSync(path.join(ROOT, 'public/sitemap.xml'), 'utf8');
+  assert.doesNotMatch(sitemapXml, /<lastmod>2026-11-14<\/lastmod>/);
+  assert.match(sitemapXml, /<lastmod>2026-11-\d{2}<\/lastmod>/);
+});
+
+test('non-GTA6 Sync copy, OBS embed mode, Pro Clan Tag, and multi-night studio checklists wire cleanly', () => {
+  const appSrc = fs.readFileSync(path.join(ROOT, 'src/App.jsx'), 'utf8');
+  assert.match(appSrc, /Sync pinned builds & multi-night checklists Phone ↔ PC via QR/);
+  assert.doesNotMatch(appSrc, /16 Cloud Profile Slots/);
+  assert.match(appSrc, /isObsOverlayActive/);
+  assert.match(appSrc, /obs-overlay-mode/);
+  assert.match(appSrc, /embed-backlink-bar/);
+  assert.match(appSrc, /id="pro-clan-tag-input"/);
+
+  const embedModalSrc = fs.readFileSync(path.join(ROOT, 'src/components/EmbedWidgetModal.jsx'), 'utf8');
+  assert.match(embedModalSrc, /\?mode=obs/);
+  assert.match(embedModalSrc, /onOpenProModal/);
+
+  const deckSrc = fs.readFileSync(path.join(ROOT, 'src/components/MultiGameToolDeck.jsx'), 'utf8');
+  assert.match(deckSrc, /isEmbed=\{isEmbed\}/);
+  assert.match(deckSrc, /onOpenEmbedModal=\{onOpenEmbedModal\}/);
+  assert.match(deckSrc, /runtimeConfig=\{runtimeConfig\}/);
+  assert.match(deckSrc, /clanTag=\{clanTag\}/);
+
+  const wzSrc = fs.readFileSync(path.join(ROOT, 'src/components/games/CodWarzoneStudio.jsx'), 'utf8');
+  assert.match(wzSrc, /gs-camo-checklist/);
+  assert.match(wzSrc, /unpause_wz_camo_checklist_v1/);
+
+  const fnSrc = fs.readFileSync(path.join(ROOT, 'src/components/games/FortniteStudio.jsx'), 'utf8');
+  assert.match(fnSrc, /gs-daily-xp-row/);
+  assert.match(fnSrc, /BR Dailies \+60K/);
+  assert.match(fnSrc, /Creative \+300K/);
+  assert.match(fnSrc, /LEGO \+120K/);
+
+  const apexSrc = fs.readFileSync(path.join(ROOT, 'src/components/games/ApexLegendsStudio.jsx'), 'utf8');
+  assert.match(apexSrc, /Packs Opened Tonight/);
+  assert.match(apexSrc, /\[1,\s*5,\s*10\]/);
+
+  const gtaSrc = fs.readFileSync(path.join(ROOT, 'src/components/games/GtaOnlineStudio.jsx'), 'utf8');
+  assert.match(gtaSrc, /renderSquadSplitCanvas/);
+  assert.match(gtaSrc, /shareOrDownloadCanvas/);
+  assert.match(gtaSrc, /Save Split PNG/);
 });

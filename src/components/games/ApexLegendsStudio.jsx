@@ -1,5 +1,5 @@
-import React from 'react';
-import { Flame, Award } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Flame, Award, Plus } from 'lucide-react';
 import { APEX_RANK_TIERS, clampNum, parseSafeNum } from '../../utils/gameMath.js';
 import {
   AnimatedValue,
@@ -7,6 +7,25 @@ import {
   SpotlightPanel,
 } from '../../utils/motionPrimitives.jsx';
 import { NumericField, PinButton } from './GameStudioDock.jsx';
+
+const APEX_SESSION_PACKS_KEY = 'unpause_apex_tonight_packs_v1';
+
+function readTonightApexPacks() {
+  const utcDate = new Date().toISOString().slice(0, 10);
+  if (typeof window === 'undefined' || !window.localStorage) return { utcDate, logged: 0 };
+  try {
+    const raw = window.localStorage.getItem(APEX_SESSION_PACKS_KEY);
+    if (!raw) return { utcDate, logged: 0 };
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || parsed.utcDate !== utcDate) {
+      return { utcDate, logged: 0 };
+    }
+    const num = Math.max(0, Math.min(500, Math.round(Number(parsed.logged) || 0)));
+    return { utcDate, logged: num };
+  } catch {
+    return { utcDate, logged: 0 };
+  }
+}
 
 export default function ApexLegendsStudio({
   game,
@@ -49,6 +68,30 @@ export default function ApexLegendsStudio({
   const bpLen = (bpSeg / 500) * circ;
   const boughtLen = (boughtSeg / 500) * circ;
   const pctTotal = Math.round((clampNum(apexTotalOpened, 0, 500) / 500) * 100);
+  const [tonightState, setTonightState] = useState(() => readTonightApexPacks());
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      window.localStorage.setItem(APEX_SESSION_PACKS_KEY, JSON.stringify(tonightState));
+    } catch {
+      // Ignore storage write errors cleanly
+    }
+  }, [tonightState]);
+
+  const handleLogTonightPacks = (delta) => {
+    playTick?.(soundEnabled, 780);
+    const nextBought = clampNum(safeBought + delta, 0, 500);
+    const applied = nextBought - safeBought;
+    setApexPurchasedPacks(nextBought);
+    if (applied > 0) {
+      const utcDate = new Date().toISOString().slice(0, 10);
+      setTonightState((prev) => ({
+        utcDate,
+        logged: (prev.utcDate === utcDate ? prev.logged : 0) + applied,
+      }));
+    }
+  };
 
   return (
     <div className="gs-studio-stack gs-apex-lab">
@@ -235,6 +278,27 @@ export default function ApexLegendsStudio({
                 onCommit={setApexPurchasedPacks}
               />
             </div>
+          </div>
+
+          <div className="gs-card-topbar">
+            <h3 className="mg-field-label">Packs Opened Tonight</h3>
+            <span className="district-pill mono">
+              {tonightState.logged} Logged Today
+            </span>
+          </div>
+          <div className="filter-row" role="group" aria-label="Log packs opened tonight">
+            {[1, 5, 10].map((delta) => (
+              <button
+                key={delta}
+                type="button"
+                className="filter-pill"
+                disabled={safeBought >= 500}
+                onClick={() => handleLogTonightPacks(delta)}
+              >
+                <Plus size={13} aria-hidden="true" />
+                <span>+{delta} {delta === 1 ? 'Pack' : 'Packs'} Tonight</span>
+              </button>
+            ))}
           </div>
         </SpotlightPanel>
       ) : (

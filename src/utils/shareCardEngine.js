@@ -1,8 +1,10 @@
 /**
  * Obsidian Hardware Studio Share Card Exporter
- * Renders crisp 960x540 dark brushed studio PNG telemetry cards for any Top-10 game
- * plus plain-text Discord/party-chat summaries.
+ * Renders crisp dark brushed studio PNG telemetry cards for any Top-10 game
+ * plus plain-text Discord/party-chat summaries with optional deep-link QR & clan tag.
  */
+
+import { MAX_QR_UTF8_BYTES, generateQrMatrix } from './qrCode.js';
 
 const POISON_CARD_TOKENS = new Set(['NaN', 'Infinity', '-Infinity', 'undefined']);
 
@@ -67,20 +69,49 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+function sanitizeShareUrl(raw) {
+  const cleaned = safeText(raw, '', 420).replace(/\s+/g, '');
+  if (!cleaned) return '';
+  return /^https?:\/\//i.test(cleaned) ? cleaned : '';
+}
+
+function encodeCompactQrUrl(rawUrl) {
+  const cleanUrl = sanitizeShareUrl(rawUrl);
+  if (!cleanUrl) return null;
+  try {
+    const enc = new TextEncoder();
+    let candidate = cleanUrl;
+    if (enc.encode(candidate).length > MAX_QR_UTF8_BYTES) {
+      const parsed = new URL(cleanUrl);
+      candidate = `${parsed.origin}${parsed.pathname}`;
+    }
+    if (enc.encode(candidate).length > MAX_QR_UTF8_BYTES) {
+      candidate = 'https://playunpause.com';
+    }
+    return generateQrMatrix(candidate);
+  } catch {
+    return null;
+  }
+}
+
 export function formatDiscordSummary(rawSpec = {}) {
   const spec = rawSpec && typeof rawSpec === 'object' ? rawSpec : {};
   const gameTitle = safeText(spec.gameTitle, 'Unpause', 80);
   const headline = safeText(spec.headline, 'Telemetry Spec', 120);
   const heroLabel = safeText(spec.heroLabel, 'RESULT', 60);
   const heroValue = safeText(spec.heroValue, '0', 80);
+  const clanTag = safeText(spec.clanTag, '', 16).toUpperCase();
+  const shareUrl = sanitizeShareUrl(spec.shareUrl);
   const safeRows = Array.isArray(spec.rows)
     ? spec.rows.filter((r) => r && typeof r === 'object').slice(0, 5)
     : [];
+  const headerPrefix = clanTag ? `[CLAN: ${clanTag}] ` : '';
+  const footerLine = shareUrl ? `Load & tweak live: ${shareUrl}` : 'playunpause.com';
   const lines = [
-    `**${gameTitle}** — ${headline}`,
+    `**${headerPrefix}${gameTitle}** — ${headline}`,
     `> **${heroLabel}:** \`${heroValue}\``,
     ...safeRows.map((r) => `• ${safeText(r.label, 'Metric', 60)}: **${safeText(r.value, '—', 80)}**`),
-    `playunpause.com`,
+    footerLine,
   ];
   return lines.join('\n');
 }
@@ -94,21 +125,30 @@ export function renderStudioSpecCardCanvas(rawSpec = {}) {
   const heroValue = safeText(spec.heroValue, '0', 80);
   const heroSub = safeText(spec.heroSub, '', 60);
   const accent = normalizeHexColor(spec.accentColor, '#FF5964');
+  const canvasBgHex = normalizeHexColor(spec.canvasBgHex, '#0B0E14');
+  const themePersonaLabel = safeText(
+    spec.themePersonaLabel,
+    'UNPAUSE // HARDWARE SPEC CARD',
+    48
+  ).toUpperCase();
+  const clanTag = safeText(spec.clanTag, '', 16).toUpperCase();
+  const shareUrl = sanitizeShareUrl(spec.shareUrl);
+  const qrMatrix = shareUrl ? encodeCompactQrUrl(shareUrl) : null;
   const rows = Array.isArray(spec.rows)
     ? spec.rows.filter((r) => r && typeof r === 'object')
     : [];
 
   const width = 960;
-  const height = 540;
+  const height = 592;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Obsidian studio background
+  // Obsidian studio background anchored to active world canvas hex
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, '#0B0E14');
+  bg.addColorStop(0, canvasBgHex);
   bg.addColorStop(1, '#121722');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
@@ -133,15 +173,16 @@ export function renderStudioSpecCardCanvas(rawSpec = {}) {
   ctx.fillStyle = accent;
   ctx.fill();
 
-  // Header brand + game
+  // Header brand + world persona + optional Pro Clan Tag
+  const rightMetaText = clanTag ? `[CLAN: ${clanTag}] · playunpause.com` : 'playunpause.com';
   ctx.fillStyle = accent;
   ctx.font = '700 16px "JetBrains Mono", monospace';
-  ctx.fillText('UNPAUSE // HARDWARE SPEC CARD', 60, 76);
+  ctx.fillText(fitCardText(ctx, themePersonaLabel, width - 410), 60, 76);
 
   ctx.fillStyle = '#9CA8BC';
   ctx.textAlign = 'right';
   ctx.font = '600 15px "JetBrains Mono", monospace';
-  ctx.fillText('playunpause.com', width - 60, 76);
+  ctx.fillText(fitCardText(ctx, rightMetaText, 300), width - 60, 76);
   ctx.textAlign = 'left';
 
   ctx.fillStyle = '#F3F6FA';
@@ -204,13 +245,42 @@ export function renderStudioSpecCardCanvas(rawSpec = {}) {
     ctx.fillText(fitCardText(ctx, safeText(row.value, '—', 80), cellW - 36), x + 18, y + 58);
   });
 
-  // Bottom bar
+  // Bottom bar + optional QR deep-link badge
+  const footerMaxW = qrMatrix ? width - 230 : width - 120;
+  if (shareUrl) {
+    ctx.fillStyle = accent;
+    ctx.font = '600 12px "JetBrains Mono", monospace';
+    ctx.fillText(fitCardText(ctx, `LIVE PRESET: ${shareUrl}`, footerMaxW), 60, height - 68);
+  }
+
   ctx.fillStyle = '#94A3B8';
   ctx.font = '500 12px "Inter", sans-serif';
   const bottomLine = gameTitle.toLowerCase().includes('minecraft')
     ? 'NOT AN OFFICIAL MINECRAFT PRODUCT · NOT ASSOCIATED WITH MOJANG OR MICROSOFT · No pop-up ads'
     : 'Unofficial fan telemetry · No pop-up ads · Zero trackers · Pure session math';
-  ctx.fillText(fitCardText(ctx, bottomLine, width - 120), 60, height - 48);
+  ctx.fillText(fitCardText(ctx, bottomLine, footerMaxW), 60, height - 46);
+
+  if (qrMatrix) {
+    const qrBoxSize = 78;
+    const qrX = width - 60 - qrBoxSize;
+    const qrY = height - 38 - qrBoxSize;
+    roundRectPath(ctx, qrX, qrY, qrBoxSize, qrBoxSize, 8);
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fill();
+    const n = qrMatrix.length;
+    const modPx = Math.max(1, Math.floor((qrBoxSize - 10) / n));
+    const drawSpan = modPx * n;
+    const ox = qrX + Math.floor((qrBoxSize - drawSpan) / 2);
+    const oy = qrY + Math.floor((qrBoxSize - drawSpan) / 2);
+    ctx.fillStyle = '#0B0E14';
+    for (let r = 0; r < n; r += 1) {
+      for (let c = 0; c < n; c += 1) {
+        if (qrMatrix[r][c]) {
+          ctx.fillRect(ox + c * modPx, oy + r * modPx, modPx, modPx);
+        }
+      }
+    }
+  }
 
   return canvas;
 }

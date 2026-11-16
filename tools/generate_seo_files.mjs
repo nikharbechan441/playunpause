@@ -39,11 +39,16 @@ function escapeXml(str) {
 
 function buildSitemapXml() {
   const routes = getSitemapRoutes();
+  const defaultLastmod =
+    TOP_GAMES.map((g) => g.patchMeta?.patchUpdatedIso)
+      .filter(Boolean)
+      .sort()
+      .pop() || '2026-11-16';
   const urls = routes
     .map(
       (r) => `  <url>
     <loc>${escapeXml(`${CANONICAL_ORIGIN}${r.path}`)}</loc>
-    <lastmod>${escapeXml(r.lastmod || '2026-11-14')}</lastmod>
+    <lastmod>${escapeXml(r.lastmod || defaultLastmod)}</lastmod>
     <changefreq>${escapeXml(r.changefreq || 'weekly')}</changefreq>
     <priority>${escapeXml(String(r.priority ?? '0.8'))}</priority>
   </url>`

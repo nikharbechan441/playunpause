@@ -1,5 +1,6 @@
-import React from 'react';
-import { DollarSign, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { DollarSign, ShieldCheck, Share2 } from 'lucide-react';
+import { renderSquadSplitCanvas, shareOrDownloadCanvas } from '../../utils/canvasCards.js';
 import { AnimatedValue, SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import { PinButton } from './GameStudioDock.jsx';
 
@@ -38,6 +39,52 @@ export default function GtaOnlineStudio({
   cayoEliteDollars,
 }) {
   const hostTakeHome = cayoResult.hostProfitAfterSetup + cayoEliteDollars;
+  const [splitExportMsg, setSplitExportMsg] = useState('');
+  const splitToastTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (splitToastTimerRef.current) clearTimeout(splitToastTimerRef.current);
+  }, []);
+
+  const handleSaveSplitPng = async () => {
+    playTick?.(soundEnabled, 840);
+    const targetName = CAYO_TARGETS.find((t) => t.val === cayoPrimaryVal)?.short || 'Cayo Perico';
+    const canvas = renderSquadSplitCanvas({
+      jobTitle: `CAYO PERICO · ${targetName.toUpperCase()} (${cayoPlayers}P${cayoHardMode ? ' HARD' : ''})`,
+      grossDollars: cayoResult.gross,
+      supportFeePct: 12,
+      supportFeeDollars: cayoResult.pavelCut + cayoResult.fenceCut,
+      netPoolDollars: cayoResult.netPool,
+      crewRows: [
+        {
+          name: 'Host',
+          role: cayoEliteBonus ? 'LEADER + ELITE' : 'LEADER',
+          pct: cayoResult.hostPct,
+          payout: hostTakeHome,
+        },
+        ...cayoResult.crewPayouts.map((cp) => ({
+          name: cp.label,
+          role: cayoEliteBonus ? 'CREW + ELITE' : 'CREW',
+          pct: cp.pct,
+          payout: cp.payout + cayoEliteDollars,
+        })),
+      ],
+    });
+    const res = await shareOrDownloadCanvas(
+      canvas,
+      `unpause-cayo-${cayoPlayers}p-split.png`,
+      'Cayo Perico Split Ledger'
+    );
+    const msg =
+      res?.method === 'shared'
+        ? 'Split PNG shared.'
+        : res?.method === 'downloaded'
+          ? 'Split PNG downloaded.'
+          : 'Could not export PNG.';
+    setSplitExportMsg(msg);
+    if (splitToastTimerRef.current) clearTimeout(splitToastTimerRef.current);
+    splitToastTimerRef.current = setTimeout(() => setSplitExportMsg(''), 4500);
+  };
 
   return (
     <div className="gs-studio-stack gs-kosatka-sonar">
@@ -52,15 +99,30 @@ export default function GtaOnlineStudio({
             <h2 className="gs-bench-heading">Vault Target &amp; 15%-Floor Crew Payout Split</h2>
           </div>
 
-          <PinButton
-            label="Pin Payout"
-            onClick={() =>
-              onPinSnapshot(
-                `${cayoPlayers}P Cayo (${cayoResult.hostPct}% Host)`,
-                `Host Net: $${hostTakeHome.toLocaleString('en-US')}`
-              )
-            }
-          />
+          <div className="gs-pill-cluster">
+            <button
+              type="button"
+              className="stage-dark-btn gs-export-btn"
+              onClick={handleSaveSplitPng}
+            >
+              <Share2 size={14} aria-hidden="true" />
+              <span>Save Split PNG</span>
+            </button>
+
+            <PinButton
+              label="Pin Payout"
+              onClick={() =>
+                onPinSnapshot(
+                  `${cayoPlayers}P Cayo (${cayoResult.hostPct}% Host)`,
+                  `Host Net: $${hostTakeHome.toLocaleString('en-US')}`
+                )
+              }
+            />
+          </div>
+        </div>
+
+        <div role="status" aria-live="polite">
+          {splitExportMsg && <div className="inline-status-note ok mono">{splitExportMsg}</div>}
         </div>
 
         <div className="gs-mc-coord-hero" aria-live="polite">

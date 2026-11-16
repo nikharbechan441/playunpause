@@ -9,6 +9,8 @@ import {
   Trash2,
   Bookmark,
   Sparkles,
+  Code2,
+  ExternalLink,
 } from 'lucide-react';
 import { SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import {
@@ -88,10 +90,16 @@ export function NumericField({
   );
 }
 
+const YOUTH_FIREWALL_GAMES = new Set(['minecraft', 'roblox', 'fortnite']);
+
 export function GameStudioSideDock({
   game,
   isPro,
+  isEmbed = false,
   onOpenProModal,
+  onOpenEmbedModal = null,
+  runtimeConfig = null,
+  clanTag = '',
   soundEnabled,
   gamePins,
   pinNotice,
@@ -105,6 +113,41 @@ export function GameStudioSideDock({
   copyText,
   extraMetaWidget = null,
 }) {
+  const [sharedPngToast, setSharedPngToast] = useState(false);
+  const pngToastTimerRef = useRef(null);
+
+  useEffect(() => {
+    setSharedPngToast(false);
+  }, [game?.id]);
+
+  useEffect(() => () => {
+    if (pngToastTimerRef.current) clearTimeout(pngToastTimerRef.current);
+  }, []);
+
+  const triggerPngToast = () => {
+    setSharedPngToast(true);
+    if (pngToastTimerRef.current) clearTimeout(pngToastTimerRef.current);
+    pngToastTimerRef.current = setTimeout(() => setSharedPngToast(false), 6000);
+  };
+
+  const patchLabel = [game?.patchMeta?.patchVersion, game?.patchMeta?.seasonLabel]
+    .filter(Boolean)
+    .join(' · ');
+
+  const gearOffer = game?.gearOffer;
+  const showGearBar =
+    !isEmbed &&
+    !YOUTH_FIREWALL_GAMES.has(game?.id) &&
+    Boolean(gearOffer && typeof gearOffer === 'object' && gearOffer.title);
+  const rawGearHref = gearOffer?.urlKey ? runtimeConfig?.affiliates?.[gearOffer.urlKey] : '';
+  const safeGearHref = /^https:\/\//i.test(String(rawGearHref || ''))
+    ? rawGearHref
+    : 'https://www.amazon.com/';
+
+  const showPostShareProNudge =
+    !isPro &&
+    (sharedPngToast || copiedKey === 'discord-spec' || copiedKey === 'share-url');
+
   return (
     <aside className="gs-side-dock" aria-label={`${game.shortTitle} telemetry & pins`}>
       {extraMetaWidget}
@@ -114,6 +157,8 @@ export function GameStudioSideDock({
           <TrendingUp size={15} color={game.accentColor} aria-hidden="true" />
           <h3>{game.proMetaTitle}</h3>
         </div>
+
+        {patchLabel && <div className="gw-patch-pill mono">{patchLabel}</div>}
 
         <div className="gs-meta-rows">
           {(game.proMetaRows || []).map((row) => (
@@ -136,6 +181,8 @@ export function GameStudioSideDock({
                   heroLabel: currentShareSpec.heroLabel,
                   heroValue: currentShareSpec.heroValue,
                   rows: currentShareSpec.rows,
+                  shareUrl: currentShareUrl,
+                  clanTag: isPro ? clanTag : '',
                 }),
                 'discord-spec',
                 currentShareUrl
@@ -161,7 +208,14 @@ export function GameStudioSideDock({
             className="stage-dark-btn gs-export-btn"
             onClick={() => {
               playSwitchTick(soundEnabled, 840);
-              downloadStudioSpecPng(currentShareSpec);
+              downloadStudioSpecPng({
+                ...currentShareSpec,
+                canvasBgHex: game.canvasHexObsidian,
+                themePersonaLabel: game.themePersonaLabel,
+                shareUrl: currentShareUrl,
+                clanTag: isPro ? clanTag : '',
+              });
+              triggerPngToast();
             }}
           >
             <Share2 size={14} aria-hidden="true" />
@@ -187,6 +241,20 @@ export function GameStudioSideDock({
                   : 'Copy Shareable Link'}
             </span>
           </button>
+
+          {!isEmbed && typeof onOpenEmbedModal === 'function' && (
+            <button
+              type="button"
+              className="subtle-pill-btn share-link-wide-btn"
+              onClick={() => {
+                playSwitchTick(soundEnabled, 740);
+                onOpenEmbedModal();
+              }}
+            >
+              <Code2 size={14} aria-hidden="true" />
+              <span>Embed / OBS Overlay</span>
+            </button>
+          )}
         </div>
 
         {shareFallbackUrl && (
@@ -207,23 +275,56 @@ export function GameStudioSideDock({
         )}
 
         <div role="status" aria-live="polite">
-          {copiedKey && (
+          {(copiedKey || sharedPngToast) && (
             <div
               className={`inline-status-note mono ${
-                String(copiedKey).startsWith('blocked:') ? 'err' : 'ok'
+                String(copiedKey || '').startsWith('blocked:') ? 'err' : 'ok'
               }`}
             >
               {copiedKey === 'share-url'
                 ? 'Shareable preset URL copied.'
                 : copiedKey === 'discord-spec'
-                  ? 'Discord summary copied.'
-                  : String(copiedKey).startsWith('blocked:')
+                  ? 'Discord summary + deep-link copied.'
+                  : String(copiedKey || '').startsWith('blocked:')
                     ? 'Clipboard blocked — use the URL box above or Save PNG.'
-                    : 'Pinned value copied.'}
+                    : sharedPngToast
+                      ? 'PNG card exported with preset QR.'
+                      : 'Pinned value copied.'}
             </div>
           )}
         </div>
+
+        {showPostShareProNudge && (
+          <div className="pin-limit-alert" role="note">
+            <span>Unlock [CLAN] PNG badges, synced checklists, and clean OBS embeds.</span>
+            <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
+              Sync Pass
+            </button>
+          </div>
+        )}
       </SpotlightPanel>
+
+      {showGearBar && (
+        <SpotlightPanel className="gs-gear-bar" aria-label={`${game.shortTitle} Pro-Gear hardware`}>
+          <div className="gs-gear-copy">
+            {gearOffer.label && <span className="gw-patch-pill mono">{gearOffer.label}</span>}
+            <strong>{gearOffer.title}</strong>
+            {gearOffer.sub && <p>{gearOffer.sub}</p>}
+            <small className="source-legal-note">
+              {gearOffer.disclosure || 'As an Amazon Associate I earn from qualifying purchases.'}
+            </small>
+          </div>
+          <a
+            href={safeGearHref}
+            target="_blank"
+            rel="sponsored nofollow noopener noreferrer"
+            className="secondary-key-btn"
+          >
+            <span>Shop Gear</span>
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
+        </SpotlightPanel>
+      )}
 
       <SpotlightPanel className="gs-pin-card">
         <div className="gs-pin-head">

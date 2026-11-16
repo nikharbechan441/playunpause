@@ -492,6 +492,139 @@
   }
 }
 
+/* ==================== 4B. PRO-GEAR BAR, CAMO CHECKLIST & DAILY XP ==================== */
+.gw-patch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 44%, var(--border-subtle));
+  background: var(--game-accent-soft, var(--bg-recessed));
+  color: var(--ink-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.gs-gear-bar {
+  margin-top: 12px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--game-accent) 34%, var(--border-subtle));
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gs-gear-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.gs-gear-copy strong {
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--ink-primary);
+}
+
+.gs-gear-copy p {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+
+.gs-gear-copy .source-legal-note {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+
+.gs-gear-bar .secondary-key-btn {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  text-decoration: none;
+  white-space: normal;
+  text-align: center;
+}
+
+.gs-camo-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 4px 2px 2px;
+}
+
+.gs-camo-checklist .filter-pill {
+  min-height: 44px;
+  height: auto;
+  min-width: 0;
+  width: 100%;
+  padding: 9px 11px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.gs-camo-checklist .filter-pill small {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.gs-camo-checklist .filter-pill.active small {
+  color: inherit;
+  opacity: 0.96;
+}
+
+.gs-daily-xp-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.gs-daily-xp-row .filter-pill {
+  min-height: 44px;
+  height: auto;
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+@media (max-width: 640px) {
+  .gs-daily-xp-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ==================== 5. REDUCED MOTION & FORCED COLORS ==================== */
 @media (prefers-reduced-motion: reduce) {
   .gw-float-slow,
@@ -520,7 +653,9 @@
 @media (forced-colors: active) {
   .gw-world-masthead,
   .gw-top-strip,
-  .gw-art-stage {
+  .gw-art-stage,
+  .gw-patch-pill,
+  .gs-gear-bar {
     border: 2px solid CanvasText !important;
     forced-color-adjust: auto;
   }

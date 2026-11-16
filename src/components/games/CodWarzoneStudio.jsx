@@ -1,5 +1,5 @@
-import React from 'react';
-import { Crosshair, ArrowLeftRight, Shield, Award } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Crosshair, ArrowLeftRight, Shield, Award, CheckSquare, Square, RotateCcw } from 'lucide-react';
 import { COD_MW4_WEAPONS } from '../../data/games/allGames.js';
 import {
   AnimatedValue,
@@ -7,6 +7,53 @@ import {
   SpotlightPanel,
 } from '../../utils/motionPrimitives.jsx';
 import { NumericField, PinButton } from './GameStudioDock.jsx';
+
+const CAMO_CHECKLIST_STORAGE_KEY = 'unpause_wz_camo_checklist_v1';
+
+const CAMO_WEAPON_SLOTS = Array.from({ length: 33 }, (_, idx) => {
+  const baseWeapon = COD_MW4_WEAPONS[idx];
+  if (baseWeapon) {
+    return {
+      id: `wz-${baseWeapon.id}`,
+      slotNum: idx + 1,
+      label: baseWeapon.name,
+      category: baseWeapon.category.split(' · ')[0] || 'Core',
+    };
+  }
+  const classLabels = [
+    'AR', 'AR', 'AR', 'SMG', 'SMG', 'SMG',
+    'LMG', 'LMG', 'LMG', 'Marksman', 'Marksman', 'Marksman',
+    'Sniper', 'Sniper', 'Sniper', 'Shotgun', 'Shotgun',
+    'Pistol', 'Pistol', 'Pistol', 'Launcher', 'Melee',
+  ];
+  const classType = classLabels[idx - COD_MW4_WEAPONS.length] || 'Primary';
+  return {
+    id: `wz-slot-${idx + 1}`,
+    slotNum: idx + 1,
+    label: `${classType} #${idx + 1}`,
+    category: classType,
+  };
+});
+
+const VALID_CAMO_IDS = new Set(CAMO_WEAPON_SLOTS.map((s) => s.id));
+
+function readStoredCamoSlots(fallbackCount) {
+  const safeCount = Math.max(0, Math.min(33, Number(fallbackCount) || 0));
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(CAMO_CHECKLIST_STORAGE_KEY);
+      if (raw !== null) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((id) => typeof id === 'string' && VALID_CAMO_IDS.has(id));
+        }
+      }
+    } catch {
+      // Fallback safely when storage is unavailable or malformed
+    }
+  }
+  return CAMO_WEAPON_SLOTS.slice(0, safeCount).map((s) => s.id);
+}
 
 const PLATE_PRESETS = [
   { hp: 300, plates: 3, label: '3 Plates', sub: '300 HP BR' },
@@ -63,6 +110,34 @@ export default function CodWarzoneStudio({
   const activeRpmA = useCustomStats ? customRpm : weaponAObj.rpm;
   const activeDmgA = useCustomStats ? customDmg : weaponAObj.damage;
   const nameA = useCustomStats ? `Custom (${activeDmgA} DMG)` : weaponAObj.name;
+  const [checkedCamoIds, setCheckedCamoIds] = useState(() => readStoredCamoSlots(camoClassCount));
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      window.localStorage.setItem(CAMO_CHECKLIST_STORAGE_KEY, JSON.stringify(checkedCamoIds));
+    } catch {
+      // Ignore quota errors cleanly
+    }
+  }, [checkedCamoIds]);
+
+  const syncCamoFromCount = (nextCount) => {
+    const clamped = Math.max(0, Math.min(33, Math.round(Number(nextCount) || 0)));
+    setCamoClassCount(clamped);
+    setCheckedCamoIds(CAMO_WEAPON_SLOTS.slice(0, clamped).map((s) => s.id));
+  };
+
+  const handleToggleCamoSlot = (slotId) => {
+    playTick?.(soundEnabled, 760);
+    const exists = checkedCamoIds.includes(slotId);
+    const next = exists
+      ? checkedCamoIds.filter((id) => id !== slotId)
+      : [...checkedCamoIds, slotId];
+    setCheckedCamoIds(next);
+    setCamoClassCount(next.length);
+  };
+
+  const nextCamoTargets = CAMO_WEAPON_SLOTS.filter((s) => !checkedCamoIds.includes(s.id)).slice(0, 2);
 
   const handleSwapWeapons = () => {
     playTick?.(soundEnabled, 740);
@@ -418,7 +493,7 @@ export default function CodWarzoneStudio({
                   aria-label={`Set ${num} weapons completed`}
                   onClick={() => {
                     playTick?.(soundEnabled, 760);
-                    setCamoClassCount(unlocked && num === camoClassCount ? num - 1 : num);
+                    syncCamoFromCount(unlocked && num === camoClassCount ? num - 1 : num);
                   }}
                 >
                   {num}
@@ -437,7 +512,7 @@ export default function CodWarzoneStudio({
                 fallback={21}
                 className="deck-input no-icon mono"
                 value={camoClassCount}
-                onCommit={setCamoClassCount}
+                onCommit={syncCamoFromCount}
               />
             </div>
             <div className="mg-field">
@@ -458,6 +533,50 @@ export default function CodWarzoneStudio({
                 <AnimatedValue value={camoMatchesLeft} suffix=" Matches" />
               </strong>
             </div>
+          </div>
+
+          <div className="gs-card-topbar">
+            <span className="mono gs-micro-label">
+              {nextCamoTargets.length > 0
+                ? `TONIGHT'S NEXT TARGETS: ${nextCamoTargets.map((t) => t.label).join(' · ')}`
+                : '33/33 MASTERY CAMO CHECKLIST COMPLETE'}
+            </span>
+            {checkedCamoIds.length > 0 && (
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => {
+                  playTick?.(soundEnabled, 660);
+                  syncCamoFromCount(0);
+                }}
+              >
+                <RotateCcw size={13} aria-hidden="true" />
+                <span>Reset Checklist</span>
+              </button>
+            )}
+          </div>
+
+          <div className="gs-camo-checklist" role="group" aria-label="Persisted 33-weapon mastery checklist">
+            {CAMO_WEAPON_SLOTS.map((slot) => {
+              const checked = checkedCamoIds.includes(slot.id);
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  aria-pressed={checked}
+                  className={`filter-pill ${checked ? 'active' : ''}`}
+                  onClick={() => handleToggleCamoSlot(slot.id)}
+                >
+                  {checked ? (
+                    <CheckSquare size={14} aria-hidden="true" />
+                  ) : (
+                    <Square size={14} aria-hidden="true" />
+                  )}
+                  <span>{slot.label}</span>
+                  <small className="mono">{slot.category}</small>
+                </button>
+              );
+            })}
           </div>
         </SpotlightPanel>
       )}

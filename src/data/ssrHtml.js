@@ -12,6 +12,7 @@ const GAME_LEGAL_NOTICE_MAP = new Map(TOP_GAMES.map((g) => [g.id, g.legalNotice 
 const GAME_CANVAS_OBSIDIAN_MAP = new Map(
   TOP_GAMES.map((g) => [g.id, g.canvasHexObsidian || '#0C0916'])
 );
+const GAME_PATCH_META_MAP = new Map(TOP_GAMES.map((g) => [g.id, g.patchMeta || null]));
 
 export function isStaticAssetPath(pathname) {
   const p = String(pathname || '');
@@ -325,6 +326,16 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
   );
 
   const schemaGraph = [];
+  const patchMeta = GAME_PATCH_META_MAP.get(activeGameId);
+  const dateModified = route.lastmod || patchMeta?.patchUpdatedIso || '2026-11-16';
+  schemaGraph.push({
+    '@type': 'WebPage',
+    '@id': `${canonicalUrl}#webpage`,
+    url: canonicalUrl,
+    name: route.title,
+    description: route.description,
+    dateModified,
+  });
   if (Array.isArray(route.breadcrumbs) && route.breadcrumbs.length > 0) {
     schemaGraph.push({
       '@type': 'BreadcrumbList',

@@ -76,6 +76,9 @@ export default function MultiGameToolDeck({
   isPro,
   isEmbed = false,
   onOpenProModal,
+  onOpenEmbedModal = null,
+  runtimeConfig = null,
+  clanTag = '',
   soundEnabled,
   savedPins = [],
   onSavePin,
@@ -1274,7 +1277,11 @@ export default function MultiGameToolDeck({
         <GameStudioSideDock
           game={game}
           isPro={isPro}
+          isEmbed={isEmbed}
           onOpenProModal={onOpenProModal}
+          onOpenEmbedModal={onOpenEmbedModal}
+          runtimeConfig={runtimeConfig}
+          clanTag={clanTag}
           soundEnabled={soundEnabled}
           gamePins={gamePins}
           pinNotice={pinNotice}

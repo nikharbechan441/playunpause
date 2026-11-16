@@ -13,7 +13,7 @@
 - [Safe Keypad Vault](https://playunpause.com/gta-6/safe-codes): Search GTA 6 safe codes by district, play interactive 10-key WebAudio sequences, copy 4-digit codes in one tap, and track cracked doors locally without ads.
 - [Squad Heist Splitter](https://playunpause.com/gta-6/heist-split): Split squad heist percentages to an exact 100%, auto-deduct NPC fees, export Crew Payout Slip PNGs to Discord, and model two-character story stock flips.
 - [Weeknight Route & Shield](https://playunpause.com/gta-6/night-run): Follow time-boxed 45m/90m/120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts with zero story spoilers.
-- [CoD / Warzone TTK](https://playunpause.com/cod-warzone): Compare Season 1 Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.
+- [CoD / Warzone TTK](https://playunpause.com/cod-warzone): Compare live Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.
 - [Fortnite XP Pace](https://playunpause.com/fortnite): Calculate daily XP and matches to reach Level 100, Level 140 V-Bucks break-even, or Level 200 Super Styles with Daily Quests, Creative & LEGO.
 - [Minecraft 8:1 Linker](https://playunpause.com/minecraft): Convert Overworld & Nether coordinates using exact Java/Bedrock Math.floor rules, test 128-block portal collisions, and triangulate Strongholds in 2 throws.
 - [EA FC 27 Tax & SBC](https://playunpause.com/ea-fc-27): Calculate exact 5% EA transfer tax, legal FUT market price-step break-evens, multi-card trading profits, and the exact 11-player SBC Excess-Rating solver.

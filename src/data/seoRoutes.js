@@ -711,9 +711,9 @@ function buildProgrammaticRoutes() {
       h1: 'How DLC Guns Let You Skip Launchers for 33-Weapon Mastery',
       preset: { studioTab: 'camo', weaponAId: 'krig-c', weaponBId: 'c9-smg', codHp: 300, codHeadshots: 1, codOpenBolt: true },
       description:
-        'Check your remaining weapon count for 33-weapon CoD Mastery Camo when swapping Launchers and Melee for Season 1 DLC rifles and SMGs. Instant free tracker.',
+        'Check remaining weapons for 33-weapon CoD Mastery Camo when swapping Launchers and Melee for post-launch DLC rifles and SMGs. Instant free tracker.',
       answer:
-        'Mastery unlocks once any 33 weapons clear base Gold/Diamond tiers. Replacing Launchers with Season 1 DLC assault rifles and SMGs preserves full eligibility while cutting camo frustration.',
+        'Mastery unlocks once any 33 weapons clear base Gold/Diamond tiers. Replacing Launchers with post-launch DLC assault rifles and SMGs preserves full eligibility while cutting camo frustration.',
     },
   ];
   for (const ec of extraCodSpecs) {
@@ -1613,11 +1613,11 @@ export const CORE_ROUTES = [
     changefreq: 'weekly',
     title: clampTitle('CoD Warzone 300 HP TTK & Camo Tracker — Unpause'),
     description: clampDesc(
-      'Compare Season 1 Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.'
+      'Compare live Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.'
     ),
-    h1: 'Call of Duty: Warzone & MW4 300 HP TTK Comparator',
+    h1: 'Call of Duty: Warzone 300 HP TTK Comparator',
     answerSummary:
-      'Compare 11 Season 1 weapon presets (including PPSh-41 +42ms & RAAL MG +50ms open-bolt delays) across 300 HP 3-plate Warzone and 100 HP Multiplayer, plus track 33-weapon Mastery Camo progress cleanly.',
+      'Compare 11 live Warzone weapon presets (including PPSh-41 +42ms & RAAL MG +50ms open-bolt delays) across 300 HP 3-plate BR and 100 HP Multiplayer, plus track 33-weapon Mastery Camo progress cleanly.',
     ogImage: '/og/cod-warzone.png',
     ogAlt: 'Unpause Warzone 300 HP TTK Comparator & Camo Tracker',
     breadcrumbs: [
@@ -1845,7 +1845,22 @@ export const LEGAL_ROUTES = Object.entries(LEGAL_META).map(([key, meta]) => ({
   faqs: [],
 }));
 
-export const PSEO_ROUTES = buildProgrammaticRoutes();
+const GAME_LASTMOD_MAP = new Map(
+  TOP_GAMES.map((g) => [g.id, g.patchMeta?.patchUpdatedIso || '2026-11-16'])
+);
+
+function attachRouteLastmod(routes) {
+  for (const r of routes) {
+    if (!r.lastmod) {
+      r.lastmod = GAME_LASTMOD_MAP.get(r.gameId) || '2026-11-16';
+    }
+  }
+  return routes;
+}
+
+export const PSEO_ROUTES = attachRouteLastmod(buildProgrammaticRoutes());
+attachRouteLastmod(CORE_ROUTES);
+attachRouteLastmod(LEGAL_ROUTES);
 export const ALL_CANONICAL_ROUTES = [...CORE_ROUTES, ...PSEO_ROUTES, ...LEGAL_ROUTES];
 
 const CANONICAL_ROUTE_MAP = new Map(ALL_CANONICAL_ROUTES.map((r) => [r.path, r]));

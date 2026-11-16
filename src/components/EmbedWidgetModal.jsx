@@ -10,9 +10,12 @@ export default function EmbedWidgetModal({
   onClose,
   initialEmbedPath = '/embed/gta-6/storage',
   soundEnabled = true,
+  isPro = false,
+  onOpenProModal = null,
 }) {
   const [selectedEmbedPath, setSelectedEmbedPath] = useState(initialEmbedPath);
   const [embedHeight, setEmbedHeight] = useState(620);
+  const [obsMode, setObsMode] = useState(false);
   const [copiedMode, setCopiedMode] = useState('');
   const [copyFeedback, setCopyFeedback] = useState('');
   const cardRef = useRef(null);
@@ -28,6 +31,7 @@ export default function EmbedWidgetModal({
     if (isOpen) {
       const valid = EMBED_ROUTES.some((r) => r.path === initialEmbedPath);
       setSelectedEmbedPath(valid ? initialEmbedPath : EMBED_ROUTES[0]?.path || '/embed/gta-6/storage');
+      setObsMode(false);
       setCopiedMode('');
       setCopyFeedback('');
     }
@@ -38,15 +42,17 @@ export default function EmbedWidgetModal({
     [selectedEmbedPath]
   );
 
-  const iframeSrc = `${CANONICAL_ORIGIN}${activeRoute?.path || '/embed/gta-6/storage'}`;
+  const obsActive = Boolean(obsMode && isPro);
+  const iframeSrc = `${CANONICAL_ORIGIN}${activeRoute?.path || '/embed/gta-6/storage'}${obsActive ? '?mode=obs' : ''}`;
   const parentHref = `${CANONICAL_ORIGIN}${activeRoute?.parentCanonicalPath || '/gta-6/storage'}`;
   const parentLabel = activeRoute?.shortLabel || 'Unpause Calculator';
 
-  const htmlSnippet = useMemo(
-    () =>
-      `<iframe src="${iframeSrc}" title="${parentLabel} — Unpause" width="100%" height="${embedHeight}" loading="lazy" class="unpause-embed-frame"></iframe>\n<p>Powered by <a href="${parentHref}" target="_blank" rel="noopener">Unpause ${parentLabel}</a></p>`,
-    [iframeSrc, parentLabel, embedHeight, parentHref]
-  );
+  const htmlSnippet = useMemo(() => {
+    if (obsActive) {
+      return `<iframe src="${iframeSrc}" title="${parentLabel} — Unpause OBS Overlay" width="100%" height="${embedHeight}" loading="lazy" class="unpause-embed-frame unpause-obs-frame"></iframe>`;
+    }
+    return `<iframe src="${iframeSrc}" title="${parentLabel} — Unpause" width="100%" height="${embedHeight}" loading="lazy" class="unpause-embed-frame"></iframe>\n<p>Powered by <a href="${parentHref}" target="_blank" rel="noopener">Unpause ${parentLabel}</a></p>`;
+  }, [iframeSrc, parentLabel, embedHeight, parentHref, obsActive]);
 
   const markdownSnippet = useMemo(
     () => `[${parentLabel} — Interactive Calculator on Unpause](${parentHref})`,
@@ -163,8 +169,49 @@ export default function EmbedWidgetModal({
           </div>
         </div>
 
+        <div className="embed-obs-box">
+          <div className="embed-obs-head">
+            <div>
+              <span className="section-label">Streamer &amp; OBS Overlay Mode (?mode=obs)</span>
+              <p className="embed-obs-sub">
+                {isPro
+                  ? 'Stripped unbranded HUD framing for OBS Browser Sources and stream overlays.'
+                  : 'Remove embed chrome & attribution footer for OBS Browser Sources via one-time Sync Pass.'}
+              </p>
+            </div>
+            {isPro ? (
+              <button
+                type="button"
+                aria-pressed={obsMode}
+                className={`filter-pill ${obsMode ? 'active' : ''}`}
+                onClick={() => {
+                  playSwitchTick(soundEnabled, 740);
+                  setObsMode((prev) => !prev);
+                }}
+              >
+                {obsMode ? 'OBS Mode On' : 'Enable OBS Mode'}
+              </button>
+            ) : (
+              onOpenProModal && (
+                <button
+                  type="button"
+                  className="secondary-key-btn"
+                  onClick={() => {
+                    playSwitchTick(soundEnabled, 740);
+                    onOpenProModal();
+                  }}
+                >
+                  Unlock OBS Mode · Sync Pass
+                </button>
+              )
+            )}
+          </div>
+        </div>
+
         <label htmlFor="embed-code-output" className="section-label">
-          HTML Embed Code (Responsive Iframe + Dofollow Source Link)
+          {obsActive
+            ? 'OBS Browser-Source Embed Code & Direct URL'
+            : 'HTML Embed Code (Responsive Iframe + Dofollow Source Link)'}
         </label>
         <textarea
           id="embed-code-output"

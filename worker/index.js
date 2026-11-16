@@ -674,7 +674,21 @@ async function handleWorkerRequest(request, env = {}) {
             xboxCardUrl:
               env.AFFILIATE_XBOX_CARD_URL ||
               'https://www.amazon.com/s?k=WD+BLACK+C50+1TB+Expansion+Card+Xbox',
-            topupsUrl: env.AFFILIATE_TOPUPS_URL || 'https://www.loaded.com/',
+            topupsUrl:
+              env.AFFILIATE_TOPUPS_URL ||
+              'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card',
+            fpsMouseUrl:
+              env.AFFILIATE_FPS_MOUSE_URL ||
+              'https://www.amazon.com/s?k=Superlight+Wireless+Esports+Gaming+Mouse',
+            heKeyboardUrl:
+              env.AFFILIATE_HE_KEYBOARD_URL ||
+              'https://www.amazon.com/s?k=Rapid+Trigger+Hall+Effect+Gaming+Keyboard',
+            proControllerUrl:
+              env.AFFILIATE_PRO_CONTROLLER_URL ||
+              'https://www.amazon.com/s?k=Hall+Effect+Pro+Esports+Controller',
+            monitor240Url:
+              env.AFFILIATE_MONITOR_240_URL ||
+              'https://www.amazon.com/s?k=240Hz+1ms+Esports+Gaming+Monitor',
           },
           demoUnlockEnabled: isDemoUnlockPermitted(env),
           activeSponsor,

@@ -1,7 +1,37 @@
-import React from 'react';
-import { Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Zap, CheckCircle2, Circle } from 'lucide-react';
 import { AnimatedValue, SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import { NumericField, PinButton } from './GameStudioDock.jsx';
+
+const FORTNITE_DAILY_XP_STORAGE_KEY = 'unpause_fn_daily_xp_v1';
+
+const DAILY_XP_TASKS = [
+  { id: 'br-dailies', label: 'BR Dailies +60K', xp: 60000 },
+  { id: 'creative-cap', label: 'Creative +300K', xp: 300000 },
+  { id: 'lego-session', label: 'LEGO +120K', xp: 120000 },
+];
+
+function getUtcDateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readUtcDailyChecklist(utcDate) {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem(FORTNITE_DAILY_XP_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || parsed.utcDate !== utcDate) {
+      return [];
+    }
+    const validIds = new Set(DAILY_XP_TASKS.map((t) => t.id));
+    return Array.isArray(parsed.checkedIds)
+      ? parsed.checkedIds.filter((id) => typeof id === 'string' && validIds.has(id))
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 const PASS_MILESTONES = [
   { lvl: 1, label: 'Lv 1 Start', sub: 'Season Drop' },
@@ -28,6 +58,33 @@ export default function FortniteStudio({
   setFnIncludeLego,
   fortniteResult,
 }) {
+  const utcDate = getUtcDateKey();
+  const [checkedDailyIds, setCheckedDailyIds] = useState(() => readUtcDailyChecklist(utcDate));
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      window.localStorage.setItem(
+        FORTNITE_DAILY_XP_STORAGE_KEY,
+        JSON.stringify({ utcDate, checkedIds: checkedDailyIds })
+      );
+    } catch {
+      // Ignore storage write errors cleanly
+    }
+  }, [utcDate, checkedDailyIds]);
+
+  const bankedDailyXp = DAILY_XP_TASKS.reduce(
+    (sum, task) => (checkedDailyIds.includes(task.id) ? sum + task.xp : sum),
+    0
+  );
+
+  const toggleDailyTask = (taskId) => {
+    playTick?.(soundEnabled, 740);
+    setCheckedDailyIds((prev) =>
+      prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]
+    );
+  };
+
   const curRailPct = Math.min(100, Math.max(0, ((fnCurLvl - 1) / 199) * 100));
   const tgtRailPct = Math.min(100, Math.max(0, ((fnTargetLvl - 1) / 199) * 100));
 
@@ -242,6 +299,38 @@ export default function FortniteStudio({
               ~<AnimatedValue value={fortniteResult.estMatchesPerDay} suffix=" Matches" />
             </strong>
           </div>
+        </div>
+      </SpotlightPanel>
+
+      {/* TODAY'S UTC DAILY XP CHECKLIST (LOCAL-ONLY, ZERO MINOR DATA) */}
+      <SpotlightPanel className="gs-work-card">
+        <div className="gs-card-topbar">
+          <h3 className="mg-subcard-title">Today&apos;s UTC Daily XP Checklist ({utcDate})</h3>
+          <span className="district-pill mono">
+            {bankedDailyXp.toLocaleString('en-US')} / 480,000 XP
+          </span>
+        </div>
+
+        <div className="gs-daily-xp-row" role="group" aria-label="Today's UTC Daily XP Checklist">
+          {DAILY_XP_TASKS.map((task) => {
+            const done = checkedDailyIds.includes(task.id);
+            return (
+              <button
+                key={task.id}
+                type="button"
+                aria-pressed={done}
+                className={`filter-pill ${done ? 'active' : ''}`}
+                onClick={() => toggleDailyTask(task.id)}
+              >
+                {done ? (
+                  <CheckCircle2 size={15} aria-hidden="true" />
+                ) : (
+                  <Circle size={15} aria-hidden="true" />
+                )}
+                <span>{task.label}</span>
+              </button>
+            );
+          })}
         </div>
       </SpotlightPanel>
     </div>

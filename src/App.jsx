@@ -120,6 +120,10 @@ const DEFAULT_RUNTIME = {
     ps5SsdUrl: 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink',
     xboxCardUrl: 'https://www.amazon.com/s?k=WD+Black+C50+Xbox+Expansion+Card',
     topupsUrl: 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card',
+    fpsMouseUrl: 'https://www.amazon.com/s?k=wireless+superlight+esports+gaming+mouse+8k',
+    heKeyboardUrl: 'https://www.amazon.com/s?k=hall+effect+rapid+trigger+gaming+keyboard',
+    proControllerUrl: 'https://www.amazon.com/s?k=pro+esports+wireless+controller+hall+effect',
+    monitor240Url: 'https://www.amazon.com/s?k=240hz+gaming+monitor+1ms+oled',
   },
   activeSponsor: null,
 };
@@ -214,6 +218,7 @@ const DEFAULT_DECK_STATE = {
   soundEnabled: true,
   isPro: false,
   deckCode: null,
+  clanTag: '',
   ...createEmptySyncState(),
 };
 
@@ -223,12 +228,18 @@ function sanitizeDeckCode(val) {
   return /^UP-[A-Z0-9]{6,12}$/.test(trimmed) ? trimmed : null;
 }
 
+function sanitizeClanTag(val) {
+  if (typeof val !== 'string') return '';
+  return val.replace(/[^a-zA-Z0-9 _\-.]/g, '').trim().slice(0, 16);
+}
+
 function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode = false } = {}) {
   const safeBase = {
     theme: baseFallback.theme === 'paper' ? 'paper' : 'obsidian',
     soundEnabled: typeof baseFallback.soundEnabled === 'boolean' ? baseFallback.soundEnabled : true,
     isPro: baseFallback.isPro === true && Boolean(sanitizeDeckCode(baseFallback.deckCode)),
     deckCode: sanitizeDeckCode(baseFallback.deckCode),
+    clanTag: sanitizeClanTag(baseFallback.clanTag),
     crackedSafeIds: sanitizeStringIdArray(baseFallback.crackedSafeIds),
     checkedRouteIds: sanitizeStringIdArray(baseFallback.checkedRouteIds),
     savedPins: sanitizeSavedPins(baseFallback.savedPins),
@@ -253,6 +264,7 @@ function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode 
     soundEnabled: typeof raw.soundEnabled === 'boolean' ? raw.soundEnabled : safeBase.soundEnabled,
     isPro: rawIsPro && Boolean(cleanDeckCode),
     deckCode: cleanDeckCode,
+    clanTag: typeof raw.clanTag === 'string' ? sanitizeClanTag(raw.clanTag) : safeBase.clanTag,
     crackedSafeIds: rawSafes !== null ? sanitizeStringIdArray(rawSafes) : safeBase.crackedSafeIds,
     checkedRouteIds: Array.isArray(raw.checkedRouteIds)
       ? sanitizeStringIdArray(raw.checkedRouteIds)
@@ -313,6 +325,7 @@ function readRouteFromLocation() {
     return {
       route: resolveSeoRequest('/').route,
       isEmbed: false,
+      obsMode: false,
       notFound: false,
       gameId: 'gta-6',
       tab: 'storage',
@@ -349,10 +362,13 @@ function readRouteFromLocation() {
   const route = seoRes.route || null;
   const preset = parseSafeStatefulQuery(effectiveParams, route?.preset || {});
   const qs = effectiveParams.toString();
+  const isEmbedReq = Boolean(seoRes.isEmbed);
+  const obsMode = Boolean(isEmbedReq && effectiveParams.get('mode') === 'obs');
 
   return {
     route,
-    isEmbed: Boolean(seoRes.isEmbed),
+    isEmbed: isEmbedReq,
+    obsMode,
     notFound: Boolean(seoRes.notFound),
     gameId: route?.gameId || 'gta-6',
     tab: route?.tab || 'storage',
@@ -457,6 +473,8 @@ export default function App() {
     [activeGameId]
   );
 
+  const isObsOverlayActive = Boolean(isEmbed && deckState.isPro && routeState.obsMode);
+
   const isPreLaunch = nowMs < Date.parse(GAME_PACKS[0].nzUnlockIsoUtc || '2026-11-18T11:00:00Z');
   const daysUntilLaunch = useMemo(
     () => Math.max(0, Math.ceil((Date.parse('2026-11-19T00:00:00Z') - nowMs) / 86400000)),
@@ -467,11 +485,16 @@ export default function App() {
     [nowMs]
   );
 
-  // Sync theme, active game world attribute, and browser address-bar color cleanly
+  // Sync theme, active game world attribute, OBS mode flag, and browser address-bar color cleanly
   useEffect(() => {
     const theme = deckState.theme === 'paper' ? 'paper' : 'obsidian';
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-game', activeGamePack.id);
+    if (isObsOverlayActive) {
+      document.documentElement.setAttribute('data-obs-mode', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-obs-mode');
+    }
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
       metaTheme.setAttribute(
@@ -486,6 +509,7 @@ export default function App() {
     activeGamePack.id,
     activeGamePack.canvasHexPaper,
     activeGamePack.canvasHexObsidian,
+    isObsOverlayActive,
   ]);
 
   // Persist user companion state (unless explicitly cleared via Clear Local Data)
@@ -570,6 +594,13 @@ export default function App() {
               ps5SsdUrl: sanitizeHttpsUrl(cfg.affiliates?.ps5SsdUrl, prev.affiliates.ps5SsdUrl),
               xboxCardUrl: sanitizeHttpsUrl(cfg.affiliates?.xboxCardUrl, prev.affiliates.xboxCardUrl),
               topupsUrl: sanitizeHttpsUrl(cfg.affiliates?.topupsUrl, prev.affiliates.topupsUrl),
+              fpsMouseUrl: sanitizeHttpsUrl(cfg.affiliates?.fpsMouseUrl, prev.affiliates.fpsMouseUrl),
+              heKeyboardUrl: sanitizeHttpsUrl(cfg.affiliates?.heKeyboardUrl, prev.affiliates.heKeyboardUrl),
+              proControllerUrl: sanitizeHttpsUrl(
+                cfg.affiliates?.proControllerUrl,
+                prev.affiliates.proControllerUrl
+              ),
+              monitor240Url: sanitizeHttpsUrl(cfg.affiliates?.monitor240Url, prev.affiliates.monitor240Url),
             },
             activeSponsor:
               cfg.activeSponsor && safeSponsorUrl
@@ -1095,6 +1126,7 @@ export default function App() {
       soundEnabled: deckState.soundEnabled,
       isPro: false,
       deckCode: null,
+      clanTag: '',
       ...createEmptySyncState(),
     });
     setClaimInput('');
@@ -1201,8 +1233,8 @@ export default function App() {
       {
         q: `What does the one-time $${runtimeConfig.passPriceUsd} Sync Pass unlock?`,
         a: activeGamePack.isGta6Suite
-          ? `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, CSV/JSON deck export, and 14-day hassle-free refunds.`
-          : `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 120 cross-game pinned builds, 16 cloud profile slots, CSV/JSON deck export, and 14-day hassle-free refunds.`,
+          ? `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, unbranded OBS embeds (?mode=obs), custom Clan Tag PNGs, and 14-day hassle-free refunds.`
+          : `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), up to 120 synced pins & session checklists, unbranded OBS embeds (?mode=obs), custom Clan Tag PNG cards, and 14-day hassle-free refunds.`,
       },
     ];
   }, [activeRoute?.faqs, activeGamePack.faqs, activeGamePack.isGta6Suite, runtimeConfig.passPriceUsd]);
@@ -1281,8 +1313,12 @@ export default function App() {
   );
 
   if (isEmbed) {
+    const embedBackUrl = `${CANONICAL_ORIGIN}${activeRoute?.parentCanonicalPath || '/'}`;
     return (
-      <div data-game={activeGamePack.id} className="embed-root-wrap game-theme-shell">
+      <div
+        data-game={activeGamePack.id}
+        className={`embed-root-wrap game-theme-shell ${isObsOverlayActive ? 'obs-overlay-mode' : ''}`}
+      >
         <main className="app-shell embed-app-shell">
           <ChunkErrorBoundary resetKey={`embed:${activeGamePack.id}:${activeTab}`}>
             <Suspense
@@ -1355,6 +1391,8 @@ export default function App() {
                   isPro={deckState.isPro}
                   isEmbed
                   onOpenProModal={handleOpenProTarget}
+                  runtimeConfig={runtimeConfig}
+                  clanTag={deckState.isPro ? deckState.clanTag : ''}
                   soundEnabled={deckState.soundEnabled}
                   savedPins={deckState.savedPins}
                   onSavePin={handleSavePin}
@@ -1367,31 +1405,39 @@ export default function App() {
             </Suspense>
           </ChunkErrorBoundary>
 
-          <footer className="embed-attribution-bar">
-            <div className="embed-attribution-copy">
-              <span>Powered by</span>
-              <a
-                href={`${CANONICAL_ORIGIN}${activeRoute?.parentCanonicalPath || '/'}`}
-                target="_blank"
-                rel="noopener"
-              >
-                Unpause ({activeRoute?.shortLabel || 'playunpause.com'}) ↗
-              </a>
-            </div>
-            <button
-              type="button"
-              className="subtle-pill-btn"
-              onClick={toggleTheme}
-              aria-label={
-                deckState.theme === 'paper'
-                  ? 'Switch to Obsidian dark studio theme'
-                  : 'Switch to Paper daylight theme'
-              }
-            >
-              {deckState.theme === 'paper' ? <Moon size={14} /> : <Sun size={14} />}
-              <span>{deckState.theme === 'paper' ? 'Dark' : 'Light'}</span>
-            </button>
-          </footer>
+          {!isObsOverlayActive && (
+            <footer className="embed-attribution-bar embed-backlink-bar">
+              <div className="embed-attribution-copy">
+                <span>Powered by</span>
+                <a href={embedBackUrl} target="_blank" rel="noopener">
+                  Unpause ({activeRoute?.shortLabel || 'playunpause.com'}) ↗
+                </a>
+              </div>
+              <div className="embed-attribution-actions">
+                <a
+                  href={embedBackUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="subtle-pill-btn embed-open-tool-link"
+                >
+                  <span>Open Full Tool ↗</span>
+                </a>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={toggleTheme}
+                  aria-label={
+                    deckState.theme === 'paper'
+                      ? 'Switch to Obsidian dark studio theme'
+                      : 'Switch to Paper daylight theme'
+                  }
+                >
+                  {deckState.theme === 'paper' ? <Moon size={14} /> : <Sun size={14} />}
+                  <span>{deckState.theme === 'paper' ? 'Dark' : 'Light'}</span>
+                </button>
+              </div>
+            </footer>
+          )}
         </main>
       </div>
     );
@@ -1933,6 +1979,9 @@ export default function App() {
               game={activeGamePack}
               isPro={deckState.isPro}
               onOpenProModal={() => setShowProModal(true)}
+              onOpenEmbedModal={() => setShowEmbedModal(true)}
+              runtimeConfig={runtimeConfig}
+              clanTag={deckState.isPro ? deckState.clanTag : ''}
               soundEnabled={deckState.soundEnabled}
               savedPins={deckState.savedPins}
               onSavePin={handleSavePin}
@@ -1953,11 +2002,14 @@ export default function App() {
             <aside className="contextual-sync-bar" aria-label="Cross-device Sync reminder">
               <div>
                 <strong>
-                  {syncInventory.totalSavedCount} items saved on this browser only
+                  {activeGamePack.isGta6Suite
+                    ? `${syncInventory.totalSavedCount} items saved on this browser only`
+                    : `${syncInventory.pinsCount} saved ${activeGamePack.shortTitle} build${syncInventory.pinsCount === 1 ? '' : 's'} on this browser`}
                 </strong>
                 <span>
-                  {syncInventory.consolesCount} consoles · {syncInventory.rostersCount} rosters ·{' '}
-                  {syncInventory.pinsCount} pins · {syncInventory.safesCount} safes. Sync to your phone for ${runtimeConfig.passPriceUsd} once or export free CSV/JSON.
+                  {activeGamePack.isGta6Suite
+                    ? `${syncInventory.consolesCount} consoles · ${syncInventory.rostersCount} rosters · ${syncInventory.pinsCount} pins · ${syncInventory.safesCount} safes. Sync Phone ↔ PC via QR for $${runtimeConfig.passPriceUsd} once.`
+                    : `Sync pinned builds & multi-night checklists Phone ↔ PC via QR + unlock Custom Clan PNGs & OBS mode (?mode=obs) for $${runtimeConfig.passPriceUsd} once.`}
                 </span>
               </div>
               <div className="contextual-sync-actions">
@@ -2265,7 +2317,7 @@ export default function App() {
                 <p className="selector-modal-sub">
                   {activeGamePack.isGta6Suite
                     ? 'Zero subscriptions. Instant Phone ↔ PC QR sync for 16 console setups, 16 squad crew rosters, 120 cross-game pins, and extended GTA VI weeknight chains.'
-                    : 'Zero subscriptions. Instant Phone ↔ PC QR sync for 120 cross-game pinned builds, 16 cloud profile slots, and desktop ↔ mobile continuity.'}
+                    : 'Zero subscriptions. Instant Phone ↔ PC QR sync for 120 cross-game pinned builds, multi-night session checklists, unbranded OBS embeds (?mode=obs), and Custom Clan Tag PNG cards.'}
                 </p>
               </div>
               <button
@@ -2287,25 +2339,47 @@ export default function App() {
                 </span>
               </div>
               <div className="pass-inventory-pills">
-                <span>
-                  <HardDrive size={12} aria-hidden="true" />
-                  {syncInventory.consolesCount}{' '}
-                  {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Consoles
-                </span>
-                <span>
-                  <Users size={12} aria-hidden="true" />
-                  {syncInventory.rostersCount}{' '}
-                  {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Rosters
-                </span>
-                <span>
-                  <Bookmark size={12} aria-hidden="true" />
-                  {syncInventory.pinsCount}{' '}
-                  {deckState.isPro ? `/ ${MAX_SYNC_PINS_TOTAL}` : 'Pins (5/game free)'}
-                </span>
-                <span>
-                  <KeyRound size={12} aria-hidden="true" />
-                  {syncInventory.safesCount} Safes · {syncInventory.routesCount} Routes
-                </span>
+                {activeGamePack.isGta6Suite ? (
+                  <>
+                    <span>
+                      <HardDrive size={12} aria-hidden="true" />
+                      {syncInventory.consolesCount}{' '}
+                      {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Consoles
+                    </span>
+                    <span>
+                      <Users size={12} aria-hidden="true" />
+                      {syncInventory.rostersCount}{' '}
+                      {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Rosters
+                    </span>
+                    <span>
+                      <Bookmark size={12} aria-hidden="true" />
+                      {syncInventory.pinsCount}{' '}
+                      {deckState.isPro ? `/ ${MAX_SYNC_PINS_TOTAL}` : 'Pins (5/game free)'}
+                    </span>
+                    <span>
+                      <KeyRound size={12} aria-hidden="true" />
+                      {syncInventory.safesCount} Safes · {syncInventory.routesCount} Routes
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      <Bookmark size={12} aria-hidden="true" />
+                      {syncInventory.pinsCount}{' '}
+                      {deckState.isPro ? `/ ${MAX_SYNC_PINS_TOTAL} Synced Pins` : 'Pins (5/game free)'}
+                    </span>
+                    <span>
+                      <Check size={12} aria-hidden="true" />
+                      {deckState.isPro ? 'OBS Mode (?mode=obs) On' : 'OBS Mode Unlocked via Pass'}
+                    </span>
+                    <span>
+                      <Sparkles size={12} aria-hidden="true" />
+                      {deckState.isPro && deckState.clanTag
+                        ? `Clan Tag: [${deckState.clanTag}]`
+                        : 'Clan Tag PNGs (Pass)'}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -2352,6 +2426,32 @@ export default function App() {
                 <p className="sync-bearer-note">
                   Security notice: Your <code>UP-</code> code and QR link act as a bearer sync key. Keep screenshots private.
                 </p>
+
+                <div className="pro-clan-field">
+                  <label htmlFor="pro-clan-tag-input" className="section-label">
+                    Custom Clan / Creator PNG Badge (Pro · Max 16 Chars)
+                  </label>
+                  <input
+                    id="pro-clan-tag-input"
+                    type="text"
+                    maxLength={16}
+                    className="deck-input no-icon mono"
+                    placeholder="e.g. TEAM-ALPHA"
+                    value={deckState.clanTag}
+                    onChange={(e) =>
+                      setDeckState((prev) => ({
+                        ...prev,
+                        clanTag: e.target.value.replace(/[^a-zA-Z0-9 _\-.]/g, '').slice(0, 16),
+                      }))
+                    }
+                    onBlur={() =>
+                      setDeckState((prev) => ({
+                        ...prev,
+                        clanTag: sanitizeClanTag(prev.clanTag),
+                      }))
+                    }
+                  />
+                </div>
 
                 <div className="sync-actions-row">
                   <button
@@ -2413,17 +2513,19 @@ export default function App() {
                   <div className="pass-feature-item">
                     <HardDrive size={14} color="var(--teal-dark)" aria-hidden="true" />
                     <span>
-                      {activeGamePack.isGta6Suite ? '16 Console & Squad Presets' : '16 Cloud Profile Slots'}
+                      {activeGamePack.isGta6Suite ? '16 Console & Squad Presets' : 'Unlimited Saved Pins & Checklists'}
                     </span>
                   </div>
                   <div className="pass-feature-item">
                     <Bookmark size={14} color="var(--gold)" aria-hidden="true" />
-                    <span>120 Cross-Game Saved Pins</span>
+                    <span>
+                      {activeGamePack.isGta6Suite ? '120 Cross-Game Saved Pins' : 'Unbranded OBS Mode (?mode=obs)'}
+                    </span>
                   </div>
                   <div className="pass-feature-item">
                     <Clock size={14} color="var(--game-accent)" aria-hidden="true" />
                     <span>
-                      {activeGamePack.isGta6Suite ? '90m & 120m Weeknight Routes' : 'CSV & JSON Preset Export'}
+                      {activeGamePack.isGta6Suite ? '90m & 120m Weeknight Routes' : 'Custom Clan Tag on Share PNGs'}
                     </span>
                   </div>
                 </div>
@@ -2611,7 +2713,7 @@ export default function App() {
                   Book 24h Header Sponsor Slot (${runtimeConfig.sponsorPriceUsd}/day)
                 </h2>
                 <p className="selector-modal-sub">
-                  Single clean text-pill above free calculator views across GTA VI, CoD: MW4, Minecraft &amp; EA Sports FC 27. Zero pop-ups or malware banners.
+                  Single clean text-pill above free calculator tools across all 10 live Unpause games (GTA VI, CoD: Warzone, Fortnite, Minecraft, EA FC 27, Roblox, CS2, Valorant, Apex Legends &amp; GTA Online). Zero pop-ups or tracking scripts.
                 </p>
               </div>
               <button
@@ -2697,6 +2799,11 @@ export default function App() {
               onClose={() => setShowEmbedModal(false)}
               initialEmbedPath={currentEmbedPath}
               soundEnabled={deckState.soundEnabled}
+              isPro={deckState.isPro}
+              onOpenProModal={() => {
+                setShowEmbedModal(false);
+                setShowProModal(true);
+              }}
             />
           </Suspense>
         </ChunkErrorBoundary>
