@@ -466,15 +466,26 @@ export default function App() {
     [nowMs]
   );
 
-  // Sync theme attribute and browser address-bar color cleanly
+  // Sync theme, active game world attribute, and browser address-bar color cleanly
   useEffect(() => {
     const theme = deckState.theme === 'paper' ? 'paper' : 'obsidian';
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-game', activeGamePack.id);
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute('content', theme === 'paper' ? '#F4F3EF' : '#0B0E14');
+      metaTheme.setAttribute(
+        'content',
+        theme === 'paper'
+          ? activeGamePack.canvasHexPaper || '#F4F3EF'
+          : activeGamePack.canvasHexObsidian || '#0B0E14'
+      );
     }
-  }, [deckState.theme]);
+  }, [
+    deckState.theme,
+    activeGamePack.id,
+    activeGamePack.canvasHexPaper,
+    activeGamePack.canvasHexObsidian,
+  ]);
 
   // Persist user companion state (unless explicitly cleared via Clear Local Data)
   useEffect(() => {
@@ -1734,6 +1745,9 @@ export default function App() {
           )}
           <div className="consumer-masthead-top">
             <div>
+              {activeGamePack.themePersonaLabel && (
+                <span className="game-world-kicker">{activeGamePack.themePersonaLabel}</span>
+              )}
               <h1 className="consumer-h1">
                 {activeRoute?.h1 ||
                   ({
@@ -1780,15 +1794,20 @@ export default function App() {
               </div>
             </div>
           )}
-          {activeGamePack.sourceNote && (
+          {(activeGamePack.sourceNote || activeGamePack.legalNotice) && (
             <div className="source-verified-bar">
-              <span className="source-verified-pill">
-                <Check size={14} color="var(--teal-dark)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>{activeGamePack.sourceNote}</span>
-              </span>
+              {activeGamePack.sourceNote && (
+                <span className="source-verified-pill">
+                  <Check size={14} color="var(--teal-dark)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span>{activeGamePack.sourceNote}</span>
+                </span>
+              )}
               <span style={{ fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
                 100% Free Core Tools · Runs Locally Once Loaded
               </span>
+              {activeGamePack.legalNotice && (
+                <span className="source-legal-note">{activeGamePack.legalNotice}</span>
+              )}
             </div>
           )}
         </section>

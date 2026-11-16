@@ -5,7 +5,7 @@
 /* ==================== 1. PER-GAME ISOLATION SHELL & CHROME ==================== */
 .game-theme-shell {
   position: relative;
-  border-radius: var(--radius-xl);
+  border-radius: var(--game-radius-panel, var(--radius-xl));
 }
 
 .game-theme-shell::before {
@@ -14,179 +14,889 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.55;
-  transition: opacity 0.45s ease;
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
 
-.game-theme-shell > * {
+.embed-app-shell .game-theme-shell::before {
+  opacity: 0.72;
+}
+
+.game-theme-shell > *:not(.mobile-bottom-rail):not(.modal-backdrop):not(.skip-to-tool-link) {
   position: relative;
   z-index: 1;
 }
 
-/* Domain-native surface atmosphere for each of the 10 supported games */
+/* ==================== 1A. FULL-PAGE WORLD PALETTES (OBSIDIAN + PAPER) ==================== */
+/* 1. GTA VI — Vice Dusk Synthwave Horizon */
+:root[data-game='gta-6'],
 .game-theme-shell[data-game='gta-6'],
 .gs-workspace[data-game='gta-6'] {
-  --game-accent: #ff5964;
-  --game-accent-soft: rgba(255, 89, 100, 0.14);
-  --game-accent-ring: rgba(255, 89, 100, 0.38);
-  --studio-grid-color: rgba(44, 229, 181, 0.05);
-  --studio-glow-a: rgba(44, 229, 181, 0.09);
-  --studio-glow-b: rgba(255, 79, 100, 0.07);
+  --bg-canvas: #0c0916;
+  --bg-surface: #151026;
+  --bg-recessed: #1e1736;
+  --bg-elevated: #271e45;
+  --border-subtle: rgba(214, 203, 235, 0.14);
+  --border-strong: rgba(255, 92, 138, 0.34);
+  --ink-primary: #faf7ff;
+  --ink-secondary: #d6cbeb;
+  --ink-muted: #aca0c8;
+  --game-accent: #ff5c8a;
+  --game-accent-soft: rgba(255, 92, 138, 0.14);
+  --game-accent-ring: rgba(255, 92, 138, 0.42);
+  --select-accent: #22d3ee;
+  --select-soft: rgba(34, 211, 238, 0.14);
+  --select-ring: rgba(34, 211, 238, 0.4);
+  --cta-bg: #ff5c8a;
+  --cta-ink: #080b10;
+  --game-radius-panel: 18px;
+  --game-radius-card: 14px;
+  --game-radius-control: 12px;
+  --studio-grid-color: rgba(34, 211, 238, 0.055);
+  --studio-glow-a: rgba(255, 92, 138, 0.15);
+  --studio-glow-b: rgba(34, 211, 238, 0.12);
 }
+
+:root[data-theme='paper'][data-game='gta-6'],
+:root[data-theme='paper'] .game-theme-shell[data-game='gta-6'],
+:root[data-theme='paper'] .gs-workspace[data-game='gta-6'] {
+  --bg-canvas: #faf2ee;
+  --bg-surface: #ffffff;
+  --bg-recessed: #f2e5df;
+  --bg-elevated: #fff8f5;
+  --border-subtle: rgba(27, 18, 36, 0.13);
+  --border-strong: rgba(162, 19, 73, 0.36);
+  --ink-primary: #1b1224;
+  --ink-secondary: #473556;
+  --ink-muted: #5f4b70;
+  --game-accent: #a21349;
+  --game-accent-soft: rgba(162, 19, 73, 0.1);
+  --game-accent-ring: rgba(162, 19, 73, 0.34);
+  --select-accent: #0e7490;
+  --select-soft: rgba(14, 116, 144, 0.1);
+  --select-ring: rgba(14, 116, 144, 0.34);
+  --cta-bg: #a21349;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 18px;
+  --game-radius-card: 14px;
+  --game-radius-control: 12px;
+  --studio-grid-color: rgba(162, 19, 73, 0.05);
+  --studio-glow-a: rgba(162, 19, 73, 0.075);
+  --studio-glow-b: rgba(14, 116, 144, 0.07);
+}
+
+/* 2. Call of Duty: Warzone — Night-Vision Tactical Ops */
+:root[data-game='cod-warzone'],
 .game-theme-shell[data-game='cod-warzone'],
 .gs-workspace[data-game='cod-warzone'] {
+  --bg-canvas: #0a0d0b;
+  --bg-surface: #111612;
+  --bg-recessed: #181f1a;
+  --bg-elevated: #202922;
+  --border-subtle: rgba(196, 208, 194, 0.14);
+  --border-strong: rgba(251, 113, 133, 0.38);
+  --ink-primary: #eef4ec;
+  --ink-secondary: #c4d0c2;
+  --ink-muted: #97a696;
   --game-accent: #fb7185;
   --game-accent-soft: rgba(251, 113, 133, 0.14);
-  --game-accent-ring: rgba(251, 113, 133, 0.38);
-  --studio-grid-color: rgba(251, 113, 133, 0.06);
+  --game-accent-ring: rgba(251, 113, 133, 0.4);
+  --select-accent: #4ade80;
+  --select-soft: rgba(74, 222, 128, 0.14);
+  --select-ring: rgba(74, 222, 128, 0.38);
+  --cta-bg: #fb7185;
+  --cta-ink: #080b10;
+  --game-radius-panel: 3px;
+  --game-radius-card: 2px;
+  --game-radius-control: 2px;
+  --studio-grid-color: rgba(74, 222, 128, 0.055);
   --studio-glow-a: rgba(251, 113, 133, 0.11);
-  --studio-glow-b: rgba(245, 158, 11, 0.07);
+  --studio-glow-b: rgba(74, 222, 128, 0.08);
 }
+
+:root[data-theme='paper'][data-game='cod-warzone'],
+:root[data-theme='paper'] .game-theme-shell[data-game='cod-warzone'],
+:root[data-theme='paper'] .gs-workspace[data-game='cod-warzone'] {
+  --bg-canvas: #f1efe6;
+  --bg-surface: #fbf9f2;
+  --bg-recessed: #e6e2d5;
+  --bg-elevated: #ffffff;
+  --border-subtle: rgba(21, 26, 20, 0.16);
+  --border-strong: rgba(159, 18, 57, 0.38);
+  --ink-primary: #151a14;
+  --ink-secondary: #384236;
+  --ink-muted: #525e4e;
+  --game-accent: #9f1239;
+  --game-accent-soft: rgba(159, 18, 57, 0.1);
+  --game-accent-ring: rgba(159, 18, 57, 0.34);
+  --select-accent: #166534;
+  --select-soft: rgba(22, 101, 52, 0.1);
+  --select-ring: rgba(22, 101, 52, 0.34);
+  --cta-bg: #9f1239;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 3px;
+  --game-radius-card: 2px;
+  --game-radius-control: 2px;
+  --studio-grid-color: rgba(21, 26, 20, 0.06);
+  --studio-glow-a: rgba(159, 18, 57, 0.06);
+  --studio-glow-b: rgba(22, 101, 52, 0.06);
+}
+
+/* 3. Minecraft — Pixel Block-Grid & Bevel World */
+:root[data-game='minecraft'],
 .game-theme-shell[data-game='minecraft'],
 .gs-workspace[data-game='minecraft'] {
+  --bg-canvas: #0f1411;
+  --bg-surface: #18201b;
+  --bg-recessed: #212c25;
+  --bg-elevated: #2a382f;
+  --border-subtle: rgba(197, 213, 200, 0.18);
+  --border-strong: rgba(52, 211, 153, 0.38);
+  --ink-primary: #f2f7f2;
+  --ink-secondary: #c5d5c8;
+  --ink-muted: #99ae9d;
   --game-accent: #34d399;
-  --game-accent-soft: rgba(52, 211, 153, 0.14);
-  --game-accent-ring: rgba(52, 211, 153, 0.36);
+  --game-accent-soft: rgba(52, 211, 153, 0.15);
+  --game-accent-ring: rgba(52, 211, 153, 0.4);
+  --select-accent: #34d399;
+  --select-soft: rgba(52, 211, 153, 0.15);
+  --select-ring: rgba(52, 211, 153, 0.4);
+  --cta-bg: #34d399;
+  --cta-ink: #080b10;
+  --game-radius-panel: 0px;
+  --game-radius-card: 0px;
+  --game-radius-control: 0px;
   --studio-grid-color: rgba(52, 211, 153, 0.065);
   --studio-glow-a: rgba(52, 211, 153, 0.11);
   --studio-glow-b: rgba(168, 85, 247, 0.09);
 }
+
+:root[data-theme='paper'][data-game='minecraft'],
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'],
+:root[data-theme='paper'] .gs-workspace[data-game='minecraft'] {
+  --bg-canvas: #eceee7;
+  --bg-surface: #f8f9f4;
+  --bg-recessed: #dee2d7;
+  --bg-elevated: #ffffff;
+  --border-subtle: rgba(20, 29, 22, 0.2);
+  --border-strong: rgba(6, 95, 70, 0.42);
+  --ink-primary: #141d16;
+  --ink-secondary: #354538;
+  --ink-muted: #4e6152;
+  --game-accent: #065f46;
+  --game-accent-soft: rgba(6, 95, 70, 0.1);
+  --game-accent-ring: rgba(6, 95, 70, 0.34);
+  --select-accent: #065f46;
+  --select-soft: rgba(6, 95, 70, 0.1);
+  --select-ring: rgba(6, 95, 70, 0.34);
+  --cta-bg: #065f46;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 0px;
+  --game-radius-card: 0px;
+  --game-radius-control: 0px;
+  --studio-grid-color: rgba(20, 29, 22, 0.065);
+  --studio-glow-a: rgba(6, 95, 70, 0.06);
+  --studio-glow-b: rgba(107, 33, 168, 0.05);
+}
+
+/* 4. Counter-Strike 2 — Buy-Menu Industrial Tactical */
+:root[data-game='cs2'],
 .game-theme-shell[data-game='cs2'],
 .gs-workspace[data-game='cs2'] {
+  --bg-canvas: #0c1017;
+  --bg-surface: #131924;
+  --bg-recessed: #1a2230;
+  --bg-elevated: #232d3e;
+  --border-subtle: rgba(198, 208, 223, 0.15);
+  --border-strong: rgba(245, 158, 11, 0.38);
+  --ink-primary: #f3f6fb;
+  --ink-secondary: #c6d0df;
+  --ink-muted: #97a4b8;
   --game-accent: #f59e0b;
   --game-accent-soft: rgba(245, 158, 11, 0.15);
-  --game-accent-ring: rgba(245, 158, 11, 0.36);
+  --game-accent-ring: rgba(245, 158, 11, 0.38);
+  --select-accent: #38bdf8;
+  --select-soft: rgba(56, 189, 248, 0.14);
+  --select-ring: rgba(56, 189, 248, 0.38);
+  --cta-bg: #f59e0b;
+  --cta-ink: #080b10;
+  --game-radius-panel: 4px;
+  --game-radius-card: 3px;
+  --game-radius-control: 3px;
   --studio-grid-color: rgba(56, 189, 248, 0.055);
-  --studio-glow-a: rgba(245, 158, 11, 0.1);
-  --studio-glow-b: rgba(56, 189, 248, 0.08);
+  --studio-glow-a: rgba(245, 158, 11, 0.11);
+  --studio-glow-b: rgba(56, 189, 248, 0.09);
 }
+
+:root[data-theme='paper'][data-game='cs2'],
+:root[data-theme='paper'] .game-theme-shell[data-game='cs2'],
+:root[data-theme='paper'] .gs-workspace[data-game='cs2'] {
+  --bg-canvas: #eff2f6;
+  --bg-surface: #ffffff;
+  --bg-recessed: #e2e7ee;
+  --bg-elevated: #f8fafc;
+  --border-subtle: rgba(16, 23, 34, 0.14);
+  --border-strong: rgba(146, 64, 14, 0.38);
+  --ink-primary: #101722;
+  --ink-secondary: #334155;
+  --ink-muted: #4c5b70;
+  --game-accent: #92400e;
+  --game-accent-soft: rgba(146, 64, 14, 0.1);
+  --game-accent-ring: rgba(146, 64, 14, 0.34);
+  --select-accent: #075985;
+  --select-soft: rgba(7, 89, 133, 0.1);
+  --select-ring: rgba(7, 89, 133, 0.32);
+  --cta-bg: #92400e;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 4px;
+  --game-radius-card: 3px;
+  --game-radius-control: 3px;
+  --studio-grid-color: rgba(16, 23, 34, 0.05);
+  --studio-glow-a: rgba(146, 64, 14, 0.06);
+  --studio-glow-b: rgba(7, 89, 133, 0.06);
+}
+
+/* 5. Valorant — Sharp Brutalist Tactical Protocol */
+:root[data-game='valorant'],
 .game-theme-shell[data-game='valorant'],
 .gs-workspace[data-game='valorant'] {
+  --bg-canvas: #0f1923;
+  --bg-surface: #162330;
+  --bg-recessed: #1e2e3e;
+  --bg-elevated: #26394c;
+  --border-subtle: rgba(203, 213, 225, 0.15);
+  --border-strong: rgba(251, 113, 133, 0.4);
+  --ink-primary: #f8f7f4;
+  --ink-secondary: #cbd5e1;
+  --ink-muted: #9ba8b8;
   --game-accent: #fb7185;
   --game-accent-soft: rgba(251, 113, 133, 0.15);
-  --game-accent-ring: rgba(251, 113, 133, 0.38);
-  --studio-grid-color: rgba(244, 63, 94, 0.06);
-  --studio-glow-a: rgba(244, 63, 94, 0.12);
-  --studio-glow-b: rgba(45, 212, 191, 0.07);
+  --game-accent-ring: rgba(251, 113, 133, 0.42);
+  --select-accent: #fb7185;
+  --select-soft: rgba(251, 113, 133, 0.15);
+  --select-ring: rgba(251, 113, 133, 0.42);
+  --cta-bg: #fb7185;
+  --cta-ink: #080b10;
+  --game-radius-panel: 2px;
+  --game-radius-card: 2px;
+  --game-radius-control: 0px;
+  --studio-grid-color: rgba(251, 113, 133, 0.06);
+  --studio-glow-a: rgba(251, 113, 133, 0.13);
+  --studio-glow-b: rgba(45, 212, 191, 0.08);
 }
+
+:root[data-theme='paper'][data-game='valorant'],
+:root[data-theme='paper'] .game-theme-shell[data-game='valorant'],
+:root[data-theme='paper'] .gs-workspace[data-game='valorant'] {
+  --bg-canvas: #ece8e1;
+  --bg-surface: #faf8f4;
+  --bg-recessed: #e0dbd2;
+  --bg-elevated: #ffffff;
+  --border-subtle: rgba(15, 25, 35, 0.16);
+  --border-strong: rgba(159, 18, 57, 0.4);
+  --ink-primary: #0f1923;
+  --ink-secondary: #334150;
+  --ink-muted: #485464;
+  --game-accent: #9f1239;
+  --game-accent-soft: rgba(159, 18, 57, 0.1);
+  --game-accent-ring: rgba(159, 18, 57, 0.34);
+  --select-accent: #9f1239;
+  --select-soft: rgba(159, 18, 57, 0.1);
+  --select-ring: rgba(159, 18, 57, 0.34);
+  --cta-bg: #9f1239;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 2px;
+  --game-radius-card: 2px;
+  --game-radius-control: 0px;
+  --studio-grid-color: rgba(15, 25, 35, 0.055);
+  --studio-glow-a: rgba(159, 18, 57, 0.07);
+  --studio-glow-b: rgba(15, 118, 110, 0.05);
+}
+
+/* 6. EA Sports FC 27 — Floodlit Stadium & Pitch World */
+:root[data-game='ea-fc-27'],
 .game-theme-shell[data-game='ea-fc-27'],
 .gs-workspace[data-game='ea-fc-27'] {
+  --bg-canvas: #08130e;
+  --bg-surface: #0f1d16;
+  --bg-recessed: #16281f;
+  --bg-elevated: #1e3529;
+  --border-subtle: rgba(196, 218, 203, 0.14);
+  --border-strong: rgba(52, 211, 153, 0.36);
+  --ink-primary: #f2fbf5;
+  --ink-secondary: #c4dacb;
+  --ink-muted: #95b09e;
   --game-accent: #34d399;
   --game-accent-soft: rgba(52, 211, 153, 0.15);
-  --game-accent-ring: rgba(52, 211, 153, 0.36);
-  --studio-grid-color: rgba(16, 185, 129, 0.06);
-  --studio-glow-a: rgba(16, 185, 129, 0.12);
-  --studio-glow-b: rgba(251, 191, 36, 0.08);
+  --game-accent-ring: rgba(52, 211, 153, 0.38);
+  --select-accent: #fbbf24;
+  --select-soft: rgba(251, 191, 36, 0.14);
+  --select-ring: rgba(251, 191, 36, 0.36);
+  --cta-bg: #34d399;
+  --cta-ink: #080b10;
+  --game-radius-panel: 16px;
+  --game-radius-card: 12px;
+  --game-radius-control: 10px;
+  --studio-grid-color: rgba(52, 211, 153, 0.055);
+  --studio-glow-a: rgba(16, 185, 129, 0.13);
+  --studio-glow-b: rgba(251, 191, 36, 0.09);
 }
+
+:root[data-theme='paper'][data-game='ea-fc-27'],
+:root[data-theme='paper'] .game-theme-shell[data-game='ea-fc-27'],
+:root[data-theme='paper'] .gs-workspace[data-game='ea-fc-27'] {
+  --bg-canvas: #f1f6f2;
+  --bg-surface: #ffffff;
+  --bg-recessed: #e2ede5;
+  --bg-elevated: #f8fcf9;
+  --border-subtle: rgba(15, 33, 23, 0.13);
+  --border-strong: rgba(6, 95, 70, 0.36);
+  --ink-primary: #0f2117;
+  --ink-secondary: #324a3b;
+  --ink-muted: #4a6554;
+  --game-accent: #065f46;
+  --game-accent-soft: rgba(6, 95, 70, 0.1);
+  --game-accent-ring: rgba(6, 95, 70, 0.32);
+  --select-accent: #92400e;
+  --select-soft: rgba(146, 64, 14, 0.1);
+  --select-ring: rgba(146, 64, 14, 0.32);
+  --cta-bg: #065f46;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 16px;
+  --game-radius-card: 12px;
+  --game-radius-control: 10px;
+  --studio-grid-color: rgba(6, 95, 70, 0.05);
+  --studio-glow-a: rgba(6, 95, 70, 0.065);
+  --studio-glow-b: rgba(146, 64, 14, 0.055);
+}
+
+/* 7. Fortnite — Battle-Royale Storm-Verse */
+:root[data-game='fortnite'],
 .game-theme-shell[data-game='fortnite'],
 .gs-workspace[data-game='fortnite'] {
+  --bg-canvas: #0f0b1f;
+  --bg-surface: #181330;
+  --bg-recessed: #221b42;
+  --bg-elevated: #2c2454;
+  --border-subtle: rgba(204, 208, 238, 0.15);
+  --border-strong: rgba(56, 189, 248, 0.4);
+  --ink-primary: #f5f6ff;
+  --ink-secondary: #ccd0ee;
+  --ink-muted: #9ea4ce;
   --game-accent: #38bdf8;
   --game-accent-soft: rgba(56, 189, 248, 0.15);
-  --game-accent-ring: rgba(56, 189, 248, 0.36);
+  --game-accent-ring: rgba(56, 189, 248, 0.4);
+  --select-accent: #facc15;
+  --select-soft: rgba(250, 204, 21, 0.14);
+  --select-ring: rgba(250, 204, 21, 0.38);
+  --cta-bg: #38bdf8;
+  --cta-ink: #080b10;
+  --game-radius-panel: 20px;
+  --game-radius-card: 16px;
+  --game-radius-control: 14px;
   --studio-grid-color: rgba(56, 189, 248, 0.06);
-  --studio-glow-a: rgba(56, 189, 248, 0.12);
-  --studio-glow-b: rgba(168, 85, 247, 0.1);
+  --studio-glow-a: rgba(56, 189, 248, 0.14);
+  --studio-glow-b: rgba(168, 85, 247, 0.13);
 }
+
+:root[data-theme='paper'][data-game='fortnite'],
+:root[data-theme='paper'] .game-theme-shell[data-game='fortnite'],
+:root[data-theme='paper'] .gs-workspace[data-game='fortnite'] {
+  --bg-canvas: #f2f5fc;
+  --bg-surface: #ffffff;
+  --bg-recessed: #e5eaf7;
+  --bg-elevated: #f8faff;
+  --border-subtle: rgba(19, 22, 45, 0.13);
+  --border-strong: rgba(7, 89, 133, 0.36);
+  --ink-primary: #13162d;
+  --ink-secondary: #363e63;
+  --ink-muted: #4e5882;
+  --game-accent: #075985;
+  --game-accent-soft: rgba(7, 89, 133, 0.1);
+  --game-accent-ring: rgba(7, 89, 133, 0.34);
+  --select-accent: #075985;
+  --select-soft: rgba(7, 89, 133, 0.1);
+  --select-ring: rgba(7, 89, 133, 0.34);
+  --cta-bg: #075985;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 20px;
+  --game-radius-card: 16px;
+  --game-radius-control: 14px;
+  --studio-grid-color: rgba(7, 89, 133, 0.05);
+  --studio-glow-a: rgba(7, 89, 133, 0.07);
+  --studio-glow-b: rgba(109, 40, 217, 0.06);
+}
+
+/* 8. Roblox — Maker Studio Baseplate & Block Ledge */
+:root[data-game='roblox'],
 .game-theme-shell[data-game='roblox'],
 .gs-workspace[data-game='roblox'] {
-  --game-accent: #818cf8;
-  --game-accent-soft: rgba(129, 140, 248, 0.15);
-  --game-accent-ring: rgba(129, 140, 248, 0.38);
-  --studio-grid-color: rgba(129, 140, 248, 0.065);
-  --studio-glow-a: rgba(129, 140, 248, 0.12);
-  --studio-glow-b: rgba(44, 229, 181, 0.08);
-}
-.game-theme-shell[data-game='apex-legends'],
-.gs-workspace[data-game='apex-legends'] {
-  --game-accent: #fb923c;
-  --game-accent-soft: rgba(251, 146, 60, 0.15);
-  --game-accent-ring: rgba(251, 146, 60, 0.38);
-  --studio-grid-color: rgba(239, 68, 68, 0.055);
-  --studio-glow-a: rgba(239, 68, 68, 0.12);
-  --studio-glow-b: rgba(56, 189, 248, 0.08);
-}
-.game-theme-shell[data-game='gta-v'],
-.gs-workspace[data-game='gta-v'] {
-  --game-accent: #2ce5b5;
-  --game-accent-soft: rgba(44, 229, 181, 0.14);
-  --game-accent-ring: rgba(44, 229, 181, 0.36);
-  --studio-grid-color: rgba(34, 211, 238, 0.06);
-  --studio-glow-a: rgba(34, 211, 238, 0.11);
+  --bg-canvas: #12141e;
+  --bg-surface: #1a1d2b;
+  --bg-recessed: #24283a;
+  --bg-elevated: #2e3349;
+  --border-subtle: rgba(199, 206, 222, 0.16);
+  --border-strong: rgba(156, 167, 255, 0.38);
+  --ink-primary: #f5f7fc;
+  --ink-secondary: #c7cede;
+  --ink-muted: #9ca6bd;
+  --game-accent: #9ca7ff;
+  --game-accent-soft: rgba(156, 167, 255, 0.16);
+  --game-accent-ring: rgba(156, 167, 255, 0.42);
+  --select-accent: #9ca7ff;
+  --select-soft: rgba(156, 167, 255, 0.16);
+  --select-ring: rgba(156, 167, 255, 0.42);
+  --cta-bg: #9ca7ff;
+  --cta-ink: #080b10;
+  --game-radius-panel: 10px;
+  --game-radius-card: 8px;
+  --game-radius-control: 6px;
+  --studio-grid-color: rgba(156, 167, 255, 0.07);
+  --studio-glow-a: rgba(129, 140, 248, 0.13);
   --studio-glow-b: rgba(44, 229, 181, 0.08);
 }
 
-.game-theme-shell[data-game]::before {
+:root[data-theme='paper'][data-game='roblox'],
+:root[data-theme='paper'] .game-theme-shell[data-game='roblox'],
+:root[data-theme='paper'] .gs-workspace[data-game='roblox'] {
+  --bg-canvas: #f3f5f8;
+  --bg-surface: #ffffff;
+  --bg-recessed: #e6eaf0;
+  --bg-elevated: #fafbfd;
+  --border-subtle: rgba(20, 25, 38, 0.15);
+  --border-strong: rgba(67, 56, 202, 0.36);
+  --ink-primary: #141926;
+  --ink-secondary: #374151;
+  --ink-muted: #4d596c;
+  --game-accent: #4338ca;
+  --game-accent-soft: rgba(67, 56, 202, 0.1);
+  --game-accent-ring: rgba(67, 56, 202, 0.34);
+  --select-accent: #4338ca;
+  --select-soft: rgba(67, 56, 202, 0.1);
+  --select-ring: rgba(67, 56, 202, 0.34);
+  --cta-bg: #4338ca;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 10px;
+  --game-radius-card: 8px;
+  --game-radius-control: 6px;
+  --studio-grid-color: rgba(67, 56, 202, 0.06);
+  --studio-glow-a: rgba(67, 56, 202, 0.065);
+  --studio-glow-b: rgba(15, 118, 110, 0.05);
+}
+
+/* 9. Apex Legends — Frontier Dropship Telemetry */
+:root[data-game='apex-legends'],
+.game-theme-shell[data-game='apex-legends'],
+.gs-workspace[data-game='apex-legends'] {
+  --bg-canvas: #130e0e;
+  --bg-surface: #1c1515;
+  --bg-recessed: #261d1d;
+  --bg-elevated: #322626;
+  --border-subtle: rgba(223, 206, 202, 0.15);
+  --border-strong: rgba(251, 146, 60, 0.38);
+  --ink-primary: #fcf6f4;
+  --ink-secondary: #dfceca;
+  --ink-muted: #b59e9a;
+  --game-accent: #fb923c;
+  --game-accent-soft: rgba(251, 146, 60, 0.15);
+  --game-accent-ring: rgba(251, 146, 60, 0.4);
+  --select-accent: #fb923c;
+  --select-soft: rgba(251, 146, 60, 0.15);
+  --select-ring: rgba(251, 146, 60, 0.4);
+  --cta-bg: #fb923c;
+  --cta-ink: #080b10;
+  --game-radius-panel: 6px;
+  --game-radius-card: 4px;
+  --game-radius-control: 4px;
+  --studio-grid-color: rgba(251, 146, 60, 0.055);
+  --studio-glow-a: rgba(239, 68, 68, 0.13);
+  --studio-glow-b: rgba(251, 146, 60, 0.09);
+}
+
+:root[data-theme='paper'][data-game='apex-legends'],
+:root[data-theme='paper'] .game-theme-shell[data-game='apex-legends'],
+:root[data-theme='paper'] .gs-workspace[data-game='apex-legends'] {
+  --bg-canvas: #f6f2ee;
+  --bg-surface: #ffffff;
+  --bg-recessed: #eae2dc;
+  --bg-elevated: #fcf9f6;
+  --border-subtle: rgba(29, 20, 19, 0.15);
+  --border-strong: rgba(153, 27, 27, 0.38);
+  --ink-primary: #1d1413;
+  --ink-secondary: #4a3735;
+  --ink-muted: #644e4b;
+  --game-accent: #991b1b;
+  --game-accent-soft: rgba(153, 27, 27, 0.1);
+  --game-accent-ring: rgba(153, 27, 27, 0.34);
+  --select-accent: #991b1b;
+  --select-soft: rgba(153, 27, 27, 0.1);
+  --select-ring: rgba(153, 27, 27, 0.34);
+  --cta-bg: #991b1b;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 6px;
+  --game-radius-card: 4px;
+  --game-radius-control: 4px;
+  --studio-grid-color: rgba(153, 27, 27, 0.05);
+  --studio-glow-a: rgba(153, 27, 27, 0.065);
+  --studio-glow-b: rgba(194, 65, 12, 0.05);
+}
+
+/* 10. GTA Online — Heist Sonar & Wireframe Terminal */
+:root[data-game='gta-v'],
+.game-theme-shell[data-game='gta-v'],
+.gs-workspace[data-game='gta-v'] {
+  --bg-canvas: #061311;
+  --bg-surface: #0c1e1b;
+  --bg-recessed: #122b27;
+  --bg-elevated: #193833;
+  --border-subtle: rgba(190, 224, 216, 0.15);
+  --border-strong: rgba(44, 229, 181, 0.36);
+  --ink-primary: #ecfcf8;
+  --ink-secondary: #bee0d8;
+  --ink-muted: #8db6ae;
+  --game-accent: #2ce5b5;
+  --game-accent-soft: rgba(44, 229, 181, 0.14);
+  --game-accent-ring: rgba(44, 229, 181, 0.38);
+  --select-accent: #2ce5b5;
+  --select-soft: rgba(44, 229, 181, 0.14);
+  --select-ring: rgba(44, 229, 181, 0.38);
+  --cta-bg: #2ce5b5;
+  --cta-ink: #080b10;
+  --game-radius-panel: 6px;
+  --game-radius-card: 6px;
+  --game-radius-control: 4px;
+  --studio-grid-color: rgba(44, 229, 181, 0.06);
+  --studio-glow-a: rgba(44, 229, 181, 0.12);
+  --studio-glow-b: rgba(34, 211, 238, 0.09);
+}
+
+:root[data-theme='paper'][data-game='gta-v'],
+:root[data-theme='paper'] .game-theme-shell[data-game='gta-v'],
+:root[data-theme='paper'] .gs-workspace[data-game='gta-v'] {
+  --bg-canvas: #eef6f4;
+  --bg-surface: #ffffff;
+  --bg-recessed: #dfece9;
+  --bg-elevated: #f6fbfa;
+  --border-subtle: rgba(12, 33, 29, 0.14);
+  --border-strong: rgba(21, 94, 117, 0.36);
+  --ink-primary: #0c211d;
+  --ink-secondary: #2d4c46;
+  --ink-muted: #466760;
+  --game-accent: #155e75;
+  --game-accent-soft: rgba(21, 94, 117, 0.1);
+  --game-accent-ring: rgba(21, 94, 117, 0.34);
+  --select-accent: #155e75;
+  --select-soft: rgba(21, 94, 117, 0.1);
+  --select-ring: rgba(21, 94, 117, 0.34);
+  --cta-bg: #155e75;
+  --cta-ink: #ffffff;
+  --game-radius-panel: 6px;
+  --game-radius-card: 6px;
+  --game-radius-control: 4px;
+  --studio-grid-color: rgba(21, 94, 117, 0.055);
+  --studio-glow-a: rgba(21, 94, 117, 0.07);
+  --studio-glow-b: rgba(17, 94, 89, 0.06);
+}
+
+/* ==================== 1B. LEGAL-SAFE WORLD BACKDROPS & GEOMETRY ==================== */
+/* Full-viewport ambient backdrop rendered on <body> (zero inline styles, static pure CSS) */
+:root[data-game] body,
+.embed-app-shell .game-theme-shell[data-game]::before {
   background-image:
-    radial-gradient(circle at 14% 12%, var(--studio-glow-a, transparent) 0%, transparent 45%),
-    radial-gradient(circle at 86% 24%, var(--studio-glow-b, transparent) 0%, transparent 42%),
+    radial-gradient(circle at 14% 6%, var(--studio-glow-a, transparent) 0%, transparent 44%),
+    radial-gradient(circle at 86% 14%, var(--studio-glow-b, transparent) 0%, transparent 40%),
     linear-gradient(var(--studio-grid-color, rgba(255, 255, 255, 0.03)) 1px, transparent 1px),
     linear-gradient(90deg, var(--studio-grid-color, rgba(255, 255, 255, 0.03)) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
 }
 
-:root[data-theme='paper'] .game-theme-shell[data-game] {
-  --studio-grid-color: rgba(15, 23, 42, 0.045);
+/* GTA 6: Twin neon sunset horizon & dusk grid */
+:root[data-game='gta-6'] body,
+.embed-app-shell .game-theme-shell[data-game='gta-6']::before {
+  background-image:
+    radial-gradient(circle at 16% 0%, var(--studio-glow-a) 0%, transparent 46%),
+    radial-gradient(circle at 86% 8%, var(--studio-glow-b) 0%, transparent 42%),
+    linear-gradient(180deg, rgba(255, 92, 138, 0.05) 0%, transparent 28%),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 72px 72px;
 }
 
-:root[data-theme='paper'] .game-theme-shell[data-game='gta-6'],
-:root[data-theme='paper'] .gs-workspace[data-game='gta-6'] {
-  --game-accent: #9f1239;
-  --game-accent-soft: rgba(159, 18, 57, 0.1);
-  --game-accent-ring: rgba(159, 18, 57, 0.3);
+:root[data-game='gta-6'] .consumer-masthead,
+:root[data-game='gta-6'] .deck-panel,
+:root[data-game='gta-6'] .gs-hero-instrument {
+  border-top: 2px solid var(--game-accent);
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='cod-warzone'],
-:root[data-theme='paper'] .gs-workspace[data-game='cod-warzone'] {
-  --game-accent: #9f1239;
-  --game-accent-soft: rgba(159, 18, 57, 0.1);
-  --game-accent-ring: rgba(159, 18, 57, 0.3);
+
+/* Call of Duty: Warzone — NVG optic reticle grid & stencil telemetry */
+:root[data-game='cod-warzone'] body,
+.embed-app-shell .game-theme-shell[data-game='cod-warzone']::before {
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--studio-glow-b) 0%, transparent 46%),
+    radial-gradient(circle at 88% 12%, var(--studio-glow-a) 0%, transparent 38%),
+    linear-gradient(var(--studio-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--studio-grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'],
-:root[data-theme='paper'] .gs-workspace[data-game='minecraft'] {
-  --game-accent: #065f46;
-  --game-accent-soft: rgba(6, 95, 70, 0.1);
-  --game-accent-ring: rgba(6, 95, 70, 0.3);
+
+:root[data-game='cod-warzone'] .consumer-masthead,
+:root[data-game='cod-warzone'] .gs-hero-instrument {
+  background-color: var(--bg-surface);
+  background-image:
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(135deg, var(--bg-surface) 0%, color-mix(in srgb, var(--bg-recessed) 90%, var(--select-accent) 10%) 100%);
+  background-size: 14px 2px, 2px 14px, 14px 2px, 2px 14px, 100% 100%;
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 0;
+  background-repeat: no-repeat;
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='cs2'],
-:root[data-theme='paper'] .gs-workspace[data-game='cs2'] {
-  --game-accent: #92400e;
-  --game-accent-soft: rgba(146, 64, 14, 0.1);
-  --game-accent-ring: rgba(146, 64, 14, 0.3);
+
+:root[data-game='cod-warzone'] .game-world-kicker,
+:root[data-game='cod-warzone'] .panel-eyebrow,
+:root[data-game='cod-warzone'] .gs-verdict-chip {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='valorant'],
-:root[data-theme='paper'] .gs-workspace[data-game='valorant'] {
-  --game-accent: #9f1239;
-  --game-accent-soft: rgba(159, 18, 57, 0.1);
-  --game-accent-ring: rgba(159, 18, 57, 0.3);
+
+/* Minecraft — 24px block chunk grid + 3D pixel bevels + monospace terminal typography */
+:root[data-game='minecraft'] body,
+.embed-app-shell .game-theme-shell[data-game='minecraft']::before {
+  background-image:
+    radial-gradient(circle at 12% 8%, var(--studio-glow-a) 0%, transparent 42%),
+    radial-gradient(circle at 88% 16%, var(--studio-glow-b) 0%, transparent 40%),
+    linear-gradient(var(--studio-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--studio-grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='ea-fc-27'],
-:root[data-theme='paper'] .gs-workspace[data-game='ea-fc-27'] {
-  --game-accent: #065f46;
-  --game-accent-soft: rgba(6, 95, 70, 0.1);
-  --game-accent-ring: rgba(6, 95, 70, 0.3);
+
+:root[data-game='minecraft'] .consumer-h1,
+:root[data-game='minecraft'] .panel-title,
+:root[data-game='minecraft'] .mg-subcard-title,
+:root[data-game='minecraft'] .gs-hero-instrument h2 {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='fortnite'],
-:root[data-theme='paper'] .gs-workspace[data-game='fortnite'] {
-  --game-accent: #075985;
-  --game-accent-soft: rgba(7, 89, 133, 0.1);
-  --game-accent-ring: rgba(7, 89, 133, 0.3);
+
+:root[data-game='minecraft'] .consumer-masthead,
+:root[data-game='minecraft'] .deck-panel,
+:root[data-game='minecraft'] .gs-hero-instrument,
+:root[data-game='minecraft'] .gs-work-card,
+:root[data-game='minecraft'] .gs-meta-card,
+:root[data-game='minecraft'] .gs-pin-card,
+:root[data-game='minecraft'] .mg-subcard {
+  border: 2px solid var(--border-subtle);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.09),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.42),
+    var(--shadow-sm);
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='roblox'],
-:root[data-theme='paper'] .gs-workspace[data-game='roblox'] {
-  --game-accent: #4338ca;
-  --game-accent-soft: rgba(67, 56, 202, 0.1);
-  --game-accent-ring: rgba(67, 56, 202, 0.3);
+
+:root[data-theme='paper'][data-game='minecraft'] .consumer-masthead,
+:root[data-theme='paper'][data-game='minecraft'] .deck-panel,
+:root[data-theme='paper'][data-game='minecraft'] .gs-hero-instrument,
+:root[data-theme='paper'][data-game='minecraft'] .gs-work-card,
+:root[data-theme='paper'][data-game='minecraft'] .gs-meta-card,
+:root[data-theme='paper'][data-game='minecraft'] .gs-pin-card,
+:root[data-theme='paper'][data-game='minecraft'] .mg-subcard {
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.85),
+    inset -2px -2px 0 rgba(20, 29, 22, 0.2),
+    var(--shadow-sm);
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='apex-legends'],
-:root[data-theme='paper'] .gs-workspace[data-game='apex-legends'] {
-  --game-accent: #991b1b;
-  --game-accent-soft: rgba(153, 27, 27, 0.1);
-  --game-accent-ring: rgba(153, 27, 27, 0.3);
+
+:root[data-game='minecraft'] .primary-coral-btn,
+:root[data-game='minecraft'] .secondary-key-btn,
+:root[data-game='minecraft'] .stage-dark-btn {
+  border-width: 2px;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.22),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.35);
 }
-:root[data-theme='paper'] .game-theme-shell[data-game='gta-v'],
-:root[data-theme='paper'] .gs-workspace[data-game='gta-v'] {
-  --game-accent: #155e75;
-  --game-accent-soft: rgba(21, 94, 117, 0.1);
-  --game-accent-ring: rgba(21, 94, 117, 0.3);
+
+/* Counter-Strike 2 — Buy-Menu signature 4px left brass column */
+:root[data-game='cs2'] body,
+.embed-app-shell .game-theme-shell[data-game='cs2']::before {
+  background-image:
+    radial-gradient(circle at 12% 10%, var(--studio-glow-a) 0%, transparent 42%),
+    radial-gradient(circle at 88% 18%, var(--studio-glow-b) 0%, transparent 40%),
+    linear-gradient(var(--studio-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--studio-grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+}
+
+:root[data-game='cs2'] .consumer-masthead,
+:root[data-game='cs2'] .deck-panel,
+:root[data-game='cs2'] .gs-hero-instrument,
+:root[data-game='cs2'] .gs-work-card,
+:root[data-game='cs2'] .gs-meta-card,
+:root[data-game='cs2'] .mg-subcard {
+  border-left: 4px solid var(--game-accent);
+}
+
+/* Valorant — Brutalist tactical protocol, diagonal hairline + top rule & badge chamfer */
+:root[data-game='valorant'] body,
+.embed-app-shell .game-theme-shell[data-game='valorant']::before {
+  background-image:
+    radial-gradient(circle at 14% 6%, var(--studio-glow-a) 0%, transparent 44%),
+    radial-gradient(circle at 88% 20%, var(--studio-glow-b) 0%, transparent 38%),
+    repeating-linear-gradient(
+      135deg,
+      var(--studio-grid-color) 0,
+      var(--studio-grid-color) 1px,
+      transparent 1px,
+      transparent 44px
+    );
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+:root[data-game='valorant'] .consumer-masthead,
+:root[data-game='valorant'] .gs-hero-instrument {
+  border-top: 3px solid var(--game-accent);
+}
+
+:root[data-game='valorant'] .game-world-kicker {
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+  padding-right: 14px;
+}
+
+/* EA Sports FC 27 — Floodlit pitch stripes & broadcast header rule */
+:root[data-game='ea-fc-27'] body,
+.embed-app-shell .game-theme-shell[data-game='ea-fc-27']::before {
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--studio-glow-a) 0%, transparent 48%),
+    radial-gradient(circle at 88% 12%, var(--studio-glow-b) 0%, transparent 40%),
+    repeating-linear-gradient(
+      90deg,
+      var(--studio-grid-color) 0,
+      var(--studio-grid-color) 56px,
+      transparent 56px,
+      transparent 112px
+    );
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+:root[data-game='ea-fc-27'] .consumer-masthead,
+:root[data-game='ea-fc-27'] .gs-hero-instrument {
+  border-top: 3px solid var(--game-accent);
+}
+
+/* Fortnite — Storm-verse concentric ring wave & vivid arcade deck */
+:root[data-game='fortnite'] body,
+.embed-app-shell .game-theme-shell[data-game='fortnite']::before {
+  background-image:
+    radial-gradient(circle at 18% 4%, var(--studio-glow-a) 0%, transparent 44%),
+    radial-gradient(circle at 85% 18%, var(--studio-glow-b) 0%, transparent 44%),
+    repeating-radial-gradient(
+      circle at 50% -12%,
+      transparent 0,
+      transparent 58px,
+      var(--studio-grid-color) 59px,
+      transparent 60px
+    );
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+:root[data-game='fortnite'] .consumer-masthead,
+:root[data-game='fortnite'] .gs-hero-instrument {
+  border-color: var(--game-accent-ring);
+}
+
+/* Roblox — Maker Studio stud-dot baseplate & tactile block bottom ledge */
+:root[data-game='roblox'] body,
+.embed-app-shell .game-theme-shell[data-game='roblox']::before {
+  background-image:
+    radial-gradient(circle at 14% 8%, var(--studio-glow-a) 0%, transparent 44%),
+    radial-gradient(circle at 86% 20%, var(--studio-glow-b) 0%, transparent 40%),
+    radial-gradient(circle, var(--studio-grid-color) 1.5px, transparent 1.6px);
+  background-size: 100% 100%, 100% 100%, 22px 22px;
+}
+
+:root[data-game='roblox'] .consumer-masthead,
+:root[data-game='roblox'] .deck-panel,
+:root[data-game='roblox'] .gs-hero-instrument,
+:root[data-game='roblox'] .gs-work-card,
+:root[data-game='roblox'] .gs-meta-card,
+:root[data-game='roblox'] .gs-pin-card,
+:root[data-game='roblox'] .mg-subcard {
+  border-bottom: 3px solid var(--border-strong);
+}
+
+:root[data-game='roblox'] .primary-coral-btn,
+:root[data-game='roblox'] .secondary-key-btn,
+:root[data-game='roblox'] .stage-dark-btn {
+  border-bottom-width: 3px;
+}
+
+/* Apex Legends — Frontier dropship telemetry & diagonal hazard header stripe */
+:root[data-game='apex-legends'] body,
+.embed-app-shell .game-theme-shell[data-game='apex-legends']::before {
+  background-image:
+    radial-gradient(circle at 14% 8%, var(--studio-glow-a) 0%, transparent 44%),
+    radial-gradient(circle at 84% 18%, var(--studio-glow-b) 0%, transparent 40%),
+    linear-gradient(var(--studio-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--studio-grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 38px 38px, 38px 38px;
+}
+
+:root[data-game='apex-legends'] .consumer-masthead,
+:root[data-game='apex-legends'] .gs-hero-instrument {
+  background-color: var(--bg-surface);
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      var(--game-accent) 0,
+      var(--game-accent) 6px,
+      transparent 6px,
+      transparent 12px
+    ),
+    linear-gradient(155deg, var(--game-accent-soft) 0%, transparent 52%);
+  background-size: 100% 4px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: no-repeat;
+}
+
+/* GTA Online — Sonar rings & wireframe scanline deck */
+:root[data-game='gta-v'] body,
+.embed-app-shell .game-theme-shell[data-game='gta-v']::before {
+  background-image:
+    radial-gradient(circle at 16% 10%, var(--studio-glow-a) 0%, transparent 46%),
+    radial-gradient(circle at 86% 24%, var(--studio-glow-b) 0%, transparent 42%),
+    repeating-radial-gradient(
+      circle at 82% 24%,
+      transparent 0,
+      transparent 46px,
+      var(--studio-grid-color) 47px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(44, 229, 181, 0.025) 0,
+      rgba(44, 229, 181, 0.025) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+
+:root[data-theme='paper'][data-game='gta-v'] body,
+:root[data-theme='paper'] .embed-app-shell .game-theme-shell[data-game='gta-v']::before {
+  background-image:
+    radial-gradient(circle at 16% 10%, var(--studio-glow-a) 0%, transparent 46%),
+    radial-gradient(circle at 86% 24%, var(--studio-glow-b) 0%, transparent 42%),
+    repeating-radial-gradient(
+      circle at 82% 24%,
+      transparent 0,
+      transparent 46px,
+      var(--studio-grid-color) 47px,
+      transparent 48px
+    );
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+:root[data-game='gta-v'] .consumer-masthead,
+:root[data-game='gta-v'] .gs-hero-instrument {
+  border-color: var(--game-accent-ring);
 }
 
 /* Header & isolated subbar overrides */
@@ -256,7 +966,7 @@
 
 .cross-game-directory-drawer {
   margin-top: 16px;
-  border-radius: var(--radius-md);
+  border-radius: var(--game-radius-card, var(--radius-md));
   border: 1px dashed var(--border-strong);
   background: var(--bg-recessed);
 }
@@ -363,7 +1073,7 @@
   display: grid;
   grid-template-columns: repeat(var(--seg-count, 2), minmax(0, 1fr));
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-control, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   gap: 0;
@@ -376,7 +1086,7 @@
   bottom: 4px;
   left: 4px;
   width: calc((100% - 8px) / var(--seg-count, 2));
-  border-radius: 9px;
+  border-radius: max(0px, calc(var(--game-radius-control, 10px) - 2px));
   background: var(--bg-elevated);
   border: 1px solid var(--game-accent, var(--teal));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
@@ -446,7 +1156,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-lg);
+  border-radius: var(--game-radius-panel, var(--radius-lg));
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--ink-muted);
@@ -459,7 +1169,7 @@
 .gs-pin-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--game-radius-panel, var(--radius-lg));
   padding: 20px;
   animation: gsStudioCardIn 0.42s var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1)) both;
 }
@@ -771,7 +1481,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 11px 12px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -1021,7 +1731,7 @@
   align-items: center;
   gap: 10px;
   padding: 11px 14px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: rgba(245, 158, 11, 0.11);
   border: 1px solid rgba(245, 158, 11, 0.36);
   color: var(--ink-primary);
@@ -1050,7 +1760,7 @@
 .gs-mc-nether-sub {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #a855f7;
+  color: #d8b4fe;
 }
 
 :root[data-theme='paper'] .gs-mc-nether-sub {
@@ -1077,7 +1787,7 @@
 .gs-mc-y-gauge {
   margin-top: 14px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
 }
@@ -1276,7 +1986,7 @@
   align-items: flex-start;
   gap: 2px;
   padding: 9px 14px;
-  border-radius: 11px;
+  border-radius: var(--game-radius-control, 11px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -1325,7 +2035,7 @@
   display: flex;
   flex-direction: column;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-strong);
   font-size: 0.74rem;
@@ -1353,7 +2063,7 @@
   align-items: center;
   gap: 4px;
   padding: 10px 8px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -1439,7 +2149,7 @@
   position: relative;
   width: 100%;
   height: 112px;
-  border-radius: 10px;
+  border-radius: var(--game-radius-control, 10px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   overflow: hidden;
@@ -1565,7 +2275,7 @@
   align-items: flex-start;
   gap: 2px;
   padding: 10px 11px;
-  border-radius: 10px;
+  border-radius: var(--game-radius-control, 10px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -1634,7 +2344,7 @@
   gap: 14px;
   margin-top: 14px;
   padding: 18px 14px;
-  border-radius: 16px;
+  border-radius: var(--game-radius-panel, 16px);
   background:
     radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.14), transparent 64%),
     repeating-linear-gradient(
@@ -1672,7 +2382,7 @@
   flex-direction: column;
   gap: 5px;
   padding: 8px 9px;
-  border-radius: 11px;
+  border-radius: var(--game-radius-card, 11px);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   transition: transform 0.2s var(--ease-spring), border-color 0.2s ease;
@@ -1758,7 +2468,7 @@
   align-items: flex-start;
   gap: 3px;
   padding: 10px 12px;
-  border-radius: 11px;
+  border-radius: var(--game-radius-card, 11px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -1829,7 +2539,7 @@
   align-items: flex-start;
   gap: 3px;
   padding: 11px 12px;
-  border-radius: 11px;
+  border-radius: var(--game-radius-card, 11px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -1886,7 +2596,7 @@
   gap: 8px;
   margin-top: 10px;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: var(--game-radius-control, 10px);
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.34);
   font-size: 0.78rem;
@@ -1906,7 +2616,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   min-width: 0;
@@ -1949,7 +2659,7 @@
   gap: 14px;
   flex-wrap: wrap;
   padding: 13px 15px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px dashed var(--game-accent);
 }
@@ -1962,7 +2672,7 @@
 
 .gs-rbx-price-badge {
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: var(--game-radius-control, 10px);
   background: var(--game-accent-soft);
   border: 1px solid var(--game-accent);
   font-size: 0.96rem;
@@ -2044,7 +2754,7 @@
   align-items: flex-start;
   gap: 2px;
   padding: 10px 12px;
-  border-radius: 11px;
+  border-radius: var(--game-radius-control, 11px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -2105,7 +2815,7 @@
   align-items: flex-start;
   gap: 3px;
   padding: 10px 11px;
-  border-radius: 11px;
+  border-radius: var(--game-radius-card, 11px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-secondary);
@@ -2132,7 +2842,7 @@
 .gs-cayo-slider-wrap {
   margin: 14px 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--game-radius-card, 12px);
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
 }

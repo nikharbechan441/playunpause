@@ -5,8 +5,13 @@ import {
   getRelatedRoutesFor,
   resolveSeoRequest,
 } from './seoRoutes.js';
+import { TOP_GAMES } from './games/allGames.js';
 
 const INDEXNOW_KEY_PATH = `/${INDEXNOW_KEY}.txt`;
+const GAME_LEGAL_NOTICE_MAP = new Map(TOP_GAMES.map((g) => [g.id, g.legalNotice || '']));
+const GAME_CANVAS_OBSIDIAN_MAP = new Map(
+  TOP_GAMES.map((g) => [g.id, g.canvasHexObsidian || '#0C0916'])
+);
 
 export function isStaticAssetPath(pathname) {
   const p = String(pathname || '');
@@ -137,6 +142,14 @@ function upsertMetaTag(html, regex, replacementTag) {
   return html.replace('</head>', () => `    ${replacementTag}\n  </head>`);
 }
 
+function stampHtmlGameAttr(html, gameId = 'gta-6') {
+  const safeId = escapeHtml(gameId || 'gta-6');
+  return html.replace(/<html\b([^>]*)>/i, (_, attrs = '') => {
+    const cleanAttrs = String(attrs).replace(/\s+data-game=(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    return `<html${cleanAttrs} data-game="${safeId}">`;
+  });
+}
+
 export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99) {
   if (!resolution || resolution.notFound || !resolution.route) {
     const title = 'Page Not Found — Unpause';
@@ -180,10 +193,12 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
       /<meta\s+name="robots"\s+content="[^"]*"\s*\/?>/,
       '<meta name="robots" content="noindex, nofollow" />'
     );
+    html = stampHtmlGameAttr(html, 'gta-6');
     return html;
   }
 
   const { route, isEmbed = false } = resolution;
+  const activeGameId = route.gameId || 'gta-6';
   const canonicalPath = isEmbed ? route.parentCanonicalPath : route.path;
   const canonicalUrl = `${CANONICAL_ORIGIN}${canonicalPath}`;
   const ogImageUrl = `${CANONICAL_ORIGIN}${route.ogImage || '/og-cover.png'}`;
@@ -209,12 +224,10 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
           .join('')}</ol></nav>`
       : '';
 
-  const complianceNotice =
-    route.gameId === 'minecraft'
-      ? '<p><strong>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</strong></p>'
-      : route.gameId === 'roblox'
-        ? '<p><strong>Requires 13+ account and 30,000 net earned R$ eligibility. Zero data is collected on minors.</strong></p>'
-        : '';
+  const noticeText = GAME_LEGAL_NOTICE_MAP.get(activeGameId) || '';
+  const complianceNotice = noticeText
+    ? `<p><strong>${escapeHtml(noticeText)}</strong></p>`
+    : '';
 
   const metaRowsHtml =
     Array.isArray(route.metaRows) && route.metaRows.length > 0
@@ -348,6 +361,13 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
       () => `  <script type="application/ld+json">${safeJson}</script>\n  </head>`
     );
   }
+
+  html = upsertMetaTag(
+    html,
+    /<meta\s+name="theme-color"\s+content="[^"]*"\s*\/?>/,
+    `<meta name="theme-color" content="${escapeHtml(GAME_CANVAS_OBSIDIAN_MAP.get(activeGameId) || '#0C0916')}" />`
+  );
+  html = stampHtmlGameAttr(html, activeGameId);
 
   return html;
 }
