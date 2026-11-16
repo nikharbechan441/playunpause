@@ -505,3 +505,106 @@ test('main.jsx imports gameWorldGraphics.css and App.jsx mounts GameWorldTopStri
     )
   );
 });
+
+test('all 10 TOP_GAMES packs define typographyProfile with 10 globally unique displayFont names', () => {
+  const displayFonts = new Set();
+
+  for (const gameId of GAME_IDS) {
+    const pack = TOP_GAMES.find((g) => g.id === gameId);
+    assert.ok(pack, `Missing TOP_GAMES pack for ${gameId}`);
+    assert.ok(
+      pack.typographyProfile && typeof pack.typographyProfile === 'object',
+      `Missing typographyProfile for ${gameId}`
+    );
+    for (const key of ['displayFont', 'bodyFont', 'monoFont', 'styleLabel']) {
+      assert.equal(
+        typeof pack.typographyProfile[key],
+        'string',
+        `typographyProfile.${key} must be a string for ${gameId}`
+      );
+      assert.ok(
+        pack.typographyProfile[key].trim().length > 0,
+        `typographyProfile.${key} must be non-empty for ${gameId}`
+      );
+    }
+    displayFonts.add(pack.typographyProfile.displayFont);
+  }
+
+  assert.equal(
+    displayFonts.size,
+    GAME_IDS.length,
+    'Every game must define a globally unique displayFont (expected 10)'
+  );
+});
+
+test('every referenced /fonts/*.woff2 in deck.css and gameTypography.css exists in public/fonts with wOF2 magic bytes and OFL-LICENSES.txt', () => {
+  const deckCss = fs.readFileSync(path.join(ROOT, 'src/styles/deck.css'), 'utf8');
+  const typoCss = fs.readFileSync(path.join(ROOT, 'src/styles/gameTypography.css'), 'utf8');
+  const fontUrlSet = new Set();
+
+  for (const cssSrc of [deckCss, typoCss]) {
+    for (const match of cssSrc.matchAll(/url\(['"]?(\/fonts\/[^'")?#]+\.woff2)['"]?\)/gi)) {
+      fontUrlSet.add(match[1]);
+    }
+  }
+
+  assert.ok(fontUrlSet.size >= 42, `Expected at least 42 referenced .woff2 fonts, found ${fontUrlSet.size}`);
+
+  const fontsDir = path.join(ROOT, 'public/fonts');
+  for (const fontUrl of fontUrlSet) {
+    const fileName = fontUrl.replace(/^\/fonts\//, '');
+    const filePath = path.join(fontsDir, fileName);
+    assert.equal(fs.existsSync(filePath), true, `Missing referenced font asset: ${fontUrl}`);
+    const buf = fs.readFileSync(filePath);
+    assert.ok(buf.length >= 4, `Font asset ${fontUrl} is truncated`);
+    assert.equal(
+      buf.readUInt32BE(0),
+      0x774f4632,
+      `Font asset ${fontUrl} must begin with wOF2 magic bytes (0x774F4632)`
+    );
+  }
+
+  const licensesPath = path.join(fontsDir, 'OFL-LICENSES.txt');
+  assert.equal(fs.existsSync(licensesPath), true, 'Missing public/fonts/OFL-LICENSES.txt');
+  const licenseText = fs.readFileSync(licensesPath, 'utf8');
+  assert.ok(licenseText.trim().length > 0, 'OFL-LICENSES.txt must be non-empty');
+  assert.match(licenseText, /SIL OPEN FONT LICENSE/i);
+});
+
+test('gameTypography.css covers all 10 worlds cleanly with zero external URLs and is imported in main.jsx', () => {
+  const typoCss = fs.readFileSync(path.join(ROOT, 'src/styles/gameTypography.css'), 'utf8');
+  assert.doesNotMatch(typoCss, /<style\b/i, 'gameTypography.css must not contain <style> tags');
+  assert.doesNotMatch(typoCss, /https?:\/\//i, 'gameTypography.css must not contain external http(s):// URLs');
+  assert.doesNotMatch(typoCss, /fonts\.googleapis\.com|fonts\.gstatic\.com/i);
+  assert.match(typoCss, /font-display:\s*swap/);
+
+  for (const gameId of GAME_IDS) {
+    const pack = TOP_GAMES.find((g) => g.id === gameId);
+    const ruleBlock = typoCss.match(
+      new RegExp(`:root\\[data-game='${gameId}'\\][^{]*\\{([\\s\\S]*?)\\}`)
+    );
+    assert.ok(ruleBlock, `Missing :root[data-game='${gameId}'] typography token block`);
+    const body = ruleBlock[1];
+    assert.match(body, /--font-display:\s*[^;]+;/);
+    assert.match(body, /--font-sans:\s*[^;]+;/);
+    assert.match(body, /--font-mono:\s*[^;]+;/);
+    assert.ok(
+      body.includes(`'${pack.typographyProfile.displayFont}'`),
+      `gameTypography.css --font-display for ${gameId} should include '${pack.typographyProfile.displayFont}'`
+    );
+    assert.ok(
+      body.includes(`'${pack.typographyProfile.bodyFont}'`),
+      `gameTypography.css --font-sans for ${gameId} should include '${pack.typographyProfile.bodyFont}'`
+    );
+    assert.ok(
+      body.includes(`'${pack.typographyProfile.monoFont}'`),
+      `gameTypography.css --font-mono for ${gameId} should include '${pack.typographyProfile.monoFont}'`
+    );
+  }
+
+  const mainSrc = fs.readFileSync(path.join(ROOT, 'src/main.jsx'), 'utf8');
+  const graphicsImportIdx = mainSrc.indexOf("import './styles/gameWorldGraphics.css'");
+  const typoImportIdx = mainSrc.indexOf("import './styles/gameTypography.css'");
+  assert.ok(typoImportIdx !== -1, 'main.jsx must import gameTypography.css');
+  assert.ok(typoImportIdx > graphicsImportIdx, 'main.jsx must import gameTypography.css after gameWorldGraphics.css');
+});

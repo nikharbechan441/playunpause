@@ -1,0 +1,911 @@
+/* ============================================================================
+   UNPAUSE // 10-WORLD SELF-HOSTED SIL OFL 1.1 TYPOGRAPHY SYSTEM
+   Zero Google Fonts CDN · Exact weight/style mapping (no faux-bold) · Swap
+   ============================================================================ */
+
+/* ==================== 1. SELF-HOSTED VARIABLE FONT FACES ==================== */
+@font-face {
+  font-family: 'Syne';
+  src: url('/fonts/syne-latin-wght-normal.woff2') format('woff2');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('/fonts/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rubik';
+  src: url('/fonts/rubik-latin-wght-normal.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('/fonts/pixelify-sans-latin-wght-normal.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fredoka';
+  src: url('/fonts/fredoka-latin-wght-normal.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('/fonts/outfit-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Oxanium';
+  src: url('/fonts/oxanium-latin-wght-normal.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Teko';
+  src: url('/fonts/teko-latin-wght-normal.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Exo 2';
+  src: url('/fonts/exo-2-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Oswald';
+  src: url('/fonts/oswald-latin-wght-normal.woff2') format('woff2');
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('/fonts/archivo-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==================== 2. SELF-HOSTED STATIC FONT FACES ==================== */
+/* Saira Condensed (CoD: Warzone Display) */
+@font-face {
+  font-family: 'Saira Condensed';
+  src: url('/fonts/saira-condensed-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saira Condensed';
+  src: url('/fonts/saira-condensed-latin-800-normal.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Barlow (CoD: Warzone & EA FC 27 Body) */
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/barlow-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/barlow-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow';
+  src: url('/fonts/barlow-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Share Tech Mono (CoD: Warzone & Apex Legends Mono) */
+@font-face {
+  font-family: 'Share Tech Mono';
+  src: url('/fonts/share-tech-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Changa One (Fortnite Display Normal & Italic) */
+@font-face {
+  font-family: 'Changa One';
+  src: url('/fonts/changa-one-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Changa One';
+  src: url('/fonts/changa-one-latin-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Chakra Petch (Minecraft Body) */
+@font-face {
+  font-family: 'Chakra Petch';
+  src: url('/fonts/chakra-petch-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  src: url('/fonts/chakra-petch-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  src: url('/fonts/chakra-petch-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Silkscreen (Minecraft Mono & Readout) */
+@font-face {
+  font-family: 'Silkscreen';
+  src: url('/fonts/silkscreen-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Silkscreen';
+  src: url('/fonts/silkscreen-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Barlow Condensed (EA FC 27 Display) */
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/barlow-condensed-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/barlow-condensed-latin-700-italic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('/fonts/barlow-condensed-latin-800-italic.woff2') format('woff2');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Space Mono (Roblox & Valorant Mono) */
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/space-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/space-mono-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Bai Jamjuree (CS2 Body) */
+@font-face {
+  font-family: 'Bai Jamjuree';
+  src: url('/fonts/bai-jamjuree-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bai Jamjuree';
+  src: url('/fonts/bai-jamjuree-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bai Jamjuree';
+  src: url('/fonts/bai-jamjuree-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Rajdhani (Valorant Body) */
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('/fonts/rajdhani-latin-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('/fonts/rajdhani-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('/fonts/rajdhani-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Russo One (Apex Legends Display) */
+@font-face {
+  font-family: 'Russo One';
+  src: url('/fonts/russo-one-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* IBM Plex Mono (GTA Online Mono) */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/ibm-plex-mono-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==================== 3. GLOBAL FONT BINDING & ANTI-FAUX GUARD ==================== */
+:root[data-game] body,
+.game-theme-shell[data-game] {
+  font-family: var(--font-sans);
+  font-synthesis-weight: none;
+  font-synthesis-style: none;
+}
+
+:root[data-game] .gw-hero-svg text,
+.game-theme-shell[data-game] .gw-hero-svg text {
+  font-family: var(--font-mono);
+}
+
+:root[data-game] .gw-hero-svg text[font-size='74'],
+.game-theme-shell[data-game] .gw-hero-svg text[font-size='74'] {
+  font-family: var(--font-display);
+}
+
+/* ==================== 4. ALL 10 WORLD TYPOGRAPHIC ARCHITECTURES ==================== */
+/* 1. GTA VI — Syne / Plus Jakarta Sans / JetBrains Mono */
+:root[data-game='gta-6'],
+.game-theme-shell[data-game='gta-6'] {
+  --font-display: 'Syne', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+:root[data-game='gta-6'] h1.consumer-h1,
+:root[data-game='gta-6'] h2.gs-bench-heading,
+:root[data-game='gta-6'] .deck-panel h2,
+:root[data-game='gta-6'] .gs-hero-big,
+:root[data-game='gta-6'] .panel-title,
+.game-theme-shell[data-game='gta-6'] h1.consumer-h1,
+.game-theme-shell[data-game='gta-6'] .deck-panel h2,
+.game-theme-shell[data-game='gta-6'] .panel-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+}
+
+:root[data-game='gta-6'] .game-world-kicker,
+:root[data-game='gta-6'] .gw-top-strip,
+:root[data-game='gta-6'] .gs-kicker-badge,
+.game-theme-shell[data-game='gta-6'] .game-world-kicker,
+.game-theme-shell[data-game='gta-6'] .gw-top-strip,
+.game-theme-shell[data-game='gta-6'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+}
+
+:root[data-game='gta-6'] .mode-tab,
+:root[data-game='gta-6'] .studio-segmented-btn,
+.game-theme-shell[data-game='gta-6'] .mode-tab,
+.game-theme-shell[data-game='gta-6'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* 2. Call of Duty: Warzone — Saira Condensed / Barlow / Share Tech Mono */
+:root[data-game='cod-warzone'],
+.game-theme-shell[data-game='cod-warzone'] {
+  --font-display: 'Saira Condensed', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Barlow', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', ui-monospace, monospace;
+}
+
+:root[data-game='cod-warzone'] h1.consumer-h1,
+:root[data-game='cod-warzone'] h2.gs-bench-heading,
+:root[data-game='cod-warzone'] .deck-panel h2,
+:root[data-game='cod-warzone'] .gs-hero-big,
+:root[data-game='cod-warzone'] .panel-title,
+.game-theme-shell[data-game='cod-warzone'] h1.consumer-h1,
+.game-theme-shell[data-game='cod-warzone'] h2.gs-bench-heading,
+.game-theme-shell[data-game='cod-warzone'] .deck-panel h2,
+.game-theme-shell[data-game='cod-warzone'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+  line-height: 0.98;
+}
+
+:root[data-game='cod-warzone'] h1.consumer-h1 {
+  font-size: clamp(1.72rem, 3.1vw, 2.4rem);
+}
+
+:root[data-game='cod-warzone'] .game-world-kicker,
+:root[data-game='cod-warzone'] .gw-top-strip,
+:root[data-game='cod-warzone'] .gs-kicker-badge,
+.game-theme-shell[data-game='cod-warzone'] .game-world-kicker,
+.game-theme-shell[data-game='cod-warzone'] .gw-top-strip,
+.game-theme-shell[data-game='cod-warzone'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0.07em;
+}
+
+:root[data-game='cod-warzone'] .mode-tab,
+:root[data-game='cod-warzone'] .studio-segmented-btn,
+.game-theme-shell[data-game='cod-warzone'] .mode-tab,
+.game-theme-shell[data-game='cod-warzone'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* 3. Fortnite — Changa One (400 normal/italic) / Rubik / JetBrains Mono */
+:root[data-game='fortnite'],
+.game-theme-shell[data-game='fortnite'] {
+  --font-display: 'Changa One', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Rubik', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+:root[data-game='fortnite'] h1.consumer-h1,
+:root[data-game='fortnite'] .gs-hero-big,
+.game-theme-shell[data-game='fortnite'] h1.consumer-h1,
+.game-theme-shell[data-game='fortnite'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-shadow: 2px 3px 0 rgba(10, 6, 26, 0.72);
+}
+
+:root[data-game='fortnite'] h2.gs-bench-heading,
+:root[data-game='fortnite'] .deck-panel h2,
+:root[data-game='fortnite'] .panel-title,
+.game-theme-shell[data-game='fortnite'] h2.gs-bench-heading,
+.game-theme-shell[data-game='fortnite'] .deck-panel h2,
+.game-theme-shell[data-game='fortnite'] .panel-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.015em;
+  line-height: 1.05;
+}
+
+:root[data-theme='paper'][data-game='fortnite'] h1.consumer-h1,
+:root[data-theme='paper'][data-game='fortnite'] .gs-hero-big,
+:root[data-theme='paper'] .game-theme-shell[data-game='fortnite'] h1.consumer-h1,
+:root[data-theme='paper'] .game-theme-shell[data-game='fortnite'] .gs-hero-big {
+  text-shadow: none;
+}
+
+:root[data-game='fortnite'] .game-world-kicker,
+:root[data-game='fortnite'] .gw-top-strip,
+:root[data-game='fortnite'] .gs-kicker-badge,
+.game-theme-shell[data-game='fortnite'] .game-world-kicker,
+.game-theme-shell[data-game='fortnite'] .gw-top-strip,
+.game-theme-shell[data-game='fortnite'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+}
+
+:root[data-game='fortnite'] .mode-tab,
+:root[data-game='fortnite'] .studio-segmented-btn,
+.game-theme-shell[data-game='fortnite'] .mode-tab,
+.game-theme-shell[data-game='fortnite'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* 4. Minecraft — Pixelify Sans / Chakra Petch / Silkscreen */
+:root[data-game='minecraft'],
+.game-theme-shell[data-game='minecraft'] {
+  --font-display: 'Pixelify Sans', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Chakra Petch', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Silkscreen', ui-monospace, monospace;
+}
+
+:root[data-game='minecraft'] h1.consumer-h1,
+:root[data-game='minecraft'] h2.gs-bench-heading,
+:root[data-game='minecraft'] .deck-panel h2,
+:root[data-game='minecraft'] .panel-title,
+:root[data-game='minecraft'] .mg-subcard-title,
+:root[data-game='minecraft'] .gs-hero-instrument h2,
+.game-theme-shell[data-game='minecraft'] h1.consumer-h1,
+.game-theme-shell[data-game='minecraft'] h2.gs-bench-heading,
+.game-theme-shell[data-game='minecraft'] .deck-panel h2,
+.game-theme-shell[data-game='minecraft'] .gs-hero-instrument h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.06;
+  text-shadow: 2px 2px 0 rgba(4, 12, 8, 0.85);
+}
+
+:root[data-theme='paper'][data-game='minecraft'] h1.consumer-h1,
+:root[data-theme='paper'][data-game='minecraft'] h2.gs-bench-heading,
+:root[data-theme='paper'][data-game='minecraft'] .deck-panel h2,
+:root[data-theme='paper'][data-game='minecraft'] .panel-title,
+:root[data-theme='paper'][data-game='minecraft'] .mg-subcard-title,
+:root[data-theme='paper'][data-game='minecraft'] .gs-hero-instrument h2,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] h1.consumer-h1,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] h2.gs-bench-heading,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .deck-panel h2,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .gs-hero-instrument h2 {
+  text-shadow: none;
+}
+
+:root[data-game='minecraft'] .gs-hero-big,
+:root[data-game='minecraft'] .gs-mc-xyz-readout,
+.game-theme-shell[data-game='minecraft'] .gs-hero-big,
+.game-theme-shell[data-game='minecraft'] .gs-mc-xyz-readout {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(1.12rem, 2.2vw, 1.54rem);
+  letter-spacing: 0;
+}
+
+:root[data-game='minecraft'] .game-world-kicker,
+:root[data-game='minecraft'] .gw-top-strip,
+:root[data-game='minecraft'] .gs-kicker-badge,
+.game-theme-shell[data-game='minecraft'] .game-world-kicker,
+.game-theme-shell[data-game='minecraft'] .gw-top-strip,
+.game-theme-shell[data-game='minecraft'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.64rem;
+  letter-spacing: 0.02em;
+}
+
+:root[data-game='minecraft'] .mode-tab,
+:root[data-game='minecraft'] .studio-segmented-btn,
+.game-theme-shell[data-game='minecraft'] .mode-tab,
+.game-theme-shell[data-game='minecraft'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+:root[data-game='minecraft'] .gw-hero-svg text,
+.game-theme-shell[data-game='minecraft'] .gw-hero-svg text {
+  font-family: 'Chakra Petch', ui-monospace, monospace;
+}
+
+/* 5. EA Sports FC 27 — Barlow Condensed (700/800 italic) / Barlow / JetBrains Mono */
+:root[data-game='ea-fc-27'],
+.game-theme-shell[data-game='ea-fc-27'] {
+  --font-display: 'Barlow Condensed', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Barlow', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+:root[data-game='ea-fc-27'] h1.consumer-h1,
+:root[data-game='ea-fc-27'] h2.gs-bench-heading,
+:root[data-game='ea-fc-27'] .deck-panel h2,
+:root[data-game='ea-fc-27'] .gs-hero-big,
+:root[data-game='ea-fc-27'] .panel-title,
+.game-theme-shell[data-game='ea-fc-27'] h1.consumer-h1,
+.game-theme-shell[data-game='ea-fc-27'] h2.gs-bench-heading,
+.game-theme-shell[data-game='ea-fc-27'] .deck-panel h2,
+.game-theme-shell[data-game='ea-fc-27'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.98;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-game='ea-fc-27'] h1.consumer-h1 {
+  font-size: clamp(1.75rem, 3.1vw, 2.45rem);
+}
+
+:root[data-game='ea-fc-27'] .game-world-kicker,
+:root[data-game='ea-fc-27'] .gw-top-strip,
+:root[data-game='ea-fc-27'] .gs-kicker-badge,
+.game-theme-shell[data-game='ea-fc-27'] .game-world-kicker,
+.game-theme-shell[data-game='ea-fc-27'] .gw-top-strip,
+.game-theme-shell[data-game='ea-fc-27'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-game='ea-fc-27'] .mode-tab,
+:root[data-game='ea-fc-27'] .studio-segmented-btn,
+.game-theme-shell[data-game='ea-fc-27'] .mode-tab,
+.game-theme-shell[data-game='ea-fc-27'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* 6. Roblox — Fredoka / Outfit / Space Mono */
+:root[data-game='roblox'],
+.game-theme-shell[data-game='roblox'] {
+  --font-display: 'Fredoka', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
+:root[data-game='roblox'] h1.consumer-h1,
+:root[data-game='roblox'] h2.gs-bench-heading,
+:root[data-game='roblox'] .deck-panel h2,
+:root[data-game='roblox'] .gs-hero-big,
+:root[data-game='roblox'] .panel-title,
+.game-theme-shell[data-game='roblox'] h1.consumer-h1,
+.game-theme-shell[data-game='roblox'] h2.gs-bench-heading,
+.game-theme-shell[data-game='roblox'] .deck-panel h2,
+.game-theme-shell[data-game='roblox'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+:root[data-game='roblox'] .game-world-kicker,
+:root[data-game='roblox'] .gw-top-strip,
+:root[data-game='roblox'] .gs-kicker-badge,
+.game-theme-shell[data-game='roblox'] .game-world-kicker,
+.game-theme-shell[data-game='roblox'] .gw-top-strip,
+.game-theme-shell[data-game='roblox'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+}
+
+:root[data-game='roblox'] .mode-tab,
+:root[data-game='roblox'] .studio-segmented-btn,
+.game-theme-shell[data-game='roblox'] .mode-tab,
+.game-theme-shell[data-game='roblox'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* 7. Counter-Strike 2 — Oxanium / Bai Jamjuree / Oxanium */
+:root[data-game='cs2'],
+.game-theme-shell[data-game='cs2'] {
+  --font-display: 'Oxanium', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Bai Jamjuree', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Oxanium', ui-monospace, monospace;
+}
+
+:root[data-game='cs2'] h1.consumer-h1,
+.game-theme-shell[data-game='cs2'] h1.consumer-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 1.06;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-game='cs2'] h2.gs-bench-heading,
+:root[data-game='cs2'] .deck-panel h2,
+:root[data-game='cs2'] .gs-hero-big,
+:root[data-game='cs2'] .panel-title,
+.game-theme-shell[data-game='cs2'] h2.gs-bench-heading,
+.game-theme-shell[data-game='cs2'] .deck-panel h2,
+.game-theme-shell[data-game='cs2'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-game='cs2'] .game-world-kicker,
+:root[data-game='cs2'] .gw-top-strip,
+:root[data-game='cs2'] .gs-kicker-badge,
+:root[data-game='cs2'] .mode-tab,
+:root[data-game='cs2'] .studio-segmented-btn,
+.game-theme-shell[data-game='cs2'] .game-world-kicker,
+.game-theme-shell[data-game='cs2'] .gw-top-strip,
+.game-theme-shell[data-game='cs2'] .gs-kicker-badge,
+.game-theme-shell[data-game='cs2'] .mode-tab,
+.game-theme-shell[data-game='cs2'] .studio-segmented-btn {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 8. Valorant — Teko / Rajdhani (500-700) / Space Mono */
+:root[data-game='valorant'],
+.game-theme-shell[data-game='valorant'] {
+  --font-display: 'Teko', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Rajdhani', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
+:root[data-game='valorant'] body,
+.game-theme-shell[data-game='valorant'] {
+  font-weight: 500;
+}
+
+:root[data-game='valorant'] h1.consumer-h1,
+.game-theme-shell[data-game='valorant'] h1.consumer-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(2.25rem, 3.9vw, 3.15rem);
+  line-height: 0.92;
+  letter-spacing: 0.025em;
+}
+
+:root[data-game='valorant'] h2.gs-bench-heading,
+:root[data-game='valorant'] .deck-panel h2,
+:root[data-game='valorant'] .gs-hero-big,
+:root[data-game='valorant'] .panel-title,
+.game-theme-shell[data-game='valorant'] h2.gs-bench-heading,
+.game-theme-shell[data-game='valorant'] .deck-panel h2,
+.game-theme-shell[data-game='valorant'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.96;
+  letter-spacing: 0.025em;
+}
+
+:root[data-game='valorant'] .game-world-kicker,
+:root[data-game='valorant'] .gw-top-strip,
+:root[data-game='valorant'] .gs-kicker-badge,
+.game-theme-shell[data-game='valorant'] .game-world-kicker,
+.game-theme-shell[data-game='valorant'] .gw-top-strip,
+.game-theme-shell[data-game='valorant'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+}
+
+:root[data-game='valorant'] .mode-tab,
+:root[data-game='valorant'] .studio-segmented-btn,
+.game-theme-shell[data-game='valorant'] .mode-tab,
+.game-theme-shell[data-game='valorant'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* 9. Apex Legends — Russo One (400) / Exo 2 / Share Tech Mono (400) */
+:root[data-game='apex-legends'],
+.game-theme-shell[data-game='apex-legends'] {
+  --font-display: 'Russo One', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Exo 2', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', ui-monospace, monospace;
+}
+
+:root[data-game='apex-legends'] h1.consumer-h1,
+:root[data-game='apex-legends'] h2.gs-bench-heading,
+:root[data-game='apex-legends'] .deck-panel h2,
+:root[data-game='apex-legends'] .gs-hero-big,
+:root[data-game='apex-legends'] .panel-title,
+.game-theme-shell[data-game='apex-legends'] h1.consumer-h1,
+.game-theme-shell[data-game='apex-legends'] h2.gs-bench-heading,
+.game-theme-shell[data-game='apex-legends'] .deck-panel h2,
+.game-theme-shell[data-game='apex-legends'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  line-height: 1.06;
+}
+
+:root[data-game='apex-legends'] .game-world-kicker,
+:root[data-game='apex-legends'] .gw-top-strip,
+:root[data-game='apex-legends'] .gs-kicker-badge,
+.game-theme-shell[data-game='apex-legends'] .game-world-kicker,
+.game-theme-shell[data-game='apex-legends'] .gw-top-strip,
+.game-theme-shell[data-game='apex-legends'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+:root[data-game='apex-legends'] .mode-tab,
+:root[data-game='apex-legends'] .studio-segmented-btn,
+.game-theme-shell[data-game='apex-legends'] .mode-tab,
+.game-theme-shell[data-game='apex-legends'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* 10. GTA Online — Oswald / Archivo / IBM Plex Mono */
+:root[data-game='gta-v'],
+.game-theme-shell[data-game='gta-v'] {
+  --font-display: 'Oswald', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'Archivo', 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+:root[data-game='gta-v'] h1.consumer-h1,
+:root[data-game='gta-v'] h2.gs-bench-heading,
+:root[data-game='gta-v'] .deck-panel h2,
+:root[data-game='gta-v'] .gs-hero-big,
+:root[data-game='gta-v'] .panel-title,
+.game-theme-shell[data-game='gta-v'] h1.consumer-h1,
+.game-theme-shell[data-game='gta-v'] h2.gs-bench-heading,
+.game-theme-shell[data-game='gta-v'] .deck-panel h2,
+.game-theme-shell[data-game='gta-v'] .gs-hero-big {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+:root[data-game='gta-v'] h1.consumer-h1 {
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+}
+
+:root[data-game='gta-v'] .game-world-kicker,
+:root[data-game='gta-v'] .gw-top-strip,
+:root[data-game='gta-v'] .gs-kicker-badge,
+.game-theme-shell[data-game='gta-v'] .game-world-kicker,
+.game-theme-shell[data-game='gta-v'] .gw-top-strip,
+.game-theme-shell[data-game='gta-v'] .gs-kicker-badge {
+  font-family: var(--font-mono);
+}
+
+:root[data-game='gta-v'] .mode-tab,
+:root[data-game='gta-v'] .studio-segmented-btn,
+.game-theme-shell[data-game='gta-v'] .mode-tab,
+.game-theme-shell[data-game='gta-v'] .studio-segmented-btn {
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ==================== 5. MOBILE RESPONSIVE CLAMPS (ZERO OVERFLOW <= 320px) ==================== */
+@media (max-width: 640px) {
+  :root[data-game='gta-6'] h1.consumer-h1,
+  :root[data-game='apex-legends'] h1.consumer-h1,
+  :root[data-game='minecraft'] h1.consumer-h1,
+  :root[data-game='fortnite'] h1.consumer-h1 {
+    font-size: clamp(1.2rem, 5.2vw, 1.54rem);
+  }
+
+  :root[data-game='valorant'] h1.consumer-h1 {
+    font-size: clamp(1.78rem, 7.2vw, 2.25rem);
+  }
+
+  :root[data-game='minecraft'] .gs-hero-big,
+  :root[data-game='minecraft'] .gs-mc-xyz-readout {
+    font-size: clamp(1.02rem, 4.4vw, 1.32rem);
+  }
+
+  :root[data-game='minecraft'] .gw-top-strip,
+  :root[data-game='minecraft'] .game-world-kicker,
+  :root[data-game='minecraft'] .gs-kicker-badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.01em;
+  }
+}
+
+@media (max-width: 380px) {
+  :root[data-game='gta-6'] h1.consumer-h1,
+  :root[data-game='apex-legends'] h1.consumer-h1,
+  :root[data-game='minecraft'] h1.consumer-h1,
+  :root[data-game='fortnite'] h1.consumer-h1 {
+    font-size: 1.14rem;
+  }
+
+  :root[data-game='cod-warzone'] h1.consumer-h1,
+  :root[data-game='ea-fc-27'] h1.consumer-h1,
+  :root[data-game='gta-v'] h1.consumer-h1 {
+    font-size: 1.38rem;
+  }
+
+  :root[data-game='valorant'] h1.consumer-h1 {
+    font-size: 1.66rem;
+  }
+
+  :root[data-game='minecraft'] .gs-hero-big,
+  :root[data-game='minecraft'] .gs-mc-xyz-readout {
+    font-size: 0.98rem;
+  }
+
+  :root[data-game='minecraft'] .gw-top-strip,
+  :root[data-game='minecraft'] .game-world-kicker,
+  :root[data-game='minecraft'] .gs-kicker-badge {
+    font-size: 0.56rem;
+    letter-spacing: 0;
+  }
+}

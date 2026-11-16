@@ -4,6 +4,7 @@ import App from './App.jsx';
 import './styles/deck.css';
 import './styles/gameStudios.css';
 import './styles/gameWorldGraphics.css';
+import './styles/gameTypography.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
