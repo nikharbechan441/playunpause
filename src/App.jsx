@@ -54,8 +54,9 @@ import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
 import { copyTextReliably } from './utils/clipboard.js';
 import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
 import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHero.jsx';
+import StorageUnlockDeck from './components/StorageUnlockDeck.jsx';
+import { isChunkLoadError, tryAutoReloadForStaleChunk } from './utils/chunkRecovery.js';
 
-const loadStorageUnlockDeck = () => import('./components/StorageUnlockDeck.jsx');
 const loadSafeKeypadVault = () => import('./components/SafeKeypadVault.jsx');
 const loadSquadHeistMarketDeck = () => import('./components/SquadHeistMarketDeck.jsx');
 const loadNightRunProDeck = () => import('./components/NightRunProDeck.jsx');
@@ -64,7 +65,6 @@ const loadGameSelectorModal = () => import('./components/GameSelectorModal.jsx')
 const loadLegalComplianceModal = () => import('./components/LegalComplianceModal.jsx');
 const loadEmbedWidgetModal = () => import('./components/EmbedWidgetModal.jsx');
 
-const StorageUnlockDeck = lazy(loadStorageUnlockDeck);
 const SafeKeypadVault = lazy(loadSafeKeypadVault);
 const SquadHeistMarketDeck = lazy(loadSquadHeistMarketDeck);
 const NightRunProDeck = lazy(loadNightRunProDeck);
@@ -141,6 +141,12 @@ class ChunkErrorBoundary extends React.Component {
     };
   }
 
+  componentDidCatch(error) {
+    if (isChunkLoadError(error)) {
+      tryAutoReloadForStaleChunk();
+    }
+  }
+
   componentDidUpdate(prevProps) {
     if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
       this.setState({ hasError: false, errorMessage: '' });
@@ -149,6 +155,8 @@ class ChunkErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      const isStaleDeploy = !isOffline && isChunkLoadError({ message: this.state.errorMessage });
       const card = (
         <section
           className={this.props.isModal ? 'modal-card chunk-error-card' : 'deck-panel chunk-error-card'}
@@ -156,10 +164,20 @@ class ChunkErrorBoundary extends React.Component {
           onClick={this.props.isModal ? (e) => e.stopPropagation() : undefined}
         >
           <div className={this.props.isModal ? '' : 'deck-body-pad'}>
-            <h2 className="legal-heading">Calculator module unavailable offline</h2>
+            <h2 className="legal-heading">
+              {isStaleDeploy
+                ? 'New version live \u2014 reload to continue'
+                : 'Calculator module unavailable offline'}
+            </h2>
             <p className="legal-copy compact-bottom">
-              This tool chunk has not been cached in your browser yet ({this.state.errorMessage}).
-              Reconnect to the network and retry, or return to the active calculator.
+              {isStaleDeploy ? (
+                'PlayUnpause shipped an update while this tab was open. Reload once to grab the latest calculator.'
+              ) : (
+                <>
+                  This tool chunk has not been cached in your browser yet ({this.state.errorMessage}).
+                  Reconnect to the network and retry, or return to the active calculator.
+                </>
+              )}
             </p>
             <div className="chunk-error-actions">
               <button
@@ -172,7 +190,7 @@ class ChunkErrorBoundary extends React.Component {
                   }
                 }}
               >
-                Reload Module
+                {isStaleDeploy ? 'Reload Calculator' : 'Reload Module'}
               </button>
               {typeof this.props.onRecover === 'function' && (
                 <button
@@ -540,7 +558,6 @@ export default function App() {
     const warmChunks = () => {
       if (cancelled) return;
       Promise.allSettled([
-        loadStorageUnlockDeck(),
         loadSafeKeypadVault(),
         loadSquadHeistMarketDeck(),
         loadNightRunProDeck(),
