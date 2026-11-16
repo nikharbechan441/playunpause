@@ -53,6 +53,7 @@ import { formatCountdownMs } from './utils/shareUrlHelpers.js';
 import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
 import { copyTextReliably } from './utils/clipboard.js';
 import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
+import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHero.jsx';
 
 const loadStorageUnlockDeck = () => import('./components/StorageUnlockDeck.jsx');
 const loadSafeKeypadVault = () => import('./components/SafeKeypadVault.jsx');
@@ -1713,7 +1714,12 @@ export default function App() {
           </section>
         ) : (
         <>
-        <section className="consumer-masthead" aria-label="Tool overview">
+        <section
+          className="consumer-masthead gw-world-masthead"
+          data-world-hero={activeGamePack.id}
+          aria-label="Tool overview"
+        >
+          <GameWorldTopStrip gameId={activeGamePack.id} />
           {Array.isArray(activeRoute?.breadcrumbs) && activeRoute.breadcrumbs.length > 0 && (
             <nav aria-label="Breadcrumb" className="seo-breadcrumb">
               <ol>
@@ -1743,8 +1749,8 @@ export default function App() {
               </ol>
             </nav>
           )}
-          <div className="consumer-masthead-top">
-            <div>
+          <div className="consumer-masthead-top gw-masthead-split">
+            <div className="consumer-masthead-copy">
               {activeGamePack.themePersonaLabel && (
                 <span className="game-world-kicker">{activeGamePack.themePersonaLabel}</span>
               )}
@@ -1771,6 +1777,7 @@ export default function App() {
                     : `${activeGamePack.tagline} · Free, instant browser math with zero ads.`)}
               </p>
             </div>
+            <GameWorldHero game={activeGamePack} theme={deckState.theme} />
           </div>
           {!isDedicatedGamePage && !activeRoute?.legal && activeRoute?.path !== '/' && sameGamePresetLinks.length > 0 && (
             <div className="seo-scenario-strip">

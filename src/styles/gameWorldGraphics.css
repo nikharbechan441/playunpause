@@ -1,0 +1,527 @@
+/* ============================================================================
+   UNPAUSE WORLD-CLASS PER-GAME VECTOR STAGES & STRUCTURAL SILHOUETTES
+   Zero inline styles · Zero external URLs · GPU-only motion · AA >= 4.5:1
+   ============================================================================ */
+
+/* ==================== 1. SHARED MASTHEAD, STRIP & SPLIT HERO ==================== */
+.gw-world-masthead {
+  position: relative;
+  padding: 14px 22px 18px;
+}
+
+.gw-top-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 11px;
+  margin-bottom: 12px;
+  border-radius: var(--game-radius-control, 8px);
+  background: var(--bg-recessed);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  min-width: 0;
+}
+
+.gw-strip-left,
+.gw-strip-center,
+.gw-strip-right {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gw-strip-left {
+  color: var(--game-accent);
+  flex-shrink: 1;
+}
+
+.gw-strip-center {
+  color: var(--ink-secondary);
+  text-align: center;
+  flex: 1 1 auto;
+}
+
+.gw-strip-right {
+  color: var(--ink-primary);
+  flex-shrink: 0;
+}
+
+.gw-masthead-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(300px, 0.96fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.consumer-masthead-copy {
+  min-width: 0;
+}
+
+.gw-hero-visual-col {
+  min-width: 0;
+  width: 100%;
+}
+
+.gw-art-stage {
+  position: relative;
+  width: 100%;
+  border-radius: var(--game-radius-card, 12px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.gw-hero-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ==================== 2. GPU-ONLY MOTION KEYFRAMES ==================== */
+@keyframes gwFloatSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@keyframes gwFloatAlt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, 4px, 0);
+  }
+}
+
+@keyframes gwPulseSoft {
+  0%,
+  100% {
+    opacity: 0.68;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes gwSpinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gwSonarSweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gw-float-slow,
+.gw-anim-float {
+  animation: gwFloatSlow 5.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.gw-float-alt {
+  animation: gwFloatAlt 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.gw-pulse-soft,
+.gw-anim-pulse {
+  animation: gwPulseSoft 3.4s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.gw-anim-shimmer {
+  animation: gwPulseSoft 4.2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.gw-spin-slow {
+  transform-origin: 0 0;
+  animation: gwSpinSlow 24s linear infinite;
+  will-change: transform;
+}
+
+.gw-sonar-sweep {
+  transform-origin: 0 0;
+  animation: gwSonarSweep 6.5s linear infinite;
+  will-change: transform;
+}
+
+/* ==================== 3. ALL 10 WORLD ARCHITECTURAL SILHOUETTES ==================== */
+/* 1. GTA VI — Vice Dusk Horizon Glass Frame & Multi-Stop Sunset Rim */
+.gw-world-masthead[data-world-hero='gta-6'] {
+  border-radius: 22px;
+  background-color: var(--bg-surface);
+  background-image:
+    linear-gradient(90deg, #ff5c8a 0%, #fb923c 50%, #22d3ee 100%),
+    linear-gradient(135deg, var(--bg-surface) 0%, color-mix(in srgb, var(--bg-recessed) 88%, var(--select-accent) 12%) 100%);
+  background-size: 100% 3px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: 0 22px 48px -24px rgba(255, 92, 138, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+:root[data-theme='paper'] .gw-world-masthead[data-world-hero='gta-6'] {
+  box-shadow: 0 18px 36px -22px rgba(162, 19, 73, 0.2), var(--shadow-card);
+}
+
+.gw-world-masthead[data-world-hero='gta-6'] .gw-top-strip {
+  border-radius: 14px;
+  border-color: color-mix(in srgb, var(--game-accent) 42%, var(--select-accent));
+}
+
+/* 2. Call of Duty: Warzone — Sharp 2px L-Bracket Mounts & Stencil Tracking */
+.gw-world-masthead[data-world-hero='cod-warzone'] {
+  border-radius: 2px;
+  background-color: var(--bg-surface);
+  background-image:
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--game-accent), var(--game-accent)),
+    linear-gradient(var(--select-accent), var(--select-accent)),
+    linear-gradient(var(--select-accent), var(--select-accent)),
+    linear-gradient(var(--select-accent), var(--select-accent)),
+    linear-gradient(var(--select-accent), var(--select-accent)),
+    linear-gradient(135deg, var(--bg-surface) 0%, color-mix(in srgb, var(--bg-recessed) 90%, var(--select-accent) 10%) 100%);
+  background-size:
+    16px 2px, 2px 16px,
+    16px 2px, 2px 16px,
+    16px 2px, 2px 16px,
+    16px 2px, 2px 16px,
+    100% 100%;
+  background-position:
+    0 0, 0 0,
+    100% 0, 100% 0,
+    0 100%, 0 100%,
+    100% 100%, 100% 100%,
+    0 0;
+  background-repeat: no-repeat;
+}
+
+.gw-world-masthead[data-world-hero='cod-warzone'] .gw-top-strip,
+.gw-world-masthead[data-world-hero='cod-warzone'] .game-world-kicker {
+  letter-spacing: 0.09em;
+  border-radius: 2px;
+}
+
+/* 3. Fortnite — Skewed Parallelogram Kickers, Rarity Ribbon & Comic-Pop Shadows */
+.gw-world-masthead[data-world-hero='fortnite'] {
+  background-color: var(--bg-surface);
+  background-image:
+    linear-gradient(90deg, #38bdf8 0%, #facc15 50%, #a855f7 100%),
+    linear-gradient(135deg, var(--bg-surface) 0%, color-mix(in srgb, var(--bg-recessed) 88%, var(--game-accent) 12%) 100%);
+  background-size: 100% 4px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: no-repeat;
+  border: 2px solid var(--border-strong);
+  box-shadow: 4px 4px 0 var(--border-strong);
+}
+
+.gw-world-masthead[data-world-hero='fortnite'] .game-world-kicker {
+  transform: skewX(-6deg);
+  border-width: 2px;
+}
+
+.game-theme-shell[data-game='fortnite'] .deck-panel,
+.game-theme-shell[data-game='fortnite'] .gs-hero-instrument,
+.game-theme-shell[data-game='fortnite'] .gs-work-card,
+.game-theme-shell[data-game='fortnite'] .gs-meta-card,
+.game-theme-shell[data-game='fortnite'] .gs-pin-card {
+  border-width: 2px;
+  box-shadow: 4px 4px 0 var(--border-strong);
+}
+
+.game-theme-shell[data-game='fortnite'] .primary-coral-btn {
+  box-shadow: 3px 3px 0 var(--border-strong);
+}
+
+/* 4. Minecraft — 0px Chiseled Pixel Bevels & Segmented XP-Bar Divider */
+.gw-world-masthead[data-world-hero='minecraft'],
+.game-theme-shell[data-game='minecraft'] .deck-panel,
+.game-theme-shell[data-game='minecraft'] .gs-hero-instrument,
+.game-theme-shell[data-game='minecraft'] .gs-work-card,
+.game-theme-shell[data-game='minecraft'] .gs-meta-card,
+.game-theme-shell[data-game='minecraft'] .gs-pin-card {
+  border-radius: 0px;
+  border: 2px solid var(--border-strong);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.14),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.48);
+}
+
+:root[data-theme='paper'] .gw-world-masthead[data-world-hero='minecraft'],
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .deck-panel,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .gs-hero-instrument,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .gs-work-card,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .gs-meta-card,
+:root[data-theme='paper'] .game-theme-shell[data-game='minecraft'] .gs-pin-card {
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.92),
+    inset -2px -2px 0 rgba(20, 29, 22, 0.24);
+}
+
+.gw-world-masthead[data-world-hero='minecraft'] .gw-top-strip {
+  border-radius: 0px;
+  background-color: var(--bg-recessed);
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--game-accent) 0 14px,
+    transparent 14px 18px
+  );
+  background-size: 100% 3px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  padding-bottom: 9px;
+}
+
+/* 5. EA Sports FC 27 — TV Broadcast Scorebug Strip & Metallic Gold/Turf Trim */
+.gw-world-masthead[data-world-hero='ea-fc-27'] {
+  border-radius: 16px;
+  border-top: 3px solid var(--game-accent);
+  border-color: color-mix(in srgb, var(--game-accent) 55%, var(--select-accent));
+  box-shadow: inset 0 1px 0 rgba(251, 191, 36, 0.26), var(--shadow-card);
+}
+
+.gw-world-masthead[data-world-hero='ea-fc-27'] .gw-top-strip {
+  border-left: 5px solid var(--select-accent);
+  padding-left: 12px;
+  letter-spacing: 0.07em;
+}
+
+.game-theme-shell[data-game='ea-fc-27'] .gs-hero-instrument,
+.game-theme-shell[data-game='ea-fc-27'] .gs-work-card {
+  border-color: color-mix(in srgb, var(--game-accent) 40%, var(--border-subtle));
+}
+
+/* 6. Roblox — Chunky Tactile 3D Push-Ledge & Studded Top Strip */
+.gw-world-masthead[data-world-hero='roblox'],
+.game-theme-shell[data-game='roblox'] .deck-panel,
+.game-theme-shell[data-game='roblox'] .gs-hero-instrument,
+.game-theme-shell[data-game='roblox'] .gs-work-card,
+.game-theme-shell[data-game='roblox'] .gs-meta-card,
+.game-theme-shell[data-game='roblox'] .gs-pin-card,
+.game-theme-shell[data-game='roblox'] .mg-subcard {
+  border-bottom: 2px solid var(--border-strong);
+  box-shadow: 0 4px 0 var(--border-strong), var(--shadow-sm);
+}
+
+.game-theme-shell[data-game='roblox'] .primary-coral-btn,
+.game-theme-shell[data-game='roblox'] .secondary-key-btn,
+.game-theme-shell[data-game='roblox'] .stage-dark-btn {
+  box-shadow: 0 3px 0 var(--border-strong);
+}
+
+.game-theme-shell[data-game='roblox'] .primary-coral-btn:active,
+.game-theme-shell[data-game='roblox'] .secondary-key-btn:active,
+.game-theme-shell[data-game='roblox'] .stage-dark-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--border-strong);
+}
+
+.gw-world-masthead[data-world-hero='roblox'] .gw-top-strip {
+  background-color: var(--bg-recessed);
+  background-image: radial-gradient(circle, var(--studio-grid-color) 1.5px, transparent 1.6px);
+  background-size: 10px 10px;
+}
+
+/* 7. Counter-Strike 2 — Industrial Steel Chassis, Brass Column & Caution Ticks */
+.gw-world-masthead[data-world-hero='cs2'],
+.game-theme-shell[data-game='cs2'] .deck-panel,
+.game-theme-shell[data-game='cs2'] .gs-hero-instrument,
+.game-theme-shell[data-game='cs2'] .gs-work-card,
+.game-theme-shell[data-game='cs2'] .gs-meta-card {
+  border-left: 4px solid var(--game-accent);
+}
+
+.gw-world-masthead[data-world-hero='cs2'] .gw-top-strip {
+  background-color: var(--bg-recessed);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--game-accent-soft) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 140px 100%;
+  background-position: 100% 0;
+  background-repeat: no-repeat;
+}
+
+/* 8. Valorant — Real CSS 45° Chamfered Corners & Brutalist Crimson Protocol */
+.gw-world-masthead[data-world-hero='valorant'] {
+  border-radius: 0px;
+  border-top: 3px solid var(--game-accent);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+.gw-art-stage[data-art-game='valorant'] {
+  border-radius: 0px;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+
+.game-theme-shell[data-game='valorant'] .gs-hero-instrument,
+.game-theme-shell[data-game='valorant'] .gs-work-card,
+.game-theme-shell[data-game='valorant'] .gs-meta-card,
+.game-theme-shell[data-game='valorant'] .gs-pin-card {
+  border-radius: 0px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+.gw-world-masthead[data-world-hero='valorant'] .gw-top-strip {
+  border-radius: 0px;
+  border-left: 4px solid var(--game-accent);
+}
+
+/* 9. Apex Legends — Diagonal Hazard Caution Stripe & Angular Dropship Bevel */
+.gw-world-masthead[data-world-hero='apex-legends'] {
+  background-color: var(--bg-surface);
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      var(--game-accent) 0 8px,
+      transparent 8px 16px
+    ),
+    linear-gradient(155deg, var(--game-accent-soft) 0%, transparent 52%);
+  background-size: 100% 5px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px var(--border-strong), var(--shadow-card);
+}
+
+.game-theme-shell[data-game='apex-legends'] .gs-hero-instrument,
+.game-theme-shell[data-game='apex-legends'] .gs-work-card {
+  border-color: var(--border-strong);
+}
+
+/* 10. GTA Online — Kosatka CRT Phosphor Sonar Frame & Terminal Dividers */
+.gw-world-masthead[data-world-hero='gta-v'] {
+  border: 1px solid var(--game-accent-ring);
+  box-shadow: inset 0 0 28px rgba(44, 229, 181, 0.08), var(--shadow-card);
+}
+
+:root[data-theme='paper'] .gw-world-masthead[data-world-hero='gta-v'] {
+  box-shadow: inset 0 0 18px rgba(21, 94, 117, 0.08), var(--shadow-card);
+}
+
+.gw-world-masthead[data-world-hero='gta-v'] .gw-top-strip::before {
+  content: '[+]';
+  color: var(--game-accent);
+  flex-shrink: 0;
+}
+
+.gw-world-masthead[data-world-hero='gta-v'] .source-verified-bar {
+  border-top: 1px dashed var(--game-accent-ring);
+}
+
+/* ==================== 4. RESPONSIVE MOBILE ERGONOMICS (<= 880px -> 320px) ==================== */
+@media (max-width: 880px) {
+  .gw-masthead-split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .gw-art-stage {
+    max-width: 460px;
+  }
+
+  .gw-hero-svg {
+    max-height: 172px;
+  }
+}
+
+@media (max-width: 680px) {
+  .gw-world-masthead {
+    padding: 12px 14px 14px;
+  }
+
+  .gw-strip-center {
+    display: none;
+  }
+
+  .gw-hero-svg {
+    max-height: 152px;
+  }
+}
+
+@media (max-width: 560px) {
+  .gw-top-strip {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
+  .gw-strip-left,
+  .gw-strip-right {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 420px) {
+  .gw-world-masthead {
+    padding: 10px 10px 12px;
+  }
+
+  .gw-top-strip {
+    padding: 5px 8px;
+    font-size: 0.67rem;
+    gap: 6px;
+  }
+
+  .gw-hero-svg {
+    max-height: 136px;
+  }
+}
+
+/* ==================== 5. REDUCED MOTION & FORCED COLORS ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .gw-float-slow,
+  .gw-float-alt,
+  .gw-pulse-soft,
+  .gw-spin-slow,
+  .gw-sonar-sweep,
+  .gw-anim-float,
+  .gw-anim-pulse,
+  .gw-anim-shimmer,
+  .gw-art-stage *,
+  .gw-world-masthead,
+  .gw-world-masthead::before,
+  .gw-world-masthead::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .game-theme-shell[data-game='roblox'] .primary-coral-btn:active,
+  .game-theme-shell[data-game='roblox'] .secondary-key-btn:active,
+  .game-theme-shell[data-game='roblox'] .stage-dark-btn:active {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .gw-world-masthead,
+  .gw-top-strip,
+  .gw-art-stage {
+    border: 2px solid CanvasText !important;
+    forced-color-adjust: auto;
+  }
+}
