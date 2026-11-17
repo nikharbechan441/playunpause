@@ -205,14 +205,9 @@ export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99)
   const ogImageUrl = `${CANONICAL_ORIGIN}${route.ogImage || '/og-cover.png'}`;
   const ogAlt = route.ogAlt || route.h1 || route.title;
 
-  const syncFaq = {
-    q: `What does the one-time $${passPriceUsd} Sync Pass unlock?`,
-    a: `All 10 game calculators stay free forever with zero ads. One-time $${passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, CSV/JSON deck export, and 14-day hassle-free refunds.`,
-  };
-
   const faqEntities = route.legal
     ? []
-    : [...(Array.isArray(route.faqs) ? route.faqs : []), syncFaq];
+    : [...(Array.isArray(route.faqs) ? route.faqs : [])];
 
   const breadcrumbsHtml =
     Array.isArray(route.breadcrumbs) && route.breadcrumbs.length > 0

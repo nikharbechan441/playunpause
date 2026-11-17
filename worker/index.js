@@ -670,25 +670,25 @@ async function handleWorkerRequest(request, env = {}) {
           affiliates: {
             ps5SsdUrl:
               env.AFFILIATE_PS5_SSD_URL ||
-              'https://www.amazon.com/s?k=WD+BLACK+2TB+SN850X+NVMe+SSD+with+Heatsink+PS5',
+              'https://www.amazon.com/s?k=WD+BLACK+2TB+SN850X+NVMe+SSD+with+Heatsink+PS5&tag=playunpause-20',
             xboxCardUrl:
               env.AFFILIATE_XBOX_CARD_URL ||
-              'https://www.amazon.com/s?k=WD+BLACK+C50+1TB+Expansion+Card+Xbox',
+              'https://www.amazon.com/s?k=WD+BLACK+C50+1TB+Expansion+Card+Xbox&tag=playunpause-20',
             topupsUrl:
               env.AFFILIATE_TOPUPS_URL ||
-              'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card',
+              'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20',
             fpsMouseUrl:
               env.AFFILIATE_FPS_MOUSE_URL ||
-              'https://www.amazon.com/s?k=Superlight+Wireless+Esports+Gaming+Mouse',
+              'https://www.amazon.com/s?k=Superlight+Wireless+Esports+Gaming+Mouse&tag=playunpause-20',
             heKeyboardUrl:
               env.AFFILIATE_HE_KEYBOARD_URL ||
-              'https://www.amazon.com/s?k=Rapid+Trigger+Hall+Effect+Gaming+Keyboard',
+              'https://www.amazon.com/s?k=Rapid+Trigger+Hall+Effect+Gaming+Keyboard&tag=playunpause-20',
             proControllerUrl:
               env.AFFILIATE_PRO_CONTROLLER_URL ||
-              'https://www.amazon.com/s?k=Hall+Effect+Pro+Esports+Controller',
+              'https://www.amazon.com/s?k=Hall+Effect+Pro+Esports+Controller&tag=playunpause-20',
             monitor240Url:
               env.AFFILIATE_MONITOR_240_URL ||
-              'https://www.amazon.com/s?k=240Hz+1ms+Esports+Gaming+Monitor',
+              'https://www.amazon.com/s?k=240Hz+1ms+Esports+Gaming+Monitor&tag=playunpause-20',
           },
           demoUnlockEnabled: isDemoUnlockPermitted(env),
           activeSponsor,

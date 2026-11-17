@@ -27,10 +27,10 @@
 - All free interactive calculators execute 100% locally in the browser with zero ad-tech scripts and self-hosted fonts.
 - Pre-launch GTA VI figures are clearly labeled as estimates ahead of November 19, 2026 release.
 - NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
-- Optional Sync Pass ($6.99 USD one-time via Whop Merchant of Record) unlocks UP-XXXXXXXX Phone <-> PC sync for console SSD setups, squad crew presets, 120 cross-game pins, 90m/120m routes, CSV/JSON export, and 14-day refunds.
+- All 10 game calculators, 90m/120m weeknight routes, saved console SSD setups, squad crew presets, and CSV/JSON exports are 100% free with zero consumer checkout.
 
 ## Legal & Trust Pages
-- [TERMS](https://playunpause.com/legal/terms): Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, Whop billing, and Nov 2026 preview terms. Support: hello@playunpause.com.
-- [PRIVACY](https://playunpause.com/legal/privacy): Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, HMAC-SHA256 email hashing, Cloudflare metrics, and DELETE sync purge.
-- [REFUNDS](https://playunpause.com/legal/refunds): Explore our 14-day hassle-free Sync Pass refund guarantee alongside EU/UK statutory rights and moderation rules for $149/day verified sponsorships.
+- [TERMS](https://playunpause.com/legal/terms): Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, and Nov 2026 preview terms. Support: hello@playunpause.com. Free browser tool with zero.
+- [PRIVACY](https://playunpause.com/legal/privacy): Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, Cloudflare metrics, and DELETE sync purge. Free browser tool with.
+- [REFUNDS](https://playunpause.com/legal/refunds): Explore Unpause moderation rules for $149/day verified header sponsorships and legacy support contact details. Free browser tool with zero popup ads.
 - [IP](https://playunpause.com/legal/ip): View Unpause publisher non-affiliation statements, Mojang and CD PROJEKT S.A. trademark notices, 17 U.S.C. 512(c)(3) DMCA contacts, and affiliate info.

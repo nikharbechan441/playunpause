@@ -133,7 +133,7 @@ ${toolLines}
 - All free interactive calculators execute 100% locally in the browser with zero ad-tech scripts and self-hosted fonts.
 - Pre-launch GTA VI figures are clearly labeled as estimates ahead of November 19, 2026 release.
 - NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
-- Optional Sync Pass ($6.99 USD one-time via Whop Merchant of Record) unlocks UP-XXXXXXXX Phone <-> PC sync for console SSD setups, squad crew presets, 120 cross-game pins, 90m/120m routes, CSV/JSON export, and 14-day refunds.
+- All 10 game calculators, 90m/120m weeknight routes, saved console SSD setups, squad crew presets, and CSV/JSON exports are 100% free with zero consumer checkout.
 
 ## Legal & Trust Pages
 ${legalLines}

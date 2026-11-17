@@ -19,8 +19,8 @@ import { buildNightRunSharePath, buildNightRunShareUrl } from '../utils/shareUrl
 
 const SESSION_DURATIONS = [
   { mins: 45, label: '45m Express (Free)', free: true },
-  { mins: 90, label: '90m Standard (Pass)', free: false },
-  { mins: 120, label: '120m Deep Clear (Pass)', free: false },
+  { mins: 90, label: '90m Standard (Free)', free: true },
+  { mins: 120, label: '120m Deep Clear (Free)', free: true },
 ];
 
 export default function NightRunProDeck({
@@ -77,8 +77,7 @@ export default function NightRunProDeck({
   const routesMap = gamePack.nightRoutes || {};
   const activeRouteStops = routesMap[sessionMins] || routesMap[45] || [];
 
-  const passPrice = runtimeConfig?.passPriceUsd ?? 6.99;
-  const routeLocked = !isPro && sessionMins > 45;
+  const routeLocked = false;
 
   const completedStopsCount = useMemo(
     () => activeRouteStops.filter((stop) => checkedRouteIds.includes(stop.id)).length,
@@ -523,7 +522,7 @@ export default function NightRunProDeck({
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 700, fontSize: '0.92rem' }}>
                   <Sparkles size={15} color="var(--game-accent)" />
-                  <span>{isPro ? 'Unpause Sync Pass Active' : `Unpause Sync Pass · $${passPrice} Once`}</span>
+                  <span>All Weeknight Routes Unlocked Free</span>
                 </div>
                 {isPro && deckCode && (
                   <button type="button" className="subtle-pill-btn" onClick={handleCopyDeckCode}>
@@ -535,34 +534,14 @@ export default function NightRunProDeck({
 
               <div className="pass-feature-grid">
                 <div className="pass-feature-item">
-                  <QrCode size={14} color="var(--ocean)" />
-                  <span>Phone ↔ PC Instant QR Sync</span>
-                </div>
-                <div className="pass-feature-item">
-                  <Sparkles size={14} color="var(--gold)" />
-                  <span>16 Console &amp; Squad Presets</span>
+                  <Clock size={14} color="var(--teal-dark)" />
+                  <span>45m, 90m &amp; 120m Routes Included</span>
                 </div>
                 <div className="pass-feature-item">
                   <CheckCircle2 size={14} color="var(--game-accent)" />
-                  <span>120 Cross-Game Saved Pins</span>
-                </div>
-                <div className="pass-feature-item">
-                  <Clock size={14} color="var(--teal-dark)" />
-                  <span>90m &amp; 120m Extended Routes</span>
+                  <span>Spoiler-Free Act I–III Alerts</span>
                 </div>
               </div>
-
-              {!isPro && (
-                <div style={{ marginTop: '12px' }}>
-                  <button
-                    type="button"
-                    className="primary-coral-btn full-width-btn"
-                    onClick={onOpenProModal}
-                  >
-                    Unlock Sync Pass · ${passPrice} (One-Time)
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>

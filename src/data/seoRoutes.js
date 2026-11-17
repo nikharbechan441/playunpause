@@ -41,25 +41,25 @@ export const LEGAL_META = {
     path: '/legal/terms',
     title: 'Terms of Service & ECTA Disclosures — Unpause',
     description:
-      'Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, Whop billing, and Nov 2026 preview terms. Support: hello@playunpause.com.',
+      'Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, and Nov 2026 preview terms. Support: hello@playunpause.com.',
     h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. Users must be 18+ or have verifiable parent/guardian consent. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. The Unpause One-Time Sync Pass ($6.99 USD one-time plus applicable VAT/sales tax via Whop Merchant of Record) unlocks cross-device cloud sync for saved console SSD setups, squad heist roster presets, up to 120 cross-game pins, 90m/120m weeknight routes, and portable CSV/JSON export during service lifetime (minimum 12 months digital conformity commitment / 30 days shutdown notice). Support: hello@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, weeknight routes, saved setups, and CSV/JSON exports are 100% free with zero consumer checkout. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. Support: hello@playunpause.com.',
   },
   privacy: {
     path: '/legal/privacy',
     title: 'Privacy Notice (POPIA · GDPR · CCPA) — Unpause',
     description:
-      'Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, HMAC-SHA256 email hashing, Cloudflare metrics, and DELETE sync purge.',
+      'Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, Cloudflare metrics, and DELETE sync purge.',
     h1: 'Unpause Privacy Notice (POPIA · EU/UK GDPR · CCPA)',
-    body: 'playunpause.com runs zero behavioral ad networks and never sells personal information. Typography fonts are self-hosted directly from playunpause.com with zero external Google Fonts requests or IP sharing. Information Officer: hello@playunpause.com. Free tool inputs stay in localStorage; paid Whop orders store HMAC-SHA256 email hashes, receipt IDs, and state JSON on Cloudflare Workers & D1 (with privacy-first Cloudflare Web Analytics). No directed collection from children under 13/16/18. Tax ledgers kept 5-7 years; inactive sync state purged cleanly via email or authenticated DELETE /api/sync/:code. Escalate unresolved POPIA queries to the Information Regulator (South Africa) at POPIAComplaints@inforegulator.org.za.',
+    body: 'playunpause.com runs zero behavioral ad networks and never sells personal information. Typography fonts are self-hosted directly from playunpause.com with zero external Google Fonts requests or IP sharing. Information Officer: hello@playunpause.com. Calculator inputs and saved setups stay in localStorage; optional legacy sync codes store state JSON on Cloudflare Workers & D1 (with privacy-first Cloudflare Web Analytics). No directed collection from children under 13/16/18. Inactive sync state is purged cleanly via email or authenticated DELETE /api/sync/:code. Escalate unresolved POPIA queries to the Information Regulator (South Africa) at POPIAComplaints@inforegulator.org.za.',
   },
   refunds: {
     path: '/legal/refunds',
-    title: '14-Day Refund & Sponsor Ad Policy — Unpause',
+    title: 'Sponsor Ad Policy & Legacy Support — Unpause',
     description:
-      'Explore our 14-day hassle-free Sync Pass refund guarantee alongside EU/UK statutory rights and moderation rules for $149/day verified sponsorships.',
-    h1: '14-Day Refund Policy & Sponsored Ad Rules',
-    body: 'Unpause Sync Pass carries a 14-day hassle-free refund guarantee via hello@playunpause.com (or Whop Resolution Center; statement reads WHOP*PLAYUNPAUSE), honoring EU/UK 14-day statutory rights and UK CRA 2015 remedies. Header sponsors ($149/24h via sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited.',
+      'Explore Unpause moderation rules for $149/day verified header sponsorships and legacy support contact details.',
+    h1: 'Sponsored Ad Rules & Support Policy',
+    body: 'All playunpause.com calculators and routes are 100% free with zero consumer billing. Header sponsors ($149/24h via direct inquiry to sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation before invoicing, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited. Legacy support: hello@playunpause.com.',
   },
   ip: {
     path: '/legal/ip',

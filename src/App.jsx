@@ -106,24 +106,24 @@ export function sanitizeHttpsUrl(rawUrl, fallback = null) {
 }
 
 const DEFAULT_RUNTIME = {
-  passPriceUsd: 6.99,
+  passPriceUsd: 0,
   sponsorPriceUsd: 149,
   demoUnlockEnabled: false,
-  passCheckoutUrl: 'https://whop.com/playunpause/unpause-one-time-all-access-pass/',
-  sponsorCheckoutUrl: 'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/',
+  passCheckoutUrl: '',
+  sponsorCheckoutUrl: '',
   supportEmail: 'hello@playunpause.com',
   sponsorEmail: 'sponsors@playunpause.com',
   legalOperatorName: '',
   legalServiceAddress: '',
   legalContactPhone: '',
   affiliates: {
-    ps5SsdUrl: 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink',
-    xboxCardUrl: 'https://www.amazon.com/s?k=WD+Black+C50+Xbox+Expansion+Card',
-    topupsUrl: 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card',
-    fpsMouseUrl: 'https://www.amazon.com/s?k=wireless+superlight+esports+gaming+mouse+8k',
-    heKeyboardUrl: 'https://www.amazon.com/s?k=hall+effect+rapid+trigger+gaming+keyboard',
-    proControllerUrl: 'https://www.amazon.com/s?k=pro+esports+wireless+controller+hall+effect',
-    monitor240Url: 'https://www.amazon.com/s?k=240hz+gaming+monitor+1ms+oled',
+    ps5SsdUrl: 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink&tag=playunpause-20',
+    xboxCardUrl: 'https://www.amazon.com/s?k=WD+Black+C50+Xbox+Expansion+Card&tag=playunpause-20',
+    topupsUrl: 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20',
+    fpsMouseUrl: 'https://www.amazon.com/s?k=wireless+superlight+esports+gaming+mouse+8k&tag=playunpause-20',
+    heKeyboardUrl: 'https://www.amazon.com/s?k=hall+effect+rapid+trigger+gaming+keyboard&tag=playunpause-20',
+    proControllerUrl: 'https://www.amazon.com/s?k=pro+esports+wireless+controller+hall+effect&tag=playunpause-20',
+    monitor240Url: 'https://www.amazon.com/s?k=240hz+gaming+monitor+1ms+oled&tag=playunpause-20',
   },
   activeSponsor: null,
 };
@@ -1245,16 +1245,8 @@ export default function App() {
       Array.isArray(activeRoute?.faqs) && activeRoute.faqs.length > 0
         ? activeRoute.faqs
         : activeGamePack.faqs || [];
-    return [
-      ...routeFaqs,
-      {
-        q: `What does the one-time $${runtimeConfig.passPriceUsd} Sync Pass unlock?`,
-        a: activeGamePack.isGta6Suite
-          ? `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), 16 saved console SSD setups, 16 squad heist crew presets, 120 cross-game pinned calcs, 90m/120m weeknight routes, unbranded OBS embeds (?mode=obs), custom Clan Tag PNGs, and 14-day hassle-free refunds.`
-          : `All 10 game calculators stay free forever with zero ads. One-time $${runtimeConfig.passPriceUsd} Sync Pass via Whop unlocks instant Phone ↔ PC QR sync (UP-XXXXXXXX code), up to 120 synced pins & session checklists, unbranded OBS embeds (?mode=obs), custom Clan Tag PNG cards, and 14-day hassle-free refunds.`,
-      },
-    ];
-  }, [activeRoute?.faqs, activeGamePack.faqs, activeGamePack.isGta6Suite, runtimeConfig.passPriceUsd]);
+    return [...routeFaqs];
+  }, [activeRoute?.faqs, activeGamePack.faqs]);
 
   const currentEmbedPath = useMemo(() => {
     if (activeGameId === 'gta-6') {
@@ -2011,51 +2003,6 @@ export default function App() {
           </Suspense>
         </ChunkErrorBoundary>
 
-        {!isNotFound &&
-          !legalSection &&
-          !deckState.isPro &&
-          !syncNudgeDismissed &&
-          syncInventory.totalSavedCount >= 2 && (
-            <aside className="contextual-sync-bar" aria-label="Cross-device Sync reminder">
-              <div>
-                <strong>
-                  {activeGamePack.isGta6Suite
-                    ? `${syncInventory.totalSavedCount} items saved on this browser only`
-                    : `${syncInventory.pinsCount} saved ${activeGamePack.shortTitle} build${syncInventory.pinsCount === 1 ? '' : 's'} on this browser`}
-                </strong>
-                <span>
-                  {activeGamePack.isGta6Suite
-                    ? `${syncInventory.consolesCount} consoles · ${syncInventory.rostersCount} rosters · ${syncInventory.pinsCount} pins · ${syncInventory.safesCount} safes. Sync Phone ↔ PC via QR for $${runtimeConfig.passPriceUsd} once.`
-                    : `Sync pinned builds & multi-night checklists Phone ↔ PC via QR + unlock Custom Clan PNGs & OBS mode (?mode=obs) for $${runtimeConfig.passPriceUsd} once.`}
-                </span>
-              </div>
-              <div className="contextual-sync-actions">
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() => {
-                    playSwitchTick(deckState.soundEnabled, 740);
-                    setShowProModal(true);
-                  }}
-                >
-                  <QrCode size={14} aria-hidden="true" />
-                  <span>Sync Across Devices</span>
-                </button>
-                <button
-                  type="button"
-                  className="subtle-pill-btn"
-                  aria-label="Dismiss sync reminder"
-                  onClick={() => {
-                    playSwitchTick(deckState.soundEnabled, 560);
-                    setSyncNudgeDismissed(true);
-                  }}
-                >
-                  <X size={14} aria-hidden="true" />
-                </button>
-              </div>
-            </aside>
-          )}
-
         {/* TRUST / GAME DOMAIN FAQ GRID */}
         <section className="trust-faq-grid" aria-label="Quick Reference FAQs">
           {faqCards.map((faq) => (
@@ -2547,67 +2494,22 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="pass-steps-strip" aria-label="How Sync Pass works">
-                  <span>1. Buy once (${runtimeConfig.passPriceUsd})</span>
-                  <span>2. Scan QR / UP- code</span>
-                  <span>3. Instant Phone ↔ PC sync</span>
+                <div className="pass-steps-strip" aria-label="How local backup works">
+                  <span>1. All calculators free</span>
+                  <span>2. Export JSON/CSV anytime</span>
+                  <span>3. Legacy UP- restore supported</span>
                 </div>
 
-                <div className="sync-actions-row">
-                  <a
-                    href={passCheckoutHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="primary-coral-btn full-width-btn"
-                  >
-                    <span>Unlock Sync Pass · ${runtimeConfig.passPriceUsd} One-Time</span>
-                    <ExternalLink size={14} aria-hidden="true" />
-                  </a>
-                </div>
                 <p className="sync-legal-fineprint">
-                  18+ (or parental/guardian consent). Merchant of Record: Whop (applicable VAT/sales tax shown before payment; statement reads <strong>WHOP*PLAYUNPAUSE</strong>). Instant digital delivery
-                  {activeGamePack.isGta6Suite
-                    ? '; GTA VI modules remain pre-launch previews until Nov 19, 2026'
-                    : ' across all unlocked cloud sync features'}. Includes 14-day hassle-free refunds.
-                </p>
-                <div className="sync-legal-links-row">
-                  <button
-                    type="button"
-                    className="inline-legal-link-btn"
-                    onClick={() => {
-                      setShowProModal(false);
-                      setLegalSection('terms');
-                    }}
-                  >
-                    Terms
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-legal-link-btn"
-                    onClick={() => {
-                      setShowProModal(false);
-                      setLegalSection('privacy');
-                    }}
-                  >
-                    Privacy
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-legal-link-btn"
-                    onClick={() => {
-                      setShowProModal(false);
-                      setLegalSection('refunds');
-                    }}
-                  >
-                    Refund Policy
-                  </button>
+                  All 10 game calculators, 90m/120m weeknight routes, and portable CSV/JSON backups are 100% free with zero checkout required. Have a legacy <code>UP-XXXXXXXX</code> sync code? Restore it below or email{' '}
                   <a
                     href={`mailto:${runtimeConfig.supportEmail}`}
                     className="legal-contact-link"
                   >
                     {runtimeConfig.supportEmail}
                   </a>
-                </div>
+                  .
+                </p>
               </div>
             )}
 
@@ -2750,9 +2652,9 @@ export default function App() {
                 Email <strong>{runtimeConfig.sponsorEmail}</strong>.
               </p>
               <p className="sync-bearer-note">
-                <strong>Pre-Checkout Ad Rules:</strong> 18+ / business buyers only; no gambling, real-money
-                trading (RMT), malware, NSFW, deceptive urgency, or Punycode domains. Subject to
-                moderation review before publishing; tax calculated by Whop. See{' '}
+                <strong>Ad Review First:</strong> 18+ / business buyers only; no gambling, real-money
+                trading (RMT), malware, NSFW, deceptive urgency, or Punycode domains. Destinations are
+                reviewed manually before invoicing. See{' '}
                 <button
                   type="button"
                   className="inline-legal-link-btn"
@@ -2761,19 +2663,17 @@ export default function App() {
                     setLegalSection('refunds');
                   }}
                 >
-                  Refund &amp; Ad Disclosure Policy
+                  Sponsored Ad Policy
                 </button>
                 .
               </p>
             </div>
 
             <a
-              href={sponsorCheckoutHref}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`mailto:${runtimeConfig.sponsorEmail}?subject=${encodeURIComponent('PlayUnpause 24h Header Sponsor Inquiry ($149)')}`}
               className="primary-coral-btn full-width-btn"
             >
-              <span>Reserve 24h Slot via Whop · ${runtimeConfig.sponsorPriceUsd}</span>
+              <span>Request 24h Sponsor Slot · ${runtimeConfig.sponsorPriceUsd}</span>
               <ExternalLink size={14} aria-hidden="true" />
             </a>
           </div>

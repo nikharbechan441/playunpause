@@ -342,9 +342,23 @@ export default function StorageUnlockDeck({
               {totalClearedGb} GB free vs {installTargetGb} GB req · ETA {downloadTimeText}
             </div>
           </div>
-          <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {fits ? `+${surplusGb} GB` : `-${shortfallGb} GB`}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {!fits && (
+              <a
+                href={/^https:\/\//i.test(String(upgradeUrl || '')) ? upgradeUrl : 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink&tag=playunpause-20'}
+                target="_blank"
+                rel="sponsored nofollow noopener noreferrer"
+                className="secondary-key-btn"
+                style={{ padding: '5px 9px', fontSize: '0.72rem' }}
+              >
+                <span>{selectedConsole.platform === 'xbox' ? 'Add 1TB Card' : 'Add PS5 SSD'}</span>
+                <ExternalLink size={11} />
+              </a>
+            )}
+            <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)', whiteSpace: 'nowrap' }}>
+              {fits ? `+${surplusGb} GB` : `-${shortfallGb} GB`}
+            </span>
+          </div>
         </div>
 
         <div className="storage-stage-grid">
@@ -618,12 +632,16 @@ export default function StorageUnlockDeck({
                   </span>
                 </div>
                 <a
-                  href={/^https:\/\//i.test(String(upgradeUrl || '')) ? upgradeUrl : 'https://www.amazon.com/'}
+                  href={/^https:\/\//i.test(String(upgradeUrl || '')) ? upgradeUrl : 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink&tag=playunpause-20'}
                   target="_blank"
                   rel="sponsored nofollow noopener noreferrer"
-                  className="secondary-key-btn"
+                  className="primary-coral-btn"
                 >
-                  <span>Shop Compatible SSD</span>
+                  <span>
+                    {selectedConsole.platform === 'xbox'
+                      ? 'Get Xbox Expansion Card'
+                      : 'Add 2TB PS5 Heatsink SSD'}
+                  </span>
                   <ExternalLink size={13} />
                 </a>
               </div>
@@ -893,9 +911,27 @@ export default function StorageUnlockDeck({
               <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.48, color: 'var(--ink-secondary)' }}>
                 {selectedConsole.nzDetail}
               </p>
-              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
-                <Download size={12} />
-                <span>Includes 10% protocol overhead factor on {mbps} Mbps downloads.</span>
+              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--ink-muted)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Download size={12} />
+                  <span>Includes 10% protocol overhead factor on {mbps} Mbps downloads.</span>
+                </span>
+                {selectedConsole.platform === 'ps5' && (
+                  <a
+                    href={
+                      /^https:\/\//i.test(String(runtimeConfig?.affiliates?.topupsUrl || ''))
+                        ? runtimeConfig.affiliates.topupsUrl
+                        : 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20'
+                    }
+                    target="_blank"
+                    rel="sponsored nofollow noopener noreferrer"
+                    className="inline-legal-link-btn"
+                    style={{ fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <span>PSN Wallet Cards</span>
+                    <ExternalLink size={11} />
+                  </a>
+                )}
               </div>
             </div>
           </div>

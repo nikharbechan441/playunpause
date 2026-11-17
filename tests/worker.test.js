@@ -1029,7 +1029,8 @@ test('Worker persists storageProfiles & crewPresets, fixes $6.99 pricing, caches
   const termsRes = await worker.fetch(new Request('https://playunpause.com/legal/terms'), env);
   assert.equal(termsRes.status, 200);
   const termsHtml = await termsRes.text();
-  assert.ok(termsHtml.includes('$6.99'));
+  assert.equal(termsHtml.includes('$6.99'), false);
+  assert.ok(termsHtml.includes('100% free'));
   assert.equal(termsHtml.includes('9.99'), false);
   assert.equal(/Founders/i.test(termsHtml), false);
 });
