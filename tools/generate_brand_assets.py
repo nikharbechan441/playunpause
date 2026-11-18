@@ -59,8 +59,8 @@ OG_CARDS = [
         "accent": (56, 189, 248),
         "category": "GTA VI STORAGE CHECKER",
         "headline": "Will GTA VI Fit On Your Console?",
-        "sub": "212 GB PS5 & 225 GB Xbox Space Check, +35 GB Patch Buffer & Mbps Download ETA.",
-        "pills": ["212-225 GB", "+35 GB PATCH", "PS5 · XSX · XSS"],
+        "sub": "Up to 212 GB PS5 & Xbox Preload Space Check, +35 GB Patch Buffer & Mbps Download ETA.",
+        "pills": ["UP TO 212 GB", "+35 GB PATCH", "PS5 · XSX · XSS"],
     },
     {
         "filename": "gta-6-safes.png",
@@ -73,7 +73,7 @@ OG_CARDS = [
     {
         "filename": "gta-6-heist.png",
         "accent": (52, 211, 153),
-        "category": "GTA VI SQUAD HEIST SPLITTER",
+        "category": "GTA ONLINE & CREW PAYOUT SPLITTER",
         "headline": "Integer-Exact 100% Heist Cut Math",
         "sub": "Deduct Support Crew Fees, Copy Squad Chat Receipts & Project Two-Character Market Compounding.",
         "pills": ["4-WAY SPLIT", "ZERO REMAINDER", "MARKET COMPOUND"],

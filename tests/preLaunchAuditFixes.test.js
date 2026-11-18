@@ -177,6 +177,11 @@ test('1. GTA VI ground-truth: 212 GB Xbox size, CFI-2100 PS5, scrubbed Safes, Cr
   const squadSource = readRepoFile('src/components/SquadHeistMarketDeck.jsx');
   assert.match(squadSource, /GTA Online \/ Future Crew Payout Estimator/);
   assert.match(squadSource, /single-player/i);
+
+  for (const rel of collectFiles('src', ['.js', '.jsx'])) {
+    const content = readRepoFile(rel);
+    assert.doesNotMatch(content, /225\s*GB|212[–-]225\s*GB/i, `Found stale 225 GB copy in ${rel}`);
+  }
 });
 
 test('2. Roblox DevEx net-earned mode yields $380.00 for 100k Robux without double 30% deduction', () => {
