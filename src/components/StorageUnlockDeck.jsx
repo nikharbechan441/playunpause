@@ -141,9 +141,14 @@ export default function StorageUnlockDeck({
   const freeSliderPct = Math.round((clampedFreeGb / usableGb) * 100);
   const speedSliderPct = Math.round(((mbps - 15) / (1000 - 15)) * 100);
 
-  const upgradeUrl =
-    runtimeConfig?.affiliates?.[selectedConsole?.upgradeKind] ||
-    'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+heatsink';
+  const defaultUpgradeFallback =
+    selectedConsole?.platform === 'xbox'
+      ? 'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20'
+      : 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20';
+  const rawUpgradeUrl = runtimeConfig?.affiliates?.[selectedConsole?.upgradeKind] || '';
+  const upgradeUrl = /^https:\/\//i.test(String(rawUpgradeUrl))
+    ? rawUpgradeUrl
+    : defaultUpgradeFallback;
 
   const diagnosisLine = useMemo(
     () => computeStorageDiagnosis(selectedConsole?.id, sacrificedGames, fits),
@@ -262,18 +267,10 @@ export default function StorageUnlockDeck({
 
   const handleSaveProfile = () => {
     if (!onSaveStorageProfile) return;
-    if (!isPro && storageProfiles.length >= MAX_FREE_PROFILES) {
-      playSwitchTick(soundEnabled, 660);
-      setProfileLimitAlert(true);
-      setProfileNotice(
-        `Free tier saves ${MAX_FREE_PROFILES} console setups locally (e.g. Living Room + Bedroom). Unlock ${MAX_SYNC_PROFILES} cloud-synced setups with Sync Pass.`
-      );
-      return;
-    }
-    if (isPro && storageProfiles.length >= MAX_SYNC_PROFILES) {
+    if (storageProfiles.length >= MAX_SYNC_PROFILES) {
       playSwitchTick(soundEnabled, 640);
       setProfileLimitAlert(false);
-      setProfileNotice(`Reached ${MAX_SYNC_PROFILES} synced console setups — remove an older setup first.`);
+      setProfileNotice(`Reached ${MAX_SYNC_PROFILES} saved console setups — remove an older setup first.`);
       return;
     }
     playSwitchTick(soundEnabled, 820);
@@ -342,22 +339,29 @@ export default function StorageUnlockDeck({
               {totalClearedGb} GB free vs {installTargetGb} GB req · ETA {downloadTimeText}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {!fits && (
+                <a
+                  href={upgradeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="amazon-plain-link"
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  <span>{selectedConsole.platform === 'xbox' ? 'Check Xbox Card on Amazon' : 'Check PS5 M.2 NVMe on Amazon'}</span>
+                  <ExternalLink size={11} aria-hidden="true" />
+                </a>
+              )}
+              <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)', whiteSpace: 'nowrap' }}>
+                {fits ? `+${surplusGb} GB` : `-${shortfallGb} GB`}
+              </span>
+            </div>
             {!fits && (
-              <a
-                href={/^https:\/\//i.test(String(upgradeUrl || '')) ? upgradeUrl : 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink&tag=playunpause-20'}
-                target="_blank"
-                rel="sponsored nofollow noopener noreferrer"
-                className="secondary-key-btn"
-                style={{ padding: '5px 9px', fontSize: '0.72rem' }}
-              >
-                <span>{selectedConsole.platform === 'xbox' ? 'Add 1TB Card' : 'Add PS5 SSD'}</span>
-                <ExternalLink size={11} />
-              </a>
+              <small style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>
+                (As an Amazon Associate I earn from qualifying purchases.)
+              </small>
             )}
-            <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ink-primary)', whiteSpace: 'nowrap' }}>
-              {fits ? `+${surplusGb} GB` : `-${shortfallGb} GB`}
-            </span>
           </div>
         </div>
 
@@ -435,9 +439,7 @@ export default function StorageUnlockDeck({
               <div className="meter-labels">
                 <span>
                   Target Required:{' '}
-                  <strong className="mono">
-                    <AnimatedValue value={installTargetGb} suffix=" GB" />
-                  </strong>
+                  <strong className="mono">{installTargetGb} GB</strong>
                   {customOffsetGb !== 0 && (
                     <span style={{ color: 'var(--ink-muted)', fontSize: '0.76rem', marginLeft: '6px' }}>
                       ({customOffsetGb > 0 ? `+${customOffsetGb}` : customOffsetGb} GB adj)
@@ -448,15 +450,7 @@ export default function StorageUnlockDeck({
                   className="mono"
                   style={{ color: fits ? 'var(--teal-dark)' : 'var(--coral)', fontWeight: 700 }}
                 >
-                  {fits ? (
-                    <>
-                      FITS (+<AnimatedValue value={surplusGb} suffix=" GB HEADROOM" />)
-                    </>
-                  ) : (
-                    <>
-                      SHORT BY <AnimatedValue value={shortfallGb} suffix=" GB" />
-                    </>
-                  )}
+                  {fits ? `FITS (+${surplusGb} GB HEADROOM)` : `SHORT BY ${shortfallGb} GB`}
                 </span>
               </div>
 
@@ -632,17 +626,17 @@ export default function StorageUnlockDeck({
                   </span>
                 </div>
                 <a
-                  href={/^https:\/\//i.test(String(upgradeUrl || '')) ? upgradeUrl : 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink&tag=playunpause-20'}
+                  href={upgradeUrl}
                   target="_blank"
-                  rel="sponsored nofollow noopener noreferrer"
-                  className="primary-coral-btn"
+                  rel="noopener noreferrer sponsored"
+                  className="amazon-plain-link"
                 >
                   <span>
                     {selectedConsole.platform === 'xbox'
-                      ? 'Get Xbox Expansion Card'
-                      : 'Add 2TB PS5 Heatsink SSD'}
+                      ? 'Check Xbox Card on Amazon'
+                      : 'Check PS5 M.2 NVMe on Amazon'}
                   </span>
-                  <ExternalLink size={13} />
+                  <ExternalLink size={13} aria-hidden="true" />
                 </a>
               </div>
             )}
@@ -700,9 +694,7 @@ export default function StorageUnlockDeck({
 
                 <div className="receipt-row" style={{ fontWeight: 700 }}>
                   <span>Total Free Space</span>
-                  <span>
-                    <AnimatedValue value={totalClearedGb} /> / {usableGb} GB
-                  </span>
+                  <span>{totalClearedGb} / {usableGb} GB</span>
                 </div>
                 <div className="receipt-row">
                   <span>ETA @ {mbps} Mbps</span>
@@ -799,8 +791,7 @@ export default function StorageUnlockDeck({
                   <div className="saved-preset-title">
                     <Bookmark size={14} color="var(--ocean)" aria-hidden="true" />
                     <span>
-                      Saved Console Setups ({storageProfiles.length}
-                      {isPro ? ` / ${MAX_SYNC_PROFILES} Synced` : ` / ${MAX_FREE_PROFILES} Free`})
+                      Saved Console Setups ({storageProfiles.length} / {MAX_SYNC_PROFILES} Free)
                     </span>
                   </div>
                   <button
@@ -814,21 +805,10 @@ export default function StorageUnlockDeck({
                 </div>
 
                 <div role="status" aria-live="polite">
-                  {profileLimitAlert && !isPro ? (
-                    <div className="pin-limit-alert">
-                      <span>{profileNotice}</span>
-                      {onOpenProModal && (
-                        <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-                          Unlock Sync Pass
-                        </button>
-                      )}
+                  {profileNotice && (
+                    <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
+                      {profileNotice}
                     </div>
-                  ) : (
-                    profileNotice && (
-                      <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
-                        {profileNotice}
-                      </div>
-                    )
                   )}
                 </div>
 
@@ -917,20 +897,25 @@ export default function StorageUnlockDeck({
                   <span>Includes 10% protocol overhead factor on {mbps} Mbps downloads.</span>
                 </span>
                 {selectedConsole.platform === 'ps5' && (
-                  <a
-                    href={
-                      /^https:\/\//i.test(String(runtimeConfig?.affiliates?.topupsUrl || ''))
-                        ? runtimeConfig.affiliates.topupsUrl
-                        : 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20'
-                    }
-                    target="_blank"
-                    rel="sponsored nofollow noopener noreferrer"
-                    className="inline-legal-link-btn"
-                    style={{ fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <span>PSN Wallet Cards</span>
-                    <ExternalLink size={11} />
-                  </a>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                    <a
+                      href={
+                        /^https:\/\//i.test(String(runtimeConfig?.affiliates?.topupsUrl || ''))
+                          ? runtimeConfig.affiliates.topupsUrl
+                          : 'https://www.amazon.com/dp/B00SW85KD4?tag=playunpause-20'
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="amazon-plain-link"
+                      style={{ fontSize: '0.76rem' }}
+                    >
+                      <span>Check PSN Gift Cards on Amazon</span>
+                      <ExternalLink size={11} aria-hidden="true" />
+                    </a>
+                    <small style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>
+                      (As an Amazon Associate I earn from qualifying purchases.)
+                    </small>
+                  </div>
                 )}
               </div>
             </div>

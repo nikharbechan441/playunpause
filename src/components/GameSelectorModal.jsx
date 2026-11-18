@@ -31,11 +31,67 @@ const ICON_MAP = {
   DollarSign,
 };
 
+const TOOL_SHORTCUTS = [
+  {
+    id: 'tool-gta6-storage',
+    gameId: 'gta-6',
+    path: '/gta-6/storage',
+    shortTitle: 'GTA VI: Preload & SSD',
+    fullTitle: 'GTA VI Console Storage Fit & Download ETA',
+    genre: 'Quick Tool',
+    audienceBadge: '212 GB Preload',
+    tagline: 'Check PS5 & Xbox Series X|S SSD headroom and download ETA.',
+    accentColor: '#FF5964',
+    accentSoft: 'rgba(255, 89, 100, 0.14)',
+    icon: 'Car',
+  },
+  {
+    id: 'tool-gta6-safes',
+    gameId: 'gta-6',
+    path: '/gta-6/safe-codes',
+    shortTitle: 'GTA VI: Safe Keypads',
+    fullTitle: 'GTA VI Safe & Door Keypad Tracker',
+    genre: 'Quick Tool',
+    audienceBadge: 'Live Nov 19',
+    tagline: 'Regional keypad vault & 10-key WebAudio tone pad (syncs Nov 19).',
+    accentColor: '#FF5964',
+    accentSoft: 'rgba(255, 89, 100, 0.14)',
+    icon: 'Car',
+  },
+  {
+    id: 'tool-gta6-heist',
+    gameId: 'gta-6',
+    path: '/gta-6/heist-split',
+    shortTitle: 'GTA Online / Crew Estimator',
+    fullTitle: 'GTA Online / Future Crew Payout Estimator',
+    genre: 'Quick Tool',
+    audienceBadge: 'Crew Split',
+    tagline: 'Exact 100% crew cut splitter & two-character market compounder.',
+    accentColor: '#FF5964',
+    accentSoft: 'rgba(255, 89, 100, 0.14)',
+    icon: 'Car',
+  },
+  {
+    id: 'tool-gta6-route',
+    gameId: 'gta-6',
+    path: '/gta-6/night-run',
+    shortTitle: 'GTA VI: Weeknight Route',
+    fullTitle: 'Weeknight Session Routes & Missables Shield',
+    genre: 'Quick Tool',
+    audienceBadge: '45/90/120m Free',
+    tagline: 'Time-boxed Leonida waypoint loops & Act I–III pause alerts.',
+    accentColor: '#FF5964',
+    accentSoft: 'rgba(255, 89, 100, 0.14)',
+    icon: 'Car',
+  },
+];
+
 export default function GameSelectorModal({
   isOpen,
   onClose,
   activeGameId,
   onSelectGame,
+  onSelectPath = null,
   soundEnabled,
   modalRef,
 }) {
@@ -45,17 +101,19 @@ export default function GameSelectorModal({
 
   useModalFocusTrap(isOpen, modalRef, onClose, { initialFocusRef: inputRef });
 
+  const allEntries = useMemo(() => [...TOP_GAMES, ...TOOL_SHORTCUTS], []);
+
   const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return TOP_GAMES;
-    return TOP_GAMES.filter(
+    return allEntries.filter(
       (g) =>
         g.shortTitle.toLowerCase().includes(q) ||
         g.fullTitle.toLowerCase().includes(q) ||
         g.genre.toLowerCase().includes(q) ||
         g.tagline.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, allEntries]);
 
   useEffect(() => {
     if (isOpen) {
@@ -95,7 +153,11 @@ export default function GameSelectorModal({
       const picked = filteredGames[focusedIdx];
       if (picked) {
         playSwitchTick(soundEnabled, 740);
-        onSelectGame(picked.id);
+        if (picked.path && typeof onSelectPath === 'function') {
+          onSelectPath(picked.path);
+        } else {
+          onSelectGame(picked.id);
+        }
         onClose();
       }
     }
@@ -161,17 +223,17 @@ export default function GameSelectorModal({
         </div>
 
         <div className="selector-result-count" role="status" aria-live="polite">
-          {filteredGames.length} of {TOP_GAMES.length} suites available
+          {filteredGames.length} of {search.trim() ? allEntries.length : TOP_GAMES.length} suites &amp; tools available
         </div>
 
         {filteredGames.length === 0 ? (
           <div className="nz-compact-card selector-empty-box" role="status">
-            No games match &ldquo;{search}&rdquo;. Try &ldquo;GTA VI&rdquo;, &ldquo;MW4&rdquo;, &ldquo;EA FC 27&rdquo;, &ldquo;Minecraft&rdquo;, or &ldquo;Valorant&rdquo;.
+            No games match &ldquo;{search}&rdquo;. Try &ldquo;GTA VI&rdquo;, &ldquo;Safes&rdquo;, &ldquo;MW4&rdquo;, &ldquo;EA FC 27&rdquo;, &ldquo;Minecraft&rdquo;, or &ldquo;Valorant&rdquo;.
           </div>
         ) : (
           <div id="game-selector-listbox" className="game-grid-selector" role="listbox" aria-label="Supported Games">
             {filteredGames.map((game, idx) => {
-              const isSelected = game.id === activeGameId;
+              const isSelected = !game.path && game.id === activeGameId;
               const isFocused = idx === focusedIdx;
               const IconComp = ICON_MAP[game.icon] || Gamepad2;
               return (
@@ -186,7 +248,11 @@ export default function GameSelectorModal({
                   onMouseEnter={() => setFocusedIdx(idx)}
                   onClick={() => {
                     playSwitchTick(soundEnabled, 740);
-                    onSelectGame(game.id);
+                    if (game.path && typeof onSelectPath === 'function') {
+                      onSelectPath(game.path);
+                    } else {
+                      onSelectGame(game.id);
+                    }
                     onClose();
                   }}
                 >

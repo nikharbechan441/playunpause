@@ -37,6 +37,7 @@ import {
   sanitizeStorageProfiles,
   sanitizeStringIdArray,
   sanitizeSyncState,
+  stripDangerousKeys,
 } from './utils/syncState.js';
 import { GAME_PACKS } from './data/games/index.js';
 import {
@@ -117,13 +118,13 @@ const DEFAULT_RUNTIME = {
   legalServiceAddress: '',
   legalContactPhone: '',
   affiliates: {
-    ps5SsdUrl: 'https://www.amazon.com/s?k=PS5+NVMe+SSD+2TB+with+Heatsink&tag=playunpause-20',
-    xboxCardUrl: 'https://www.amazon.com/s?k=WD+Black+C50+Xbox+Expansion+Card&tag=playunpause-20',
-    topupsUrl: 'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20',
-    fpsMouseUrl: 'https://www.amazon.com/s?k=wireless+superlight+esports+gaming+mouse+8k&tag=playunpause-20',
-    heKeyboardUrl: 'https://www.amazon.com/s?k=hall+effect+rapid+trigger+gaming+keyboard&tag=playunpause-20',
-    proControllerUrl: 'https://www.amazon.com/s?k=pro+esports+wireless+controller+hall+effect&tag=playunpause-20',
-    monitor240Url: 'https://www.amazon.com/s?k=240hz+gaming+monitor+1ms+oled&tag=playunpause-20',
+    ps5SsdUrl: 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20',
+    xboxCardUrl: 'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20',
+    topupsUrl: 'https://www.amazon.com/dp/B00SW85KD4?tag=playunpause-20',
+    fpsMouseUrl: 'https://www.amazon.com/dp/B09NBWL8J5?tag=playunpause-20',
+    heKeyboardUrl: 'https://www.amazon.com/dp/B0CG7BWG7J?tag=playunpause-20',
+    proControllerUrl: 'https://www.amazon.com/dp/B0BSYFB99D?tag=playunpause-20',
+    monitor240Url: 'https://www.amazon.com/dp/B0CZWM44QP?tag=playunpause-20',
   },
   activeSponsor: null,
 };
@@ -297,12 +298,35 @@ function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode 
   };
 }
 
+function maskSyncCode(code) {
+  const clean = sanitizeDeckCode(code);
+  if (!clean) return 'UP-••••••••';
+  return `UP-••••${clean.slice(-4)}`;
+}
+
+function generateLocalSyncCodeFallback() {
+  const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  let out = 'UP-';
+  const bytes = new Uint8Array(8);
+  if (typeof globalThis.crypto?.getRandomValues === 'function') {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  for (let i = 0; i < 8; i += 1) {
+    out += alphabet[bytes[i] % alphabet.length];
+  }
+  return out;
+}
+
 function parseStoredDeckObject(rawText) {
   if (!rawText || typeof rawText !== 'string') return null;
   try {
     const parsed = JSON.parse(rawText);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed;
+      return stripDangerousKeys(parsed);
     }
   } catch {
     // Ignore malformed JSON entries
@@ -356,10 +380,10 @@ function readRouteFromLocation() {
   }
 
   let syncCode = null;
-  const hash = window.location.hash || '';
-  const syncMatch = hash.match(/#sync=(UP-[A-Z0-9]{6,12})/i);
+  const hash = (window.location.hash || '').trim();
+  const syncMatch = hash.match(/^#sync=(UP-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8,12})$/i);
   if (syncMatch) {
-    syncCode = syncMatch[1].toUpperCase();
+    syncCode = sanitizeDeckCode(syncMatch[1]);
   }
 
   const rawPath = window.location.pathname || '/';
@@ -431,6 +455,8 @@ export default function App() {
   const [pendingSyncCode, setPendingSyncCode] = useState(() => routeState.syncCode || null);
   const [syncNudgeDismissed, setSyncNudgeDismissed] = useState(false);
   const [backupNotice, setBackupNotice] = useState(null);
+  const [revealSyncSecret, setRevealSyncSecret] = useState(false);
+  const [isCreatingSync, setIsCreatingSync] = useState(false);
 
   const gameModalRef = useRef(null);
   const proModalRef = useRef(null);
@@ -491,13 +517,19 @@ export default function App() {
     [activeGameId]
   );
 
-  const isObsOverlayActive = Boolean(isEmbed && deckState.isPro && routeState.obsMode);
+  const isObsOverlayActive = Boolean(isEmbed && routeState.obsMode);
 
   const isPreLaunch = nowMs < Date.parse(GAME_PACKS[0].nzUnlockIsoUtc || '2026-11-18T11:00:00Z');
-  const daysUntilLaunch = useMemo(
-    () => Math.max(0, Math.ceil((Date.parse('2026-11-19T00:00:00Z') - nowMs) / 86400000)),
-    [nowMs]
-  );
+  const daysUntilLaunch = useMemo(() => {
+    const nowDate = new Date(nowMs);
+    const utcMidnightToday = Date.UTC(
+      nowDate.getUTCFullYear(),
+      nowDate.getUTCMonth(),
+      nowDate.getUTCDate()
+    );
+    const launchMidnightUtc = Date.UTC(2026, 10, 19);
+    return Math.max(0, Math.round((launchMidnightUtc - utcMidnightToday) / 86400000));
+  }, [nowMs]);
   const headerNzClock = useMemo(
     () => formatCountdownMs(Date.parse(GAME_PACKS[0].nzUnlockIsoUtc) - nowMs),
     [nowMs]
@@ -584,8 +616,9 @@ export default function App() {
     };
   }, [isEmbed]);
 
-  // Tick minute countdown clock
+  // Tick minute countdown clock cleanly on mount
   useEffect(() => {
+    setNowMs(Date.now());
     const timer = setInterval(() => setNowMs(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
@@ -753,9 +786,9 @@ export default function App() {
     restoreSyncPassByCode(syncCode);
   }, []);
 
-  // Debounced cloud state push when Sync Pass active (skips unchanged payloads)
+  // Debounced cloud state push when a sync code is linked (skips unchanged payloads)
   useEffect(() => {
-    if (!deckState.isPro || !deckState.deckCode) return undefined;
+    if (!deckState.deckCode) return undefined;
     const payloadObj = sanitizeSyncState({
       crackedSafeIds: deckState.crackedSafeIds,
       checkedRouteIds: deckState.checkedRouteIds,
@@ -794,13 +827,15 @@ export default function App() {
     deckState.crewPresets,
   ]);
 
-  // Keyboard shortcuts: Ctrl/Cmd + K opens Game Selector (unless another modal is active), Escape closes active modal
+  // Keyboard shortcuts: Ctrl/Cmd + K opens Game/Tool Switcher cleanly from anywhere, Escape closes active modal
   useEffect(() => {
     const onKeyDown = (e) => {
       if (isEmbed) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        if (showProModal || showSponsorModal || showEmbedModal || legalSection) return;
         e.preventDefault();
+        setShowProModal(false);
+        setShowSponsorModal(false);
+        setShowEmbedModal(false);
         setShowGameModal((open) => !open);
       } else if (e.key === 'Escape') {
         setShowGameModal(false);
@@ -812,7 +847,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEmbed, legalSection, showProModal, showSponsorModal, showEmbedModal]);
+  }, [isEmbed, legalSection]);
 
   // Browser back/forward URL navigation support
   useEffect(() => {
@@ -890,15 +925,11 @@ export default function App() {
 
   const handleSaveStorageProfile = (profileObj) => {
     setDeckState((prev) => {
-      const maxProfiles = prev.isPro ? MAX_SYNC_PROFILES : MAX_FREE_PROFILES;
       const existing = Array.isArray(prev.storageProfiles) ? prev.storageProfiles : [];
       const filtered = existing.filter((p) => p && p.id !== profileObj?.id);
-      if (!prev.isPro && filtered.length >= MAX_FREE_PROFILES) {
-        return prev;
-      }
       return {
         ...prev,
-        storageProfiles: sanitizeStorageProfiles([profileObj, ...filtered], maxProfiles),
+        storageProfiles: sanitizeStorageProfiles([profileObj, ...filtered], MAX_SYNC_PROFILES),
       };
     });
   };
@@ -914,15 +945,11 @@ export default function App() {
 
   const handleSaveCrewPreset = (presetObj) => {
     setDeckState((prev) => {
-      const maxProfiles = prev.isPro ? MAX_SYNC_PROFILES : MAX_FREE_PROFILES;
       const existing = Array.isArray(prev.crewPresets) ? prev.crewPresets : [];
       const filtered = existing.filter((p) => p && p.id !== presetObj?.id);
-      if (!prev.isPro && filtered.length >= MAX_FREE_PROFILES) {
-        return prev;
-      }
       return {
         ...prev,
-        crewPresets: sanitizeCrewPresets([presetObj, ...filtered], maxProfiles),
+        crewPresets: sanitizeCrewPresets([presetObj, ...filtered], MAX_SYNC_PROFILES),
       };
     });
   };
@@ -992,29 +1019,16 @@ export default function App() {
         setBackupNotice({ tone: 'err', text: 'Unrecognized JSON backup structure.' });
         return;
       }
-      const sanitizedImport = sanitizeSyncState(parsed);
+      const cleanParsed = stripDangerousKeys(parsed);
+      const sanitizedImport = sanitizeSyncState(cleanParsed);
+      if (!sanitizedImport) {
+        setBackupNotice({ tone: 'err', text: 'Unrecognized JSON backup structure.' });
+        return;
+      }
       playUnlockChime(deckState.soundEnabled);
       setDeckState((prev) => {
         const merged = mergeSyncStates(prev, sanitizedImport);
-        if (prev.isPro) {
-          return { ...prev, ...merged };
-        }
-        const pinCountsByGame = new Map();
-        const cappedPins = [];
-        for (const pin of merged.savedPins) {
-          const c = pinCountsByGame.get(pin.gameId) || 0;
-          if (c < MAX_FREE_PINS_PER_GAME) {
-            pinCountsByGame.set(pin.gameId, c + 1);
-            cappedPins.push(pin);
-          }
-        }
-        return {
-          ...prev,
-          ...merged,
-          storageProfiles: merged.storageProfiles.slice(0, MAX_FREE_PROFILES),
-          crewPresets: merged.crewPresets.slice(0, MAX_FREE_PROFILES),
-          savedPins: cappedPins,
-        };
+        return { ...prev, ...merged };
       });
       setBackupNotice({
         tone: 'ok',
@@ -1190,9 +1204,55 @@ export default function App() {
     deckState.crewPresets,
   ]);
 
+  const handleCreateFreeSyncCode = async () => {
+    setClaimError('');
+    setClaimStatus('');
+    setIsCreatingSync(true);
+    try {
+      const payloadObj = sanitizeSyncState(deckState);
+      const resp = await fetch('/api/sync/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: payloadObj }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      const serverCode = sanitizeDeckCode(data?.deckCode);
+      if (resp.ok && data?.ok && serverCode) {
+        playUnlockChime(deckState.soundEnabled);
+        lastSyncedPayloadRef.current = JSON.stringify(payloadObj);
+        setDeckState((prev) => ({
+          ...prev,
+          isPro: true,
+          deckCode: serverCode,
+        }));
+        setRevealSyncSecret(false);
+        setClaimStatus(`Free QR sync key ready (${maskSyncCode(serverCode)})`);
+        return;
+      }
+      setClaimError(data?.error || 'Cloud sync endpoint unavailable right now.');
+    } catch {
+      const fallbackCode = generateLocalSyncCodeFallback();
+      setDeckState((prev) => ({
+        ...prev,
+        isPro: true,
+        deckCode: fallbackCode,
+      }));
+      setRevealSyncSecret(false);
+      setClaimStatus(`Generated local QR sync preview (${maskSyncCode(fallbackCode)})`);
+    } finally {
+      setIsCreatingSync(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showProModal) {
+      setRevealSyncSecret(false);
+    }
+  }, [showProModal]);
+
   useEffect(() => {
     let cancelled = false;
-    if (!showProModal || !deckState.isPro || !syncShareUrl) {
+    if (!showProModal || !syncShareUrl) {
       setQrMatrix(null);
       setQrError('');
       return () => {
@@ -1218,7 +1278,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [showProModal, deckState.isPro, syncShareUrl]);
+  }, [showProModal, syncShareUrl]);
 
   const handleGtaTabKeyDown = (event, currentIndex) => {
     let nextIndex = null;
@@ -1518,20 +1578,26 @@ export default function App() {
                 className="nz-hud-pill"
                 title={`Global launch Nov 19, 2026 · Xbox NZ earliest midnight: Nov 18 @ 11:00 UTC (${headerNzClock})`}
               >
-                <span className="nz-live-dot" />
-                <span className="nz-full-text">GTA VI · Nov 19 ({daysUntilLaunch}d)</span>
-                <span className="nz-compact-text">Nov 19 ({daysUntilLaunch}d)</span>
+                <span className="nz-live-dot" aria-hidden="true" />
+                <span className="nz-full-text">
+                  {daysUntilLaunch > 0 ? `GTA VI · Nov 19 (${daysUntilLaunch}d)` : 'GTA VI · Live Nov 19'}
+                </span>
+                <span className="nz-compact-text" aria-hidden="true">
+                  {daysUntilLaunch > 0 ? `Nov 19 (${daysUntilLaunch}d)` : 'Live Nov 19'}
+                </span>
               </div>
             ) : (
               <div
                 className="nz-hud-pill game-context-pill"
                 title={`${activeGamePack.fullTitle} · ${activeGamePack.audienceBadge}`}
               >
-                <span className="nz-live-dot game-context-dot" />
+                <span className="nz-live-dot game-context-dot" aria-hidden="true" />
                 <span className="nz-full-text">
                   {activeGamePack.shortTitle} · {activeGamePack.audienceBadge}
                 </span>
-                <span className="nz-compact-text">{activeGamePack.shortTitle}</span>
+                <span className="nz-compact-text" aria-hidden="true">
+                  {activeGamePack.shortTitle}
+                </span>
               </div>
             )}
 
@@ -1579,7 +1645,7 @@ export default function App() {
 
             <button
               type="button"
-              className={`tactile-icon-btn pass-header-btn ${deckState.isPro ? 'sync-pill-pro' : ''}`}
+              className={`tactile-icon-btn pass-header-btn ${deckState.deckCode ? 'sync-pill-pro' : ''}`}
               onClick={() => {
                 playSwitchTick(deckState.soundEnabled, 700);
                 setShowProModal(true);
@@ -1587,10 +1653,10 @@ export default function App() {
             >
               <QrCode size={14} aria-hidden="true" />
               <span className="pass-full-label">
-                {deckState.isPro ? `Synced · ${deckState.deckCode}` : 'Phone ↔ PC Sync'}
+                {deckState.deckCode ? 'Phone ↔ PC Synced' : 'Phone ↔ PC Sync'}
               </span>
-              <span className="pass-short-label">
-                {deckState.isPro ? 'Synced' : 'Sync'}
+              <span className="pass-short-label" aria-hidden="true">
+                {deckState.deckCode ? 'Synced' : 'Sync'}
               </span>
             </button>
           </div>
@@ -2249,6 +2315,7 @@ export default function App() {
               onClose={() => setShowGameModal(false)}
               activeGameId={activeGameId}
               onSelectGame={handleSelectGame}
+              onSelectPath={(path) => navigateToPath(path, { scrollToTop: true })}
               soundEnabled={deckState.soundEnabled}
               modalRef={gameModalRef}
             />
@@ -2274,20 +2341,20 @@ export default function App() {
             <div className="selector-modal-header">
               <div>
                 <h2 id="pro-modal-title" className="selector-modal-title">
-                  {deckState.isPro
-                    ? `Cloud Sync Active · ${deckState.deckCode}`
-                    : `Unpause Sync Pass · $${runtimeConfig.passPriceUsd} Once`}
+                  {deckState.deckCode
+                    ? `Phone ↔ PC QR Sync · ${maskSyncCode(deckState.deckCode)}`
+                    : 'Phone ↔ PC Cloud Sync (100% Free)'}
                 </h2>
                 <p className="selector-modal-sub">
                   {activeGamePack.isGta6Suite
-                    ? 'Zero subscriptions. Instant Phone ↔ PC QR sync for 16 console setups, 16 squad crew rosters, 120 cross-game pins, and extended GTA VI weeknight chains.'
-                    : 'Zero subscriptions. Instant Phone ↔ PC QR sync for 120 cross-game pinned builds, multi-night session checklists, unbranded OBS embeds (?mode=obs), and Custom Clan Tag PNG cards.'}
+                    ? '100% Free — Phone ↔ PC QR sync for up to 16 console setups, 16 crew rosters, 120 cross-game pins, and extended GTA VI routes.'
+                    : '100% Free — Phone ↔ PC QR sync for 120 cross-game pinned builds, multi-night session checklists, unbranded OBS embeds (?mode=obs), and Custom Clan Tag PNG cards.'}
                 </p>
               </div>
               <button
                 type="button"
                 className="tactile-icon-btn"
-                aria-label="Close Sync Pass modal"
+                aria-label="Close Sync modal"
                 onClick={() => setShowProModal(false)}
               >
                 <X size={16} aria-hidden="true" />
@@ -2307,18 +2374,15 @@ export default function App() {
                   <>
                     <span>
                       <HardDrive size={12} aria-hidden="true" />
-                      {syncInventory.consolesCount}{' '}
-                      {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Consoles
+                      {syncInventory.consolesCount} / {MAX_SYNC_PROFILES} Consoles (Free)
                     </span>
                     <span>
                       <Users size={12} aria-hidden="true" />
-                      {syncInventory.rostersCount}{' '}
-                      {deckState.isPro ? `/ ${MAX_SYNC_PROFILES}` : `/ ${MAX_FREE_PROFILES}`} Rosters
+                      {syncInventory.rostersCount} / {MAX_SYNC_PROFILES} Rosters (Free)
                     </span>
                     <span>
                       <Bookmark size={12} aria-hidden="true" />
-                      {syncInventory.pinsCount}{' '}
-                      {deckState.isPro ? `/ ${MAX_SYNC_PINS_TOTAL}` : 'Pins (5/game free)'}
+                      {syncInventory.pinsCount} / {MAX_SYNC_PINS_TOTAL} Pins (Free)
                     </span>
                     <span>
                       <KeyRound size={12} aria-hidden="true" />
@@ -2329,34 +2393,33 @@ export default function App() {
                   <>
                     <span>
                       <Bookmark size={12} aria-hidden="true" />
-                      {syncInventory.pinsCount}{' '}
-                      {deckState.isPro ? `/ ${MAX_SYNC_PINS_TOTAL} Synced Pins` : 'Pins (5/game free)'}
+                      {syncInventory.pinsCount} / {MAX_SYNC_PINS_TOTAL} Pins (Free)
                     </span>
                     <span>
                       <Check size={12} aria-hidden="true" />
-                      {deckState.isPro ? 'OBS Mode (?mode=obs) On' : 'OBS Mode Unlocked via Pass'}
+                      OBS Mode (?mode=obs) Free
                     </span>
                     <span>
                       <Sparkles size={12} aria-hidden="true" />
-                      {deckState.isPro && deckState.clanTag
+                      {deckState.clanTag
                         ? `Clan Tag: [${deckState.clanTag}]`
-                        : 'Clan Tag PNGs (Pass)'}
+                        : 'Clan Tag PNGs Free'}
                     </span>
                   </>
                 )}
               </div>
             </div>
 
-            {deckState.isPro && deckState.deckCode ? (
+            {deckState.deckCode ? (
               <div className="mg-subcard">
-                {qrMatrix && (
+                {revealSyncSecret && qrMatrix ? (
                   <div className="sync-qr-frame">
                     <svg
                       width="148"
                       height="148"
                       viewBox={`-4 -4 ${qrMatrix.length + 8} ${qrMatrix.length + 8}`}
                       role="img"
-                      aria-label={`QR sync code for ${deckState.deckCode}`}
+                      aria-label={`QR sync code for ${maskSyncCode(deckState.deckCode)}`}
                       shapeRendering="crispEdges"
                     >
                       <rect
@@ -2373,6 +2436,23 @@ export default function App() {
                       )}
                     </svg>
                   </div>
+                ) : (
+                  <div className="sync-qr-masked-box">
+                    <QrCode size={28} color="var(--ocean)" aria-hidden="true" />
+                    <span className="mono" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                      {maskSyncCode(deckState.deckCode)} (Masked for OBS / Stream Safety)
+                    </span>
+                    <button
+                      type="button"
+                      className="secondary-key-btn"
+                      onClick={() => {
+                        playSwitchTick(deckState.soundEnabled, 760);
+                        setRevealSyncSecret(true);
+                      }}
+                    >
+                      Click to Reveal QR Code &amp; Key
+                    </button>
+                  </div>
                 )}
 
                 {qrError && (
@@ -2381,19 +2461,24 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="mono sync-code-readout">
-                  {deckState.deckCode}
+                <div
+                  className="mono sync-code-readout"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setRevealSyncSecret((v) => !v)}
+                  title="Click to toggle full sync key visibility"
+                >
+                  {revealSyncSecret ? deckState.deckCode : maskSyncCode(deckState.deckCode)}
                 </div>
                 <p className="sync-sub-copy">
-                  Scan on your phone while playing on console or PC — safes, routes &amp; pinned calcs sync automatically.
+                  Scan on your phone while playing on console or PC — encodes <code>https://playunpause.com/#sync={revealSyncSecret ? deckState.deckCode : maskSyncCode(deckState.deckCode)}</code>.
                 </p>
                 <p className="sync-bearer-note">
-                  Security notice: Your <code>UP-</code> code and QR link act as a bearer sync key. Keep screenshots private.
+                  OBS &amp; stream notice: Raw key and QR remain hidden until clicked. Keep screenshots private, as anyone holding your sync link can edit synced checklists.
                 </p>
 
                 <div className="pro-clan-field">
                   <label htmlFor="pro-clan-tag-input" className="section-label">
-                    Custom Clan / Creator PNG Badge (Pro · Max 16 Chars)
+                    Custom Clan / Creator PNG Badge (Free · Max 16 Chars)
                   </label>
                   <input
                     id="pro-clan-tag-input"
@@ -2439,19 +2524,28 @@ export default function App() {
                   <button type="button" className="subtle-pill-btn" onClick={handlePullCloudNow}>
                     <RefreshCw size={13} aria-hidden="true" /> Refresh Cloud
                   </button>
+                  {revealSyncSecret && (
+                    <button
+                      type="button"
+                      className="subtle-pill-btn"
+                      onClick={() => setRevealSyncSecret(false)}
+                    >
+                      Hide QR
+                    </button>
+                  )}
                 </div>
 
                 {copiedSyncLink === 'blocked' && syncShareUrl && (
                   <div className="share-fallback-box">
                     <label htmlFor="sync-share-fallback-input" className="share-fallback-label">
-                      Clipboard blocked — select and copy your sync link below:
+                      Clipboard blocked — reveal key above or copy sync link:
                     </label>
                     <input
                       id="sync-share-fallback-input"
                       type="text"
                       readOnly
                       className="deck-input no-icon mono"
-                      value={syncShareUrl}
+                      value={revealSyncSecret ? syncShareUrl : maskSyncCode(deckState.deckCode)}
                       onFocus={(e) => e.target.select()}
                     />
                   </div>
@@ -2462,7 +2556,7 @@ export default function App() {
                     <div className="inline-status-note ok">Sync link copied to clipboard.</div>
                   ) : copiedSyncLink === 'blocked' ? (
                     <div className="inline-status-note err">
-                      Clipboard blocked — select and copy your sync link above.
+                      Clipboard blocked — reveal key and copy your sync link above.
                     </div>
                   ) : null}
                 </div>
@@ -2495,13 +2589,51 @@ export default function App() {
                 </div>
 
                 <div className="pass-steps-strip" aria-label="How local backup works">
-                  <span>1. All calculators free</span>
-                  <span>2. Export JSON/CSV anytime</span>
-                  <span>3. Legacy UP- restore supported</span>
+                  <span>1. All 16 setups &amp; OBS free</span>
+                  <span>2. Generate free QR link</span>
+                  <span>3. Export JSON/CSV anytime</span>
+                </div>
+
+                <div className="sync-actions-row">
+                  <button
+                    type="button"
+                    className="primary-coral-btn full-width-btn"
+                    onClick={handleCreateFreeSyncCode}
+                    disabled={isCreatingSync}
+                  >
+                    <QrCode size={14} aria-hidden="true" />
+                    <span>{isCreatingSync ? 'Generating Free QR Key…' : 'Generate Free Phone ↔ PC QR Sync'}</span>
+                  </button>
+                </div>
+
+                <div className="pro-clan-field" style={{ marginTop: '10px' }}>
+                  <label htmlFor="pro-clan-tag-input" className="section-label">
+                    Custom Clan / Creator PNG Badge (Free · Max 16 Chars)
+                  </label>
+                  <input
+                    id="pro-clan-tag-input"
+                    type="text"
+                    maxLength={16}
+                    className="deck-input no-icon mono"
+                    placeholder="e.g. TEAM-ALPHA"
+                    value={deckState.clanTag}
+                    onChange={(e) =>
+                      setDeckState((prev) => ({
+                        ...prev,
+                        clanTag: e.target.value.replace(/[^a-zA-Z0-9 _\-.]/g, '').slice(0, 16),
+                      }))
+                    }
+                    onBlur={() =>
+                      setDeckState((prev) => ({
+                        ...prev,
+                        clanTag: sanitizeClanTag(prev.clanTag),
+                      }))
+                    }
+                  />
                 </div>
 
                 <p className="sync-legal-fineprint">
-                  All 10 game calculators, 90m/120m weeknight routes, and portable CSV/JSON backups are 100% free with zero checkout required. Have a legacy <code>UP-XXXXXXXX</code> sync code? Restore it below or email{' '}
+                  All 10 game calculators, 90m/120m weeknight routes, and portable CSV/JSON backups are 100% free with zero checkout required. Questions? Email{' '}
                   <a
                     href={`mailto:${runtimeConfig.supportEmail}`}
                     className="legal-contact-link"
@@ -2515,7 +2647,7 @@ export default function App() {
 
             <form onSubmit={handleActivatePass}>
               <label htmlFor="claim-code-input" className="section-label">
-                Already purchased? Restore via Sync Code, Whop ID, or Email + Receipt
+                Already have a Sync Key? Restore via UP-XXXXXXXX Code or Legacy Receipt
               </label>
               <div className="sync-restore-row">
                 <input

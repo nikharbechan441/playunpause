@@ -8,11 +8,11 @@
 - Embeddable Calculators: Every core deck supports chromeless iframe embedding at `https://playunpause.com/embed/<slug>`
 
 ## Core Game Calculators
-- [Home (GTA VI + All 10)](https://playunpause.com/): Check GTA VI 212–225 GB SSD fit on PS5 or Xbox in seconds, compare Warzone 300 HP TTK, link Minecraft Nether portals, and solve EA FC 27 tax cleanly free.
-- [Preload & SSD Surgery](https://playunpause.com/gta-6/storage): Test if GTA 6 (212 GB PS5 / 225 GB Xbox) fits on Series S, Series X, or PS5 SSDs, pick games to clear, check NZ unlock timing, and export a Preload Spec Card.
-- [Safe Keypad Vault](https://playunpause.com/gta-6/safe-codes): Search GTA 6 safe codes by district, play interactive 10-key WebAudio sequences, copy 4-digit codes in one tap, and track cracked doors locally without ads.
-- [Squad Heist Splitter](https://playunpause.com/gta-6/heist-split): Split squad heist percentages to an exact 100%, auto-deduct NPC fees, export Crew Payout Slip PNGs to Discord, and model two-character story stock flips.
-- [Weeknight Route & Shield](https://playunpause.com/gta-6/night-run): Follow time-boxed 45m/90m/120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts with zero story spoilers.
+- [Home (GTA VI + All 10)](https://playunpause.com/): Check GTA VI 212 GB SSD fit on PS5 or Xbox in seconds, compare Warzone 300 HP TTK, link Minecraft Nether portals, and solve EA FC 27 tax cleanly free.
+- [Preload & SSD Surgery](https://playunpause.com/gta-6/storage): Test if GTA 6 (official 212 GB preload live since Nov 10) fits on Series S, Series X, or PS5 SSDs, clear games, check NZ timing, and export a Spec PNG.
+- [Safe Keypad Vault](https://playunpause.com/gta-6/safe-codes): Track Leonida district GTA 6 safe keypads with interactive 10-key WebAudio tones. Verified keypad codes populate live starting Nov 19 at 11:00 UTC.
+- [Crew Payout Estimator](https://playunpause.com/gta-6/heist-split): Split GTA Online & future multiplayer crew percentages to 100%, deduct NPC fees, export Payout PNGs, and plan 2-lead story stock flips free online.
+- [Weeknight Route & Shield](https://playunpause.com/gta-6/night-run): Follow time-boxed 45m, 90m, and 120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts free online.
 - [CoD / Warzone TTK](https://playunpause.com/cod-warzone): Compare live Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.
 - [Fortnite XP Pace](https://playunpause.com/fortnite): Calculate daily XP and matches to reach Level 100, Level 140 V-Bucks break-even, or Level 200 Super Styles with Daily Quests, Creative & LEGO.
 - [Minecraft 8:1 Linker](https://playunpause.com/minecraft): Convert Overworld & Nether coordinates using exact Java/Bedrock Math.floor rules, test 128-block portal collisions, and triangulate Strongholds in 2 throws.
@@ -30,7 +30,7 @@
 - All 10 game calculators, 90m/120m weeknight routes, saved console SSD setups, squad crew presets, and CSV/JSON exports are 100% free with zero consumer checkout.
 
 ## Legal & Trust Pages
-- [TERMS](https://playunpause.com/legal/terms): Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, and Nov 2026 preview terms. Support: hello@playunpause.com. Free browser tool with zero.
-- [PRIVACY](https://playunpause.com/legal/privacy): Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, Cloudflare metrics, and DELETE sync purge. Free browser tool with.
-- [REFUNDS](https://playunpause.com/legal/refunds): Explore Unpause moderation rules for $149/day verified header sponsorships and legacy support contact details. Free browser tool with zero popup ads.
-- [IP](https://playunpause.com/legal/ip): View Unpause publisher non-affiliation statements, Mojang and CD PROJEKT S.A. trademark notices, 17 U.S.C. 512(c)(3) DMCA contacts, and affiliate info.
+- [TERMS](https://playunpause.com/legal/terms): Read Unpause Terms of Service, ECTA s.43 disclosures, Nov 19 GTA VI launch notes, and free utility terms. Support: hello@playunpause.com.
+- [PRIVACY](https://playunpause.com/legal/privacy): Review Unpause zero-ad privacy notice: self-hosted fonts, local browser storage, Cloudflare telemetry, and DELETE /api/sync/:code erasure.
+- [REFUNDS](https://playunpause.com/legal/refunds): Explore Unpause moderation rules for $149/day verified header sponsorships, manual invoicing, and legacy receipt support details online.
+- [IP](https://playunpause.com/legal/ip): View Unpause publisher non-affiliation statements, Mojang and CD PROJEKT S.A. trademark notices, DMCA contacts, and Amazon affiliate rules.

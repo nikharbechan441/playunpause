@@ -1,4 +1,4 @@
-# Unpause (playunpause.com) — Crawler & AI Search Indexing Policy
+# Unpause (playunpause.com) - Crawler & AI Search Indexing Policy
 # Machine-readable LLM indexes:
 #   https://playunpause.com/llms.txt
 #   https://playunpause.com/llms-full.txt

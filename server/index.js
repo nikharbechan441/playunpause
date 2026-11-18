@@ -183,6 +183,26 @@ export function createApp({ dbPath, env = process.env } = {}) {
     };
   }
 
+  function rateLimitByParam(maxPerMinute = 30, scope = 'global', paramName = 'code') {
+    const scopeBuckets = new Map();
+
+    return (req, res, next) => {
+      const paramVal = String(req.params?.[paramName] || 'empty').trim().toUpperCase();
+      const key = `${scope}:${paramVal}`;
+      const rl = checkAndSweepRateLimit(scopeBuckets, key, {
+        limit: maxPerMinute,
+        windowMs: 60_000,
+        maxBuckets: 5_000,
+      });
+      if (!rl.allowed) {
+        const retryAfterSec = String(Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000)));
+        res.setHeader('Retry-After', retryAfterSec);
+        return res.status(429).json({ error: 'Rate limit exceeded. Try again in a moment.' });
+      }
+      return next();
+    };
+  }
+
   const emailPepper =
     env.EMAIL_HASH_PEPPER ||
     (env.WHOP_WEBHOOK_SECRET
@@ -589,9 +609,8 @@ export function createApp({ dbPath, env = process.env } = {}) {
       activeSponsor = null;
     }
 
-    const defaultPassCheckout = 'https://whop.com/playunpause/unpause-one-time-all-access-pass/';
-    const defaultSponsorCheckout =
-      'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/';
+    const defaultPassCheckout = '';
+    const defaultSponsorCheckout = '';
     const passUrlCheck = isSafePublicHttpsUrl(env.WHOP_PASS_CHECKOUT_URL);
     const sponsorUrlCheck = isSafePublicHttpsUrl(env.WHOP_SPONSOR_CHECKOUT_URL);
     const passPriceUsd = computePassPriceUsd();
@@ -615,25 +634,25 @@ export function createApp({ dbPath, env = process.env } = {}) {
       affiliates: {
         ps5SsdUrl:
           env.AFFILIATE_PS5_SSD_URL ||
-          'https://www.amazon.com/s?k=WD+BLACK+2TB+SN850X+NVMe+SSD+with+Heatsink+PS5&tag=playunpause-20',
+          'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20',
         xboxCardUrl:
           env.AFFILIATE_XBOX_CARD_URL ||
-          'https://www.amazon.com/s?k=WD+BLACK+C50+1TB+Expansion+Card+Xbox&tag=playunpause-20',
+          'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20',
         topupsUrl:
           env.AFFILIATE_TOPUPS_URL ||
-          'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20',
+          'https://www.amazon.com/dp/B00SW85KD4?tag=playunpause-20',
         fpsMouseUrl:
           env.AFFILIATE_FPS_MOUSE_URL ||
-          'https://www.amazon.com/s?k=Superlight+Wireless+Esports+Gaming+Mouse&tag=playunpause-20',
+          'https://www.amazon.com/dp/B09NBWL8J5?tag=playunpause-20',
         heKeyboardUrl:
           env.AFFILIATE_HE_KEYBOARD_URL ||
-          'https://www.amazon.com/s?k=Rapid+Trigger+Hall+Effect+Gaming+Keyboard&tag=playunpause-20',
+          'https://www.amazon.com/dp/B0CG7BWG7J?tag=playunpause-20',
         proControllerUrl:
           env.AFFILIATE_PRO_CONTROLLER_URL ||
-          'https://www.amazon.com/s?k=Hall+Effect+Pro+Esports+Controller&tag=playunpause-20',
+          'https://www.amazon.com/dp/B0BSYFB99D?tag=playunpause-20',
         monitor240Url:
           env.AFFILIATE_MONITOR_240_URL ||
-          'https://www.amazon.com/s?k=240Hz+1ms+Esports+Gaming+Monitor&tag=playunpause-20',
+          'https://www.amazon.com/dp/B0CZWM44QP?tag=playunpause-20',
       },
       demoUnlockEnabled: isDemoUnlockPermitted(),
       activeSponsor,
@@ -819,8 +838,35 @@ export function createApp({ dbPath, env = process.env } = {}) {
     });
   });
 
+  // 3b. Provision Free Cloud Sync Key (/api/sync/create)
+  app.post('/api/sync/create', rateLimit(10, 'sync_create'), (req, res) => {
+    const sanitized = req.body?.state ? sanitizeSyncState(req.body.state) : createEmptySyncState();
+    if (!sanitized) {
+      return res.status(400).json({ error: 'Invalid state object' });
+    }
+    const serialized = JSON.stringify(sanitized);
+    if (Buffer.byteLength(serialized, 'utf8') > 48_000) {
+      return res.status(413).json({ error: 'State payload exceeds 48KB limit' });
+    }
+    const issued = issueOrReuseDeckCode({ tier: 'free' });
+    const now = Date.now();
+    db.prepare('UPDATE sync_decks SET state_json = ?, updated_at = ? WHERE deck_code = ?').run(
+      serialized,
+      now,
+      issued.deckCode
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({
+      ok: true,
+      deckCode: issued.deckCode,
+      tier: 'free',
+      updatedAt: now,
+      state: sanitized,
+    });
+  });
+
   // 4. Read, Save & Erase Cloud Sync State by Deck Code
-  app.get('/api/sync/:code', rateLimit(60, 'sync_read'), (req, res) => {
+  app.get('/api/sync/:code', rateLimit(30, 'sync_read'), rateLimitByParam(30, 'sync_code_read'), (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
     if (!DECK_CODE_REGEX.test(code)) {
       return res.status(400).json({ error: 'Invalid sync code format' });
@@ -846,7 +892,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
     });
   });
 
-  app.put('/api/sync/:code', rateLimit(60, 'sync_write'), (req, res) => {
+  app.put('/api/sync/:code', rateLimit(20, 'sync_write'), rateLimitByParam(15, 'sync_code_write'), (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
     if (!DECK_CODE_REGEX.test(code)) {
       return res.status(400).json({ error: 'Invalid sync code format' });
@@ -875,7 +921,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
     return res.json({ ok: true, updatedAt: now, state: sanitized });
   });
 
-  app.delete('/api/sync/:code', rateLimit(20, 'sync_delete'), (req, res) => {
+  app.delete('/api/sync/:code', rateLimit(10, 'sync_delete'), rateLimitByParam(5, 'sync_code_delete'), (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
     if (!DECK_CODE_REGEX.test(code)) {
       return res.status(400).json({ error: 'Invalid sync code format' });
@@ -986,7 +1032,10 @@ export function createApp({ dbPath, env = process.env } = {}) {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
       const rawHost = String(req.headers.host || '').split(':')[0].toLowerCase();
       const hostname = String(req.hostname || rawHost || '').toLowerCase();
-      if (rawHost === 'www.playunpause.com' || hostname === 'www.playunpause.com') {
+      const fwdProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+      const isHttpUpgrade =
+        fwdProto === 'http' && (rawHost === 'playunpause.com' || hostname === 'playunpause.com' || rawHost === 'www.playunpause.com' || hostname === 'www.playunpause.com');
+      if (rawHost === 'www.playunpause.com' || hostname === 'www.playunpause.com' || isHttpUpgrade) {
         const fullUrl = new URL(req.originalUrl || req.url, 'http://localhost');
         const target = resolveWwwRedirectLocation(req.path, fullUrl.searchParams, fullUrl.search);
         res.setHeader('Cache-Control', 'public, max-age=3600');
@@ -1012,6 +1061,9 @@ export function createApp({ dbPath, env = process.env } = {}) {
         const cacheControl = getStaticAssetCacheControl(rel);
         if (cacheControl) {
           res.setHeader('Cache-Control', cacheControl);
+        }
+        if (rel === '/robots.txt' || rel === '/llms.txt' || rel === '/llms-full.txt' || rel.endsWith('.txt')) {
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         }
       },
     });
@@ -1046,6 +1098,7 @@ export function createApp({ dbPath, env = process.env } = {}) {
       const isEmbed = Boolean(seoRes.isEmbed);
       applyHttpSecurityHeaders(res, env, { isEmbed });
       res.setHeader('Cache-Control', seoRes.notFound ? 'no-store' : 'no-cache');
+      res.setHeader('CDN-Cache-Control', 'no-store');
       if (seoRes.notFound) {
         res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       }

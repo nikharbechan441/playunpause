@@ -139,14 +139,30 @@ export function GameStudioSideDock({
     !isEmbed &&
     !YOUTH_FIREWALL_GAMES.has(game?.id) &&
     Boolean(gearOffer && typeof gearOffer === 'object' && gearOffer.title);
+  const getDefaultAmazonDp = (key) => {
+    const defaults = {
+      ps5SsdUrl: 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20',
+      xboxCardUrl: 'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20',
+      topupsUrl: 'https://www.amazon.com/dp/B00SW85KD4?tag=playunpause-20',
+      fpsMouseUrl: 'https://www.amazon.com/dp/B09NBWL8J5?tag=playunpause-20',
+      heKeyboardUrl: 'https://www.amazon.com/dp/B0CG7BWG7J?tag=playunpause-20',
+      proControllerUrl: 'https://www.amazon.com/dp/B0BSYFB99D?tag=playunpause-20',
+      monitor240Url: 'https://www.amazon.com/dp/B0CZWM44QP?tag=playunpause-20',
+    };
+    return defaults[key] || 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20';
+  };
   const rawGearHref = gearOffer?.urlKey ? runtimeConfig?.affiliates?.[gearOffer.urlKey] : '';
   const safeGearHref = /^https:\/\//i.test(String(rawGearHref || ''))
     ? rawGearHref
-    : 'https://www.amazon.com/';
-
-  const showPostShareProNudge =
-    !isPro &&
-    (sharedPngToast || copiedKey === 'discord-spec' || copiedKey === 'share-url');
+    : getDefaultAmazonDp(gearOffer?.urlKey);
+  const rawSecondaryGearHref = gearOffer?.secondaryUrlKey
+    ? runtimeConfig?.affiliates?.[gearOffer.secondaryUrlKey]
+    : '';
+  const safeSecondaryGearHref = gearOffer?.secondaryUrlKey
+    ? /^https:\/\//i.test(String(rawSecondaryGearHref || ''))
+      ? rawSecondaryGearHref
+      : getDefaultAmazonDp(gearOffer.secondaryUrlKey)
+    : '';
 
   return (
     <aside className="gs-side-dock" aria-label={`${game.shortTitle} telemetry & pins`}>
@@ -182,7 +198,7 @@ export function GameStudioSideDock({
                   heroValue: currentShareSpec.heroValue,
                   rows: currentShareSpec.rows,
                   shareUrl: currentShareUrl,
-                  clanTag: isPro ? clanTag : '',
+                  clanTag,
                 }),
                 'discord-spec',
                 currentShareUrl
@@ -213,7 +229,7 @@ export function GameStudioSideDock({
                 canvasBgHex: game.canvasHexObsidian,
                 themePersonaLabel: game.themePersonaLabel,
                 shareUrl: currentShareUrl,
-                clanTag: isPro ? clanTag : '',
+                clanTag,
               });
               triggerPngToast();
             }}
@@ -294,14 +310,6 @@ export function GameStudioSideDock({
           )}
         </div>
 
-        {showPostShareProNudge && (
-          <div className="pin-limit-alert" role="note">
-            <span>Unlock [CLAN] PNG badges, synced checklists, and clean OBS embeds.</span>
-            <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-              Sync Pass
-            </button>
-          </div>
-        )}
       </SpotlightPanel>
 
       {showGearBar && (
@@ -310,19 +318,32 @@ export function GameStudioSideDock({
             {gearOffer.label && <span className="gw-patch-pill mono">{gearOffer.label}</span>}
             <strong>{gearOffer.title}</strong>
             {gearOffer.sub && <p>{gearOffer.sub}</p>}
-            <small className="source-legal-note">
-              {gearOffer.disclosure || 'As an Amazon Associate I earn from qualifying purchases.'}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: '6px' }}>
+              <a
+                href={safeGearHref}
+                target="_blank"
+                rel="sponsored nofollow noopener noreferrer"
+                className="amazon-plain-link"
+              >
+                <span>{gearOffer.ctaLabel || 'Check Price on Amazon'}</span>
+                <ExternalLink size={13} aria-hidden="true" />
+              </a>
+              {safeSecondaryGearHref && gearOffer.secondaryCtaLabel && (
+                <a
+                  href={safeSecondaryGearHref}
+                  target="_blank"
+                  rel="sponsored nofollow noopener noreferrer"
+                  className="amazon-plain-link"
+                >
+                  <span>{gearOffer.secondaryCtaLabel}</span>
+                  <ExternalLink size={13} aria-hidden="true" />
+                </a>
+              )}
+            </div>
+            <small className="source-legal-note" style={{ display: 'block', marginTop: '4px' }}>
+              ({gearOffer.disclosure || 'As an Amazon Associate I earn from qualifying purchases.'})
             </small>
           </div>
-          <a
-            href={safeGearHref}
-            target="_blank"
-            rel="sponsored nofollow noopener noreferrer"
-            className="secondary-key-btn"
-          >
-            <span>Shop Gear</span>
-            <ExternalLink size={13} aria-hidden="true" />
-          </a>
         </SpotlightPanel>
       )}
 
@@ -331,28 +352,18 @@ export function GameStudioSideDock({
           <div className="gs-pin-title">
             <Compass size={15} color={game.accentColor} aria-hidden="true" />
             <span>
-              Saved {game.shortTitle} Pins ({gamePins.length}
-              {isPro ? ' · Cloud Synced' : ' / 5 Free'})
+              Saved {game.shortTitle} Pins ({gamePins.length} / 120 Free)
             </span>
           </div>
-          {!isPro && (
+          {typeof onOpenProModal === 'function' && (
             <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-              Sync Cloud
+              {isPro ? 'QR Sync Active' : 'Free QR Sync'}
             </button>
           )}
         </div>
 
         <div role="status" aria-live="polite">
-          {pinLimitAlert && !isPro ? (
-            <div className="pin-limit-alert">
-              <span>{pinNotice || 'Free tier saves up to 5 pins per game.'}</span>
-              <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-                Unlock Pass
-              </button>
-            </div>
-          ) : (
-            pinNotice && <div className="inline-status-note ok mono">{pinNotice}</div>
-          )}
+          {pinNotice && <div className="inline-status-note ok mono">{pinNotice}</div>}
         </div>
 
         {gamePins.length === 0 ? (

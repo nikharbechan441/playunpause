@@ -298,7 +298,7 @@ test('Generated PNG OG assets, sitemap.xml, robots.txt, llms*.txt, IndexNow, and
   assert.equal(llmsFull.includes('?game='), false);
   assert.equal(llmsFull.includes('Category: undefined'), false);
   assert.ok(llmsFull.includes('212 GB'));
-  assert.ok(llmsFull.includes('225 GB'));
+  assert.equal(llmsFull.includes('225 GB'), false);
   assert.equal(llmsFull.includes('175 GB'), false);
   assert.equal(llmsFull.includes('189 GB'), false);
 

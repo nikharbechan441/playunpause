@@ -58,13 +58,13 @@ test('generateQrMatrix produces deterministic ISO square matrix with finder patt
   assert.deepEqual(generateQrMatrix(url), matrix);
 });
 
-test('GTA VI pack defines 6 balanced consoles (3 Xbox @ 225GB + 3 PS5 @ 212GB) and 4 route waypoints', () => {
+test('GTA VI pack defines 6 balanced consoles (3 Xbox @ 212GB + 3 PS5 @ 212GB) and 4 route waypoints', () => {
   assert.equal(gta6Pack.consoles.length, 6);
   const xbox = gta6Pack.consoles.filter((c) => c.platform === 'xbox');
   const ps5 = gta6Pack.consoles.filter((c) => c.platform === 'ps5');
   assert.equal(xbox.length, 3);
   assert.equal(ps5.length, 3);
-  xbox.forEach((c) => assert.equal(c.installGb, 225));
+  xbox.forEach((c) => assert.equal(c.installGb, 212));
   ps5.forEach((c) => assert.equal(c.installGb, 212));
   assert.equal(gta6Pack.dayOnePatchGb, 35);
   assert.equal(gta6Pack.routeWaypoints.length, 4);

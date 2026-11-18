@@ -49,15 +49,14 @@ function jsonResponse(body, status = 200, env = {}, extraHeaders = {}) {
 // Per-isolate, per-scope LRU + TTL sliding rate limiter
 const scopeMaps = new Map();
 
-function checkRateLimit(request, maxPerMinute = 90, scope = 'global', env = {}) {
+function checkBucketRateLimit(bucketKey, maxPerMinute = 90, scope = 'global', env = {}) {
   let scopeBuckets = scopeMaps.get(scope);
   if (!scopeBuckets) {
     scopeBuckets = new Map();
     scopeMaps.set(scope, scopeBuckets);
   }
 
-  const clientIp = (request.headers.get('cf-connecting-ip') || 'edge-local').trim();
-  const rl = checkAndSweepRateLimit(scopeBuckets, clientIp, {
+  const rl = checkAndSweepRateLimit(scopeBuckets, String(bucketKey || 'edge-local'), {
     limit: maxPerMinute,
     windowMs: 60_000,
     maxBuckets: 5_000,
@@ -70,6 +69,11 @@ function checkRateLimit(request, maxPerMinute = 90, scope = 'global', env = {}) 
     });
   }
   return null;
+}
+
+function checkRateLimit(request, maxPerMinute = 90, scope = 'global', env = {}) {
+  const clientIp = (request.headers.get('cf-connecting-ip') || 'edge-local').trim();
+  return checkBucketRateLimit(clientIp, maxPerMinute, scope, env);
 }
 
 const initializedDbs = new WeakSet();
@@ -644,9 +648,8 @@ async function handleWorkerRequest(request, env = {}) {
         }
       }
 
-      const defaultPassCheckout = 'https://whop.com/playunpause/unpause-one-time-all-access-pass/';
-      const defaultSponsorCheckout =
-        'https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/';
+      const defaultPassCheckout = '';
+      const defaultSponsorCheckout = '';
       const passUrlCheck = isSafePublicHttpsUrl(env.WHOP_PASS_CHECKOUT_URL);
       const sponsorUrlCheck = isSafePublicHttpsUrl(env.WHOP_SPONSOR_CHECKOUT_URL);
       const passPriceUsd = computePassPriceUsd(env);
@@ -670,25 +673,25 @@ async function handleWorkerRequest(request, env = {}) {
           affiliates: {
             ps5SsdUrl:
               env.AFFILIATE_PS5_SSD_URL ||
-              'https://www.amazon.com/s?k=WD+BLACK+2TB+SN850X+NVMe+SSD+with+Heatsink+PS5&tag=playunpause-20',
+              'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20',
             xboxCardUrl:
               env.AFFILIATE_XBOX_CARD_URL ||
-              'https://www.amazon.com/s?k=WD+BLACK+C50+1TB+Expansion+Card+Xbox&tag=playunpause-20',
+              'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20',
             topupsUrl:
               env.AFFILIATE_TOPUPS_URL ||
-              'https://www.amazon.com/s?k=PlayStation+Store+Gift+Card&tag=playunpause-20',
+              'https://www.amazon.com/dp/B00SW85KD4?tag=playunpause-20',
             fpsMouseUrl:
               env.AFFILIATE_FPS_MOUSE_URL ||
-              'https://www.amazon.com/s?k=Superlight+Wireless+Esports+Gaming+Mouse&tag=playunpause-20',
+              'https://www.amazon.com/dp/B09NBWL8J5?tag=playunpause-20',
             heKeyboardUrl:
               env.AFFILIATE_HE_KEYBOARD_URL ||
-              'https://www.amazon.com/s?k=Rapid+Trigger+Hall+Effect+Gaming+Keyboard&tag=playunpause-20',
+              'https://www.amazon.com/dp/B0CG7BWG7J?tag=playunpause-20',
             proControllerUrl:
               env.AFFILIATE_PRO_CONTROLLER_URL ||
-              'https://www.amazon.com/s?k=Hall+Effect+Pro+Esports+Controller&tag=playunpause-20',
+              'https://www.amazon.com/dp/B0BSYFB99D?tag=playunpause-20',
             monitor240Url:
               env.AFFILIATE_MONITOR_240_URL ||
-              'https://www.amazon.com/s?k=240Hz+1ms+Esports+Gaming+Monitor&tag=playunpause-20',
+              'https://www.amazon.com/dp/B0CZWM44QP?tag=playunpause-20',
           },
           demoUnlockEnabled: isDemoUnlockPermitted(env),
           activeSponsor,
@@ -943,6 +946,48 @@ async function handleWorkerRequest(request, env = {}) {
       );
     }
 
+    // 3b. Provision Free Cloud Sync Key (/api/sync/create)
+    if (pathname === '/api/sync/create' && method === 'POST') {
+      const limited = checkRateLimit(request, 10, 'sync_create', env);
+      if (limited) return limited;
+
+      if (!env.DB) {
+        return jsonResponse({ error: 'Database binding not configured' }, 503, env);
+      }
+      await ensureSchema(env.DB);
+
+      const { errorResp, data: body } = await readJsonBody(request, env);
+      if (errorResp) return errorResp;
+
+      const sanitized = body?.state ? sanitizeSyncState(body.state) : createEmptySyncState();
+      if (!sanitized) {
+        return jsonResponse({ error: 'Invalid state object' }, 400, env);
+      }
+      const serialized = JSON.stringify(sanitized);
+      if (Buffer.byteLength(serialized, 'utf8') > 48_000) {
+        return jsonResponse({ error: 'State payload exceeds 48KB limit' }, 413, env);
+      }
+
+      const issued = await issueOrReuseDeckCode(env.DB, { tier: 'free' });
+      const now = Date.now();
+      await env.DB.prepare('UPDATE sync_decks SET state_json = ?, updated_at = ? WHERE deck_code = ?')
+        .bind(serialized, now, issued.deckCode)
+        .run();
+
+      return jsonResponse(
+        {
+          ok: true,
+          deckCode: issued.deckCode,
+          tier: 'free',
+          updatedAt: now,
+          state: sanitized,
+        },
+        200,
+        env,
+        { 'Cache-Control': 'no-store' }
+      );
+    }
+
     // 4. Read & Save Cloud Sync State (/api/sync/:code)
     if (pathname.startsWith('/api/sync/')) {
       let code = '';
@@ -961,8 +1006,10 @@ async function handleWorkerRequest(request, env = {}) {
       await ensureSchema(env.DB);
 
       if (method === 'GET' || method === 'HEAD') {
-        const limited = checkRateLimit(request, 60, 'sync_read', env);
-        if (limited) return limited;
+        const ipLimited = checkRateLimit(request, 30, 'sync_read', env);
+        if (ipLimited) return ipLimited;
+        const codeLimited = checkBucketRateLimit(code, 30, 'sync_code_read', env);
+        if (codeLimited) return codeLimited;
 
         const deck = await env.DB.prepare(
           'SELECT deck_code, tier, active, state_json, updated_at FROM sync_decks WHERE deck_code = ?'
@@ -994,8 +1041,10 @@ async function handleWorkerRequest(request, env = {}) {
       }
 
       if (method === 'PUT') {
-        const limited = checkRateLimit(request, 60, 'sync_write', env);
-        if (limited) return limited;
+        const ipLimited = checkRateLimit(request, 20, 'sync_write', env);
+        if (ipLimited) return ipLimited;
+        const codeLimited = checkBucketRateLimit(code, 15, 'sync_code_write', env);
+        if (codeLimited) return codeLimited;
 
         const { errorResp, data: body } = await readJsonBody(request, env);
         if (errorResp) return errorResp;
@@ -1034,8 +1083,10 @@ async function handleWorkerRequest(request, env = {}) {
       }
 
       if (method === 'DELETE') {
-        const limited = checkRateLimit(request, 20, 'sync_delete', env);
-        if (limited) return limited;
+        const ipLimited = checkRateLimit(request, 10, 'sync_delete', env);
+        if (ipLimited) return ipLimited;
+        const codeLimited = checkBucketRateLimit(code, 5, 'sync_code_delete', env);
+        if (codeLimited) return codeLimited;
 
         const { errorResp, data: body } = await readJsonBody(request, env);
         if (errorResp) return errorResp;
@@ -1156,7 +1207,11 @@ async function handleWorkerRequest(request, env = {}) {
     }
 
     const host = url.hostname.toLowerCase();
-    if (host === 'www.playunpause.com') {
+    const fwdProto = (request.headers.get('x-forwarded-proto') || '').split(',')[0].trim().toLowerCase();
+    const isHttpUpgrade =
+      (url.protocol === 'http:' || fwdProto === 'http') &&
+      (host === 'playunpause.com' || host === 'www.playunpause.com');
+    if (host === 'www.playunpause.com' || isHttpUpgrade) {
       const target = resolveWwwRedirectLocation(pathname, url.searchParams, url.search);
       const redirHeaders = new Headers({
         Location: target,
@@ -1180,6 +1235,9 @@ async function handleWorkerRequest(request, env = {}) {
         const cacheControl = getStaticAssetCacheControl(pathname);
         if (cacheControl) {
           headers.set('Cache-Control', cacheControl);
+        }
+        if (pathname === '/robots.txt' || pathname === '/llms.txt' || pathname === '/llms-full.txt' || pathname.endsWith('.txt')) {
+          headers.set('Content-Type', 'text/plain; charset=utf-8');
         }
         return new Response(method === 'HEAD' ? null : assetResp.body, {
           status: assetResp.status,
@@ -1223,6 +1281,8 @@ async function handleWorkerRequest(request, env = {}) {
     const headers = new Headers({
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': seoRes.notFound ? 'no-store' : 'no-cache',
+      'CDN-Cache-Control': 'no-store',
+      'Cloudflare-CDN-Cache-Control': 'no-store',
     });
     if (seoRes.notFound) {
       headers.set('X-Robots-Tag', 'noindex, nofollow');

@@ -63,7 +63,7 @@ ${urls}
 }
 
 function buildRobotsTxt() {
-  return `# Unpause (playunpause.com) — Crawler & AI Search Indexing Policy
+  return `# Unpause (playunpause.com) - Crawler & AI Search Indexing Policy
 # Machine-readable LLM indexes:
 #   ${CANONICAL_ORIGIN}/llms.txt
 #   ${CANONICAL_ORIGIN}/llms-full.txt
@@ -161,7 +161,7 @@ function buildLlmsFullTxt() {
   const speedRows = [25, 50, 100, 150, 300, 500, 1000]
     .map(
       (mbps) =>
-        `| ${mbps} Mbps | ${formatDownloadEta(212, mbps)} | ${formatDownloadEta(225, mbps)} | ${formatDownloadEta(225 + patchGb, mbps)} |`
+        `| ${mbps} Mbps | ${formatDownloadEta(212, mbps)} | ${formatDownloadEta(212 + patchGb, mbps)} |`
     )
     .join('\n');
 
@@ -249,8 +249,8 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ${consoleRows}
 
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
-| Connection Speed | PS5 Base (212 GB) | Xbox Base (225 GB) | Xbox + Patch (${225 + patchGb} GB) |
-| --- | --- | --- | --- |
+| Connection Speed | PS5 & Xbox Base (212 GB) | With +${patchGb} GB Patch (${212 + patchGb} GB) |
+| --- | --- | --- |
 ${speedRows}
 
 ## 2. Call of Duty: Warzone / BO7 (300 HP Armor Plate TTK Matrix)

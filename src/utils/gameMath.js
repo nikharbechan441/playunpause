@@ -398,14 +398,21 @@ export function calcRobloxMinSalesFor30k(groupSplitPct = 100) {
 }
 
 export function calcRobloxDevEx(opts = {}) {
-  const { grossRobux = 50000, rateId = 'std-2025', groupSplitPct = 100, targetUsd = 100 } =
-    opts && typeof opts === 'object' ? opts : {};
+  const {
+    grossRobux = 50000,
+    rateId = 'std-2025',
+    groupSplitPct = 100,
+    targetUsd = 100,
+    isNetEarned = false,
+  } = opts && typeof opts === 'object' ? opts : {};
   const gross = clampNum(Math.round(parseSafeNum(grossRobux, 0)), 0, 1000000000);
   const split = clampNum(parseSafeNum(groupSplitPct, 100), 1, 100) / 100;
   const rateObj = ROBLOX_RATES.find((r) => r.id === rateId) || ROBLOX_RATES[0];
 
-  const afterMarketFee = normalizeZero(Math.round(gross * 0.7));
-  const creatorNetRobux = normalizeZero(Math.round(afterMarketFee * split));
+  const afterMarketFee = isNetEarned ? gross : normalizeZero(Math.round(gross * 0.7));
+  const creatorNetRobux = isNetEarned
+    ? gross
+    : normalizeZero(Math.round(afterMarketFee * split));
   const usdPayout = normalizeZero(creatorNetRobux * rateObj.usdPerRobux);
   const eligible = creatorNetRobux >= 30000;
   const minSalesFor30k = calcRobloxMinSalesFor30k(groupSplitPct);
@@ -424,6 +431,7 @@ export function calcRobloxDevEx(opts = {}) {
     robuxNeededForTargetUsd,
     grossSalesNeededForTargetUsd,
     rate: rateObj.usdPerRobux,
+    isNetEarned: Boolean(isNetEarned),
   };
 }
 

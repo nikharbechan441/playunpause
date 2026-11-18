@@ -41,31 +41,31 @@ export const LEGAL_META = {
     path: '/legal/terms',
     title: 'Terms of Service & ECTA Disclosures — Unpause',
     description:
-      'Read Unpause Terms of Service, ECTA s.43 disclosures, 18+ age rules, and Nov 2026 preview terms. Support: hello@playunpause.com.',
+      'Read Unpause Terms of Service, ECTA s.43 disclosures, Nov 19 GTA VI launch notes, and free utility terms. Support: hello@playunpause.com.',
     h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, weeknight routes, saved setups, and CSV/JSON exports are 100% free with zero consumer checkout. We do not sell game software, cheats, accounts, gambling, financial advice, or RMT currency. Support: hello@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, weeknight routes, OBS overlays, 16 saved setups, and CSV/JSON exports are 100% free with zero self-serve consumer checkout. Grand Theft Auto VI launches November 19, 2026 as single-player, with official preload live since November 10 (up to 212 GB on PS5 & Xbox). Full ECTA s.43(1) physical service address and phone particulars for $149/day B2B sponsor contracts are provided on written request via sponsors@playunpause.com prior to invoicing. Support: hello@playunpause.com.',
   },
   privacy: {
     path: '/legal/privacy',
     title: 'Privacy Notice (POPIA · GDPR · CCPA) — Unpause',
     description:
-      'Review Unpause zero-ad privacy architecture: self-hosted fonts, local browser storage, Cloudflare metrics, and DELETE sync purge.',
+      'Review Unpause zero-ad privacy notice: self-hosted fonts, local browser storage, Cloudflare telemetry, and DELETE /api/sync/:code erasure.',
     h1: 'Unpause Privacy Notice (POPIA · EU/UK GDPR · CCPA)',
-    body: 'playunpause.com runs zero behavioral ad networks and never sells personal information. Typography fonts are self-hosted directly from playunpause.com with zero external Google Fonts requests or IP sharing. Information Officer: hello@playunpause.com. Calculator inputs and saved setups stay in localStorage; optional legacy sync codes store state JSON on Cloudflare Workers & D1 (with privacy-first Cloudflare Web Analytics). No directed collection from children under 13/16/18. Inactive sync state is purged cleanly via email or authenticated DELETE /api/sync/:code. Escalate unresolved POPIA queries to the Information Regulator (South Africa) at POPIAComplaints@inforegulator.org.za.',
+    body: 'playunpause.com runs zero behavioral ad networks and never sells personal information. Typography fonts are self-hosted directly from playunpause.com with zero external Google Fonts requests or IP sharing. Information Officer: hello@playunpause.com. Calculator inputs and saved setups stay in localStorage; optional UP-XXXXXXXX QR sync codes store only sanitized game-checklist JSON on Cloudflare Workers & D1 (with privacy-first Cloudflare Web Analytics). No directed collection from children under 13/16/18. Synced checklists are purged cleanly via email or DELETE /api/sync/:code. Escalate unresolved POPIA queries to the Information Regulator (South Africa) at POPIAComplaints@inforegulator.org.za.',
   },
   refunds: {
     path: '/legal/refunds',
     title: 'Sponsor Ad Policy & Legacy Support — Unpause',
     description:
-      'Explore Unpause moderation rules for $149/day verified header sponsorships and legacy support contact details.',
+      'Explore Unpause moderation rules for $149/day verified header sponsorships, manual invoicing, and legacy receipt support details online.',
     h1: 'Sponsored Ad Rules & Support Policy',
-    body: 'All playunpause.com calculators and routes are 100% free with zero consumer billing. Header sponsors ($149/24h via direct inquiry to sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation before invoicing, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited. Legacy support: hello@playunpause.com.',
+    body: 'All playunpause.com calculators, routes, and OBS overlays are 100% free with zero consumer billing. Header sponsors ($149/24h via direct inquiry to sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation plus ECTA s.43(1) supplier particulars prior to invoicing, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited. Legacy support: hello@playunpause.com.',
   },
   ip: {
     path: '/legal/ip',
     title: 'IP, Trademarks, DMCA & Affiliate Info — Unpause',
     description:
-      'View Unpause publisher non-affiliation statements, Mojang and CD PROJEKT S.A. trademark notices, 17 U.S.C. 512(c)(3) DMCA contacts, and affiliate info.',
+      'View Unpause publisher non-affiliation statements, Mojang and CD PROJEKT S.A. trademark notices, DMCA contacts, and Amazon affiliate rules.',
     h1: 'Intellectual Property, DMCA & FTC Affiliate Disclosure',
     body: 'playunpause.com is an independent, unofficial utility not affiliated with or endorsed by Take-Two Interactive, Rockstar Games, Activision, Epic Games, Mojang AB, Microsoft, Electronic Arts, CD PROJEKT S.A., Respawn Entertainment, Valve, Riot Games, Roblox Corp., or Sony Interactive Entertainment. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA. As an Amazon Associate I earn from qualifying purchases. DMCA / IP agent: dmca@playunpause.com.',
   },
@@ -123,12 +123,12 @@ const CONSOLE_SEO_SPECS = [
     freeGb: 140,
     includePatch: false,
     shortLabel: 'Xbox Series S 512GB',
-    title: 'GTA 6 Xbox Series S 512GB Fit Check (225 GB?) — Unpause',
+    title: 'GTA 6 Xbox Series S 512GB Fit Check (212 GB) — Unpause',
     description:
-      'Will GTA 6 fit on Xbox Series S 512GB? Calculate exact 225 GB vs 364 GB usable NVMe headroom, see which games to uninstall, and check expansion cards now.',
+      'Will GTA 6 fit on Xbox Series S 512GB? Calculate exact 212 GB vs 364 GB usable NVMe headroom, see which games to uninstall, and check expansion cards now.',
     h1: 'Will GTA VI Fit on Xbox Series S (512 GB)?',
     answer:
-      'Xbox Series S (512 GB) provides 364 GB of usable internal NVMe space. At an estimated 225 GB Xbox install, GTA VI consumes 61.8% of your usable drive—leaving 139 GB free when empty, or requiring ~85 GB cleared if you only have 140 GB open.',
+      'Xbox Series S (512 GB) provides 364 GB of usable internal NVMe space. With Rockstar’s official up-to-212 GB preload live since Nov 10, GTA VI consumes 58.2% of your usable drive—leaving 152 GB free when empty, or requiring ~72 GB cleared if you have 140 GB open.',
     faqs: [
       {
         q: 'Can Xbox Series S run GTA 6 off a cheap USB external drive?',
@@ -146,12 +146,12 @@ const CONSOLE_SEO_SPECS = [
     freeGb: 320,
     includePatch: false,
     shortLabel: 'Xbox Series S 1TB',
-    title: 'GTA 6 Xbox Series S 1TB Storage Check (225 GB) — Unpause',
+    title: 'GTA 6 Xbox Series S 1TB Storage Check (212 GB) — Unpause',
     description:
-      'Check GTA 6 fit on the Carbon Black Xbox Series S 1TB (802 GB usable). Compare 225 GB install + Day-1 patch headroom and download time in seconds, ad-free.',
+      'Check GTA 6 fit on the Carbon Black Xbox Series S 1TB (802 GB usable). Compare 212 GB install + Day-1 patch headroom and download time in seconds, ad-free.',
     h1: 'GTA VI Storage Check for Xbox Series S (1 TB)',
     answer:
-      'The 1 TB Xbox Series S exposes 802 GB of usable NVMe storage. An estimated 225 GB install leaves 577 GB for other titles—enough for Call of Duty HQ, Fortnite, and EA FC 27 alongside GTA VI with zero external card needed.',
+      'The 1 TB Xbox Series S exposes 802 GB of usable NVMe storage. The official 212 GB preload leaves 590 GB for other titles—enough for Call of Duty HQ, Fortnite, and EA FC 27 alongside GTA VI with zero external card needed.',
   },
   {
     slug: 'xbox-series-x-1tb',
@@ -161,36 +161,36 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'Xbox Series X 1TB',
     title: 'GTA 6 Xbox Series X 1TB Storage & NZ Unlock — Unpause',
     description:
-      'Calculate Xbox Series X 1TB (802 GB usable) headroom for GTA 6 225 GB preload, Day-1 patch space, Mbps download ETA, and Nov 18 New Zealand midnight unlock rules.',
+      'Calculate Xbox Series X 1TB (802 GB usable) headroom for GTA 6 212 GB preload, Day-1 patch space, Mbps download ETA, and Nov 18 New Zealand midnight unlock rules.',
     h1: 'GTA VI Storage Fit & NZ Unlock on Xbox Series X (1 TB)',
     answer:
-      'Xbox Series X 1 TB provides 802 GB of usable internal storage, so an estimated 225 GB GTA VI install uses 28.1% of capacity (or 32.4% with a +35 GB Day-1 patch). Test your exact free space and download speed live below.',
+      'Xbox Series X 1 TB provides 802 GB of usable internal storage, so Rockstar’s official 212 GB GTA VI preload uses 26.4% of capacity (or 30.8% with a +35 GB Day-1 patch). Test your exact free space and download speed live below.',
   },
   {
     slug: 'ps5-base-825gb',
     consoleId: 'ps5-base',
     freeGb: 180,
     includePatch: false,
-    shortLabel: 'PS5 Base 825GB',
-    title: 'GTA 6 Base PS5 825GB Storage Check (212 GB) — Unpause',
+    shortLabel: 'PS5 Base / Slim Digital 825GB',
+    title: 'GTA 6 PS5 825GB & CFI-2100 Storage Check — Unpause',
     description:
-      'Does 212 GB GTA 6 fit on a launch PS5 (667 GB usable)? Pick installed games to delete, calculate +35 GB Day-1 patch headroom, and export your Preload Spec Card.',
-    h1: 'Will GTA VI Fit on Launch PS5 (825 GB / 667 GB Usable)?',
+      'Does 212 GB GTA 6 fit on a PS5 Base or Sept 2025 CFI-2100 Slim Digital (667 GB usable)? Clear installed games, check +35 GB patch headroom, and export Spec PNGs.',
+    h1: 'Will GTA VI Fit on PS5 Base / Slim Digital (825 GB)?',
     answer:
-      'Original launch PlayStation 5 consoles expose 667 GB of usable SSD space. An estimated 212 GB GTA VI install takes 31.8% of the drive (247 GB with a +35 GB Day-1 buffer), leaving room for two or three staples once older games are cleared.',
+      'Both launch PS5 models and Sony’s Sept 2025 CFI-2100 Slim Digital 825GB expose 667 GB of usable SSD space. The official 212 GB GTA VI preload takes 31.8% of the drive (247 GB with a +35 GB Day-1 buffer), leaving room once older staples are cleared.',
   },
   {
     slug: 'ps5-slim-1tb',
     consoleId: 'ps5-slim',
     freeGb: 310,
     includePatch: false,
-    shortLabel: 'PS5 Slim 1TB',
+    shortLabel: 'PS5 Slim Disc 1TB',
     title: 'GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause',
     description:
-      'Test GTA 6 212 GB preload space on PS5 Slim 1TB (848 GB usable). Check remaining NVMe headroom, download ETA by Mbps, and official PSN region unlock timing.',
-    h1: 'GTA VI Storage Check for PS5 Slim (1 TB · 848 GB Usable)',
+      'Test GTA 6 212 GB preload space on PS5 Slim Disc 1TB (848 GB usable). Check remaining NVMe headroom, download ETA by Mbps, and official PSN region unlock timing.',
+    h1: 'GTA VI Storage Check for PS5 Slim Disc (1 TB · 848 GB)',
     answer:
-      'PS5 Slim models ship with 848 GB of usable internal SSD capacity—181 GB more than the launch PS5. GTA VI (est. 212 GB) fills exactly 25.0% of usable storage, leaving 636 GB for remaining games and capture clips.',
+      'PS5 Slim Disc models ship with 848 GB of usable internal SSD capacity—181 GB more than 825GB models. GTA VI (up to 212 GB) fills exactly 25.0% of usable storage, leaving 636 GB for remaining games and capture clips.',
   },
   {
     slug: 'ps5-pro-2tb',
@@ -203,7 +203,7 @@ const CONSOLE_SEO_SPECS = [
       'Check GTA 6 212 GB + 35 GB patch impact on PS5 Pro (1,890 GB usable SSD), calculate gigabit preload ETA, and confirm PSN regional midnight launch timing now.',
     h1: 'GTA VI Storage & Gigabit ETA on PS5 Pro (2 TB)',
     answer:
-      'PlayStation 5 Pro delivers 1,890 GB of usable SSD space, meaning an estimated 212 GB GTA VI preload uses just 11.2% of the internal drive. Calculate download duration at your fiber speed and check PSN disc-drive notes below.',
+      'PlayStation 5 Pro delivers 1,890 GB of usable SSD space, meaning Rockstar’s official 212 GB GTA VI preload uses just 11.2% of the internal drive. Calculate download duration at your fiber speed and check PSN disc-drive notes below.',
   },
   {
     slug: '212gb-day-one-patch',
@@ -213,10 +213,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: '212 GB + 35 GB Patch',
     title: 'GTA 6 212 GB + Day-1 Patch Storage Buffer — Unpause',
     description:
-      'Plan for GTA 6 212–225 GB base install plus an estimated 35 GB Day-1 launch patch buffer across PS5 and Xbox consoles so your preload never stalls at 99%.',
-    h1: 'GTA VI Base Install + Estimated 35 GB Day-1 Patch Check',
+      'Plan for GTA 6 official up-to-212 GB preload plus an estimated 35 GB Day-1 launch patch buffer across PS5 and Xbox consoles so your download never stalls.',
+    h1: 'GTA VI 212 GB Preload + Estimated 35 GB Day-1 Patch Check',
     answer:
-      'Including an optional +35 GB Day-1 launch patch brings total required space to ~247 GB on PlayStation 5 and ~260 GB on Xbox Series X|S. Keeping this buffer free avoids failed midnight unpacking or emergency uninstalls.',
+      'Including an optional +35 GB Day-1 launch patch brings total required space to ~247 GB across both PlayStation 5 and Xbox Series X|S. Keeping this buffer free avoids failed midnight unpacking or emergency uninstalls.',
   },
   {
     slug: 'external-usb-drive-xbox-ps5',
@@ -229,7 +229,7 @@ const CONSOLE_SEO_SPECS = [
       'Check PS5 and Xbox Series S|X external drive rules before preloading GTA 6: why USB 3.0 drives only store cold games and which NVMe expansions actually boot.',
     h1: 'External USB Drive vs NVMe Expansion Rules for GTA VI',
     answer:
-      'Neither PS5 nor Xbox Series X|S can play current-gen titles from external USB 3.0 HDDs or SSDs. You can park Call of Duty or RDR2 on USB cold storage to clear 212–225 GB internally, or install a PCIe Gen4 M.2 SSD (PS5) / Xbox Expansion Card.',
+      'Neither PS5 nor Xbox Series X|S can play current-gen titles from external USB 3.0 HDDs or SSDs. You can park Call of Duty or RDR2 on USB cold storage to clear 212 GB internally, or install a PCIe Gen4 M.2 SSD (PS5) / Xbox Expansion Card.',
   },
 ];
 
@@ -462,25 +462,25 @@ function buildProgrammaticRoutes() {
 
   // 2. GTA VI Download Times (10)
   for (const spd of DOWNLOAD_SPEED_SPECS) {
-    const ps5Mins = (212 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
-    const xboxMins = (225 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
-    const ps5Eta = formatEta(ps5Mins);
-    const xboxEta = formatEta(xboxMins);
+    const baseMins = (212 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
+    const patchMins = (247 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
+    const baseEta = formatEta(baseMins);
+    const patchEta = formatEta(patchMins);
     const cleanSpeed = spd.mbps === 1000 ? '1000 Mbps Gigabit' : `${spd.mbps} Mbps`;
     pages.push({
       path: `/gta-6/download-time/${spd.slug}`,
       gameId: 'gta-6',
       tab: 'storage',
       cluster: 'GTA VI Download Speeds',
-      shortLabel: `${spd.mbps} Mbps ETA (${ps5Eta})`,
+      shortLabel: `${spd.mbps} Mbps ETA (${baseEta})`,
       priority: '0.82',
       changefreq: 'weekly',
-      title: clampTitle(`GTA 6 Download Time on ${cleanSpeed} (${ps5Eta}) — Unpause`),
+      title: clampTitle(`GTA 6 Download Time on ${cleanSpeed} (${baseEta}) — Unpause`),
       description: clampDesc(
-        `How long is a 212–225 GB GTA 6 preload on ${spd.label}? ${ps5Eta} on PS5 and ${xboxEta} on Xbox Series X|S with 10% protocol overhead. Adjust speed & patch live.`
+        `How long is a 212 GB GTA 6 preload on ${spd.label}? ${baseEta} base (${patchEta} with +35 GB patch) on PS5 and Xbox Series X|S with 10% protocol overhead.`
       ),
-      h1: `GTA VI Download Time on ${spd.label}: ${ps5Eta} (PS5) / ${xboxEta} (Xbox)`,
-      answerSummary: `At ${spd.mbps} Mbps (accounting for realistic 90% sustained CDN throughput), downloading an estimated 212 GB PS5 preload takes ${ps5Eta}, while a 225 GB Xbox Series X|S download finishes in ${xboxEta}.`,
+      h1: `GTA VI Download Time on ${spd.label}: ${baseEta} (212 GB Preload)`,
+      answerSummary: `At ${spd.mbps} Mbps (accounting for realistic 90% sustained CDN throughput), downloading Rockstar’s official up-to-212 GB PS5 & Xbox Series X|S preload takes ${baseEta} (${patchEta} with an optional +35 GB Day-1 patch).`,
       ogImage: '/og/gta-6-storage.png',
       ogAlt: `GTA VI download duration at ${spd.mbps} Mbps on Unpause`,
       breadcrumbs: [
@@ -490,9 +490,9 @@ function buildProgrammaticRoutes() {
       ],
       preset: { consoleId: 'ps5-base', freeGb: 250, includePatch: false, mbps: spd.mbps },
       metaRows: [
-        { label: `PS5 (212 GB) @ ${spd.mbps} Mbps`, val: `${ps5Eta} (with 10% overhead)` },
-        { label: `Xbox Series (225 GB) @ ${spd.mbps} Mbps`, val: `${xboxEta} (with 10% overhead)` },
-        { label: 'With +35 GB Day-1 Patch', val: formatEta((247 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60)) },
+        { label: `PS5 (212 GB) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
+        { label: `Xbox Series (212 GB) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
+        { label: 'With +35 GB Day-1 Patch', val: patchEta },
       ],
       faqs: getGameFaqs('gta-6'),
     });
@@ -511,12 +511,12 @@ function buildProgrammaticRoutes() {
       changefreq: 'daily',
       title: clampTitle(`GTA 6 ${dist.district} Safe Codes & Clues — Unpause`),
       description: clampDesc(
-        `Search ${dist.district} GTA 6 safe combinations, play 10-key audio beeps, copy 4-digit codes in one tap, and track cracked doors locally (pre-launch UI preview until Nov 18).`
+        `Track ${dist.district} GTA 6 keypad safes cleanly free online. Verified combinations populate live starting Nov 19 at 11:00 UTC NZ unlock.`
       ),
       h1: `GTA VI ${dist.district} Safe & Keypad Vault`,
       answerSummary: safeSample
-        ? `${dist.district} entries include ${safeSample.title} (pre-launch UI demo code ${safeSample.code}; hint: ${safeSample.clueLocation}). Verified launch combinations update live starting Nov 18 at 11:00 UTC.`
-        : `Instant ${dist.district} safe and door keypad filter with WebAudio playback and 1-tap clipboard copy.`,
+        ? `${dist.district} keypad tracker awaits launch confirmation (${safeSample.title}). Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock with zero fake placeholders.`
+        : `Instant ${dist.district} safe and door keypad filter with live WebAudio keypad tones.`,
       ogImage: '/og/gta-6-safes.png',
       ogAlt: `Unpause GTA VI ${dist.district} safe code vault`,
       breadcrumbs: [
@@ -527,8 +527,8 @@ function buildProgrammaticRoutes() {
       preset: { district: dist.district, query: '', safeId: safeSample?.id || '' },
       metaRows: safeSample
         ? [
-            { label: 'Featured Safe Preview', val: `${safeSample.title} (${safeSample.district})` },
-            { label: 'Reward Preview', val: safeSample.reward },
+            { label: 'District Tracker', val: `${safeSample.title} (${safeSample.district})` },
+            { label: 'Launch Format', val: 'Single-Player Release · Nov 19, 2026' },
             { label: 'Launch Sync Status', val: safeSample.verifiedStatus },
           ]
         : [],
@@ -946,8 +946,19 @@ function buildProgrammaticRoutes() {
 
   // 7. Roblox DevEx & Marketplace (10)
   for (const rm of ROBLOX_MILESTONES) {
-    const std = calcRobloxDevEx({ grossRobux: rm.robux, rateId: 'std-2025', groupSplitPct: 100 });
-    const usdStr = (rm.robux * 0.0038).toFixed(2);
+    const netOut = calcRobloxDevEx({
+      grossRobux: rm.robux,
+      rateId: 'std-2025',
+      groupSplitPct: 100,
+      isNetEarned: true,
+    });
+    const grossAfterCut = calcRobloxDevEx({
+      grossRobux: rm.robux,
+      rateId: 'std-2025',
+      groupSplitPct: 100,
+      isNetEarned: false,
+    });
+    const usdStr = netOut.usdPayout.toFixed(2);
     const directStr = (rm.robux * 0.0054).toFixed(2);
     pages.push({
       path: `/roblox/devex/${rm.slug}`,
@@ -958,10 +969,10 @@ function buildProgrammaticRoutes() {
       changefreq: 'weekly',
       title: clampTitle(`${rm.label} to USD DevEx Payout ($${usdStr}) — Unpause`),
       description: clampDesc(
-        `Convert ${rm.label} earned Robux to USD: $${usdStr} at $0.0038/R$ standard or $${directStr} US 18+ Direct Store. Includes 30% marketplace cut & 30K minimum guard.`
+        `Convert ${rm.label} earned DevEx Robux to USD: $${usdStr} at $0.0038/R$ standard or $${directStr} US 18+ Direct Store, plus optional 30% Marketplace cut mode.`
       ),
       h1: `How Much Is ${rm.label} in USD? ($${usdStr} DevEx Breakdown)`,
-      answerSummary: `${rm.robux.toLocaleString('en-US')} earned DevEx Robux pays $${usdStr} USD at the standard $0.0038/R$ rate ($${(rm.robux * 0.0035).toFixed(2)} legacy, or $${directStr} US 18+ Direct Store). After Roblox's 30% Marketplace fee, net take from ${rm.label} gross sales is ${std.afterMarketFee.toLocaleString('en-US')} R$.`,
+      answerSummary: `${rm.robux.toLocaleString('en-US')} net earned DevEx Robux pays $${usdStr} USD at the standard $0.0038/R$ rate ($${(rm.robux * 0.0035).toFixed(2)} legacy, or $${directStr} US 18+ Direct Store). If calculating pre-tax Gamepass gross sales, Roblox's 30% Marketplace fee leaves ${grossAfterCut.afterMarketFee.toLocaleString('en-US')} R$ ($${grossAfterCut.usdPayout.toFixed(2)} USD).`,
       ogImage: '/og/roblox.png',
       ogAlt: `Roblox ${rm.label} to USD DevEx calculator on Unpause`,
       breadcrumbs: [
@@ -969,11 +980,11 @@ function buildProgrammaticRoutes() {
         { name: 'Roblox DevEx', path: '/roblox' },
         { name: `${rm.label} to USD`, path: `/roblox/devex/${rm.slug}` },
       ],
-      preset: { robux: rm.robux, devexRate: 'std-2025', groupSplit: 100 },
+      preset: { robux: rm.robux, devexRate: 'std-2025', groupSplit: 100, rbxMode: 'net' },
       metaRows: [
-        { label: 'Earned Balance Cashout ($0.0038/R$)', val: `$${usdStr} USD` },
+        { label: 'Net Earned Balance ($0.0038/R$)', val: `$${usdStr} USD` },
         { label: 'US 18+ Direct Store ($0.0054/R$)', val: `$${directStr} USD` },
-        { label: 'Gross Sales After 30% Tax', val: `$${std.usdPayout.toFixed(2)} USD (${std.afterMarketFee.toLocaleString('en-US')} R$)` },
+        { label: 'If Pre-Tax Gross Sales (-30% Cut)', val: `$${grossAfterCut.usdPayout.toFixed(2)} USD (${grossAfterCut.afterMarketFee.toLocaleString('en-US')} R$)` },
       ],
       faqs: getGameFaqs('roblox'),
     });
@@ -1007,7 +1018,7 @@ function buildProgrammaticRoutes() {
       shortLabel: '$0.0038 vs $0.0035 Legacy',
       title: 'Roblox DevEx Rate: $0.0038 vs $0.0035 — Unpause',
       h1: 'Roblox DevEx New ($0.0038) vs Legacy ($0.0035) Rate Comparison',
-      preset: { robux: 100000, devexRate: 'std-2025', groupSplit: 100 },
+      preset: { robux: 100000, devexRate: 'std-2025', groupSplit: 100, rbxMode: 'net' },
       description:
         'Compare the September 2025 $0.0038/R$ DevEx bump against the $0.0035/R$ legacy queue across 30K, 100K, and 1M Robux milestones in one instant browser deck.',
       answer:
@@ -1018,7 +1029,7 @@ function buildProgrammaticRoutes() {
       shortLabel: 'US 18+ $0.0054 Rate',
       title: 'Roblox US 18+ Direct Store $0.0054 Rate — Unpause',
       h1: 'Roblox US 18+ Direct Store ($0.0054/R$) DevEx Estimator',
-      preset: { robux: 100000, devexRate: 'us-direct', groupSplit: 100 },
+      preset: { robux: 100000, devexRate: 'us-direct', groupSplit: 100, rbxMode: 'net' },
       description:
         'Calculate Roblox creator payouts at the US 18+ Direct Store $0.0054/R$ tier alongside standard $0.0038 DevEx math and 30% fee calculations instantly.',
       answer:
@@ -1479,11 +1490,11 @@ export const CORE_ROUTES = [
     changefreq: 'daily',
     title: clampTitle('Unpause — Instant Console Storage & Game Math Tools'),
     description: clampDesc(
-      'Check GTA VI 212–225 GB SSD fit on PS5 or Xbox in seconds, compare Warzone 300 HP TTK, link Minecraft Nether portals, and solve EA FC 27 tax cleanly free.'
+      'Check GTA VI 212 GB SSD fit on PS5 or Xbox in seconds, compare Warzone 300 HP TTK, link Minecraft Nether portals, and solve EA FC 27 tax cleanly free.'
     ),
     h1: 'Will GTA VI fit on your console?',
     answerSummary:
-      'Check exact PS5 & Xbox SSD headroom (212 GB PS5 / 225 GB Xbox est.), download ETA, keypad vaults, heist splits, and 9 instant top-game math decks — free, zero popups, no account.',
+      'Check exact PS5 & Xbox SSD headroom against Rockstar’s official up-to-212 GB preload live since Nov 10, download ETA, live Nov 19 keypad vault, and 9 instant top-game math decks — 100% free, zero popups.',
     ogImage: '/og-cover.png',
     ogAlt: 'Unpause — Clean second-screen calculators across 10 games',
     breadcrumbs: [],
@@ -1499,13 +1510,13 @@ export const CORE_ROUTES = [
     shortLabel: 'Preload & SSD Surgery',
     priority: '0.95',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Storage Fit Check (212–225 GB) — Unpause'),
+    title: clampTitle('GTA 6 Storage Fit Check (212 GB Preload) — Unpause'),
     description: clampDesc(
-      'Test if GTA 6 (212 GB PS5 / 225 GB Xbox) fits on Series S, Series X, or PS5 SSDs, pick games to clear, check NZ unlock timing, and export a Preload Spec Card.'
+      'Test if GTA 6 (official 212 GB preload live since Nov 10) fits on Series S, Series X, or PS5 SSDs, clear games, check NZ timing, and export a Spec PNG.'
     ),
     h1: 'GTA VI Preload & Console Storage Surgery (PS5 & Xbox)',
     answerSummary:
-      'Compare your exact console usable NVMe (364 GB Series S up to 1,890 GB PS5 Pro) against estimated 212 GB PlayStation 5 and 225 GB Xbox Series X|S installs, toggle a +35 GB Day-1 patch buffer, and calculate download ETA by Mbps.',
+      'Compare your exact console usable NVMe (364 GB Series S up to 1,890 GB PS5 Pro) against Rockstar’s official up-to-212 GB PS5 & Xbox Series X|S preload live since Nov 10, toggle +35 GB patch headroom, and calculate Mbps download ETA.',
     ogImage: '/og/gta-6-storage.png',
     ogAlt: 'Unpause GTA VI Console Storage Fit & Download ETA Calculator',
     breadcrumbs: [
@@ -1514,8 +1525,8 @@ export const CORE_ROUTES = [
     ],
     preset: { consoleId: 'xss-512', freeGb: 140, mbps: 120 },
     metaRows: [
-      { label: 'PS5 Base / Slim / Pro Estimate', val: '212 GB base (+35 GB optional patch)' },
-      { label: 'Xbox Series S / X Estimate', val: '225 GB base (+35 GB optional patch)' },
+      { label: 'Official Preload (PS5 & Xbox)', val: 'Up to 212 GB live since Nov 10 (+35 GB opt. patch)' },
+      { label: 'Launch Edition & Format', val: 'Nov 19 Single-Player ($79.99 Std / $99.99 Ult)' },
       { label: 'Earliest Rolling Unlock (NZ)', val: 'Nov 18, 2026 @ 11:00 UTC (Xbox Settings)' },
     ],
     faqs: getGameFaqs('gta-6'),
@@ -1530,11 +1541,11 @@ export const CORE_ROUTES = [
     changefreq: 'daily',
     title: clampTitle('GTA 6 Safe & Door Combinations Keypad — Unpause'),
     description: clampDesc(
-      'Search GTA 6 safe codes by district, play interactive 10-key WebAudio sequences, copy 4-digit codes in one tap, and track cracked doors locally without ads.'
+      'Track Leonida district GTA 6 safe keypads with interactive 10-key WebAudio tones. Verified keypad codes populate live starting Nov 19 at 11:00 UTC.'
     ),
     h1: 'GTA VI Safe & Door Combinations Keypad Vault',
     answerSummary:
-      'Search Leonida districts instantaneously, replay 4-digit keypad rhythms with tactile WebAudio tones, copy codes cleanly on phone or desktop, and check off opened doors locally (UI demo codes shown pre-launch; verified launch codes publish Nov 18).',
+      'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock with zero fake placeholders. Test 10-key WebAudio tones and track cleared Leonida locations locally 100% free.',
     ogImage: '/og/gta-6-safes.png',
     ogAlt: 'Unpause GTA VI Safe & Door Keypad Combination Vault',
     breadcrumbs: [
@@ -1544,7 +1555,7 @@ export const CORE_ROUTES = [
     preset: { district: 'All Districts', query: '' },
     metaRows: [
       { label: 'Covered Leonida Regions', val: 'Port Gellhorn, Vice Beach, Keys, Grassrivers, Ambrosia, Mt. Kalaga' },
-      { label: 'Live Launch Update', val: 'Verified release combinations sync Nov 18 (11:00 UTC)' },
+      { label: 'Live Launch Update', val: 'Verified keypad codes populate live starting Nov 19 (11:00 UTC)' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
@@ -1553,26 +1564,26 @@ export const CORE_ROUTES = [
     gameId: 'gta-6',
     tab: 'squad',
     cluster: 'GTA VI Launch Suite',
-    shortLabel: 'Squad Heist Splitter',
+    shortLabel: 'Crew Payout Estimator',
     priority: '0.90',
     changefreq: 'weekly',
-    title: clampTitle('GTA 6 Heist Cut Splitter & Stock Flip — Unpause'),
+    title: clampTitle('GTA Online / Crew Payout Estimator & Split — Unpause'),
     description: clampDesc(
-      'Split squad heist percentages to an exact 100%, auto-deduct NPC fees, export Crew Payout Slip PNGs to Discord, and model two-character story stock flips.'
+      'Split GTA Online & future multiplayer crew percentages to 100%, deduct NPC fees, export Payout PNGs, and plan 2-lead story stock flips free online.'
     ),
-    h1: 'Squad Heist Cut Splitter & Two-Character Stock Planner',
+    h1: 'GTA Online / Future Crew Payout Estimator & Stock Flip',
     answerSummary:
-      'Lock crew cuts with integer-exact 100% reconciliation after NPC support fees, export transparent Crew Payout Slips to party chat, and preview two-protagonist stock compounding timelines free with zero popup ads.',
+      'Grand Theft Auto VI launches Nov 19, 2026 as single-player ($79.99 Standard / $99.99 Ultimate). Use our integer-exact 100% crew splitter as a GTA Online / Future Crew Payout Estimator plus two-protagonist stock flip planner.',
     ogImage: '/og/gta-6-heist.png',
-    ogAlt: 'Unpause GTA VI Squad Heist Cut Splitter & Payout Slip',
+    ogAlt: 'Unpause GTA Online & Future Crew Payout Estimator',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'Squad & Heist Split', path: '/gta-6/heist-split' },
+      { name: 'Crew Estimator', path: '/gta-6/heist-split' },
     ],
     preset: { subTab: 'heist', gross: 2450000, fee: 12, cuts: [40, 20, 20, 20] },
     metaRows: [
-      { label: 'Preset Heist Takes', val: '$145K Early Run up to $2.45M Vice Beach Reserve' },
-      { label: 'Share Format', val: '1-Tap Crew Payout Slip PNG & Discord Clipboard' },
+      { label: 'GTA VI Launch Mode', val: 'Single-Player Story Release on Nov 19 ($79.99 / $99.99)' },
+      { label: '2–4 Player Estimator', val: 'GTA Online / Future Multiplayer Crew Payouts' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
@@ -1586,11 +1597,11 @@ export const CORE_ROUTES = [
     changefreq: 'daily',
     title: clampTitle('GTA 6 Weeknight Routes & Missables Shield — Unpause'),
     description: clampDesc(
-      'Follow time-boxed 45m/90m/120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts with zero story spoilers.'
+      'Follow time-boxed 45m, 90m, and 120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts free online.'
     ),
     h1: 'Weeknight Session Routes & Spoiler-Free Missables Shield',
     answerSummary:
-      'Pick a free 45-minute express run (or extended 90m/120m Sync Pass chains) across Port Gellhorn, Grassrivers, Vice Beach, and Leonida Keys, paired with spoiler-free Act I–III pause alerts.',
+      'Pick 100% free 45m, 90m, or 120m weeknight routes across Port Gellhorn, Grassrivers, Vice Beach, and Leonida Keys, paired with spoiler-free Act I–III pause alerts.',
     ogImage: '/og/gta-6-nightrun.png',
     ogAlt: 'Unpause GTA VI Weeknight Route Map & Missables Shield',
     breadcrumbs: [
@@ -1970,13 +1981,21 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
     }
   }
 
-  // 3. Direct embed convenience redirect (/embed -> /embed/gta-6/storage)
+  // 3. Direct embed & YouTube Shorts convenience 301 redirects
+  const lowerPath = pathname.toLowerCase();
   if (pathname === '/embed') {
     return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/embed/gta-6/storage` };
   }
+  if (lowerPath === '/eafc-tax') {
+    const qs = params.toString();
+    return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/ea-fc-27${qs ? `?${qs}` : ''}` };
+  }
+  if (lowerPath === '/warzone-ttk') {
+    const qs = params.toString();
+    return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/cod-warzone${qs ? `?${qs}` : ''}` };
+  }
 
   // 4. Match embed route or canonical indexable route
-  const lowerPath = pathname.toLowerCase();
   if (EMBED_ROUTE_MAP.has(lowerPath)) {
     const route = EMBED_ROUTE_MAP.get(lowerPath);
     return { status: 200, route, isEmbed: true };

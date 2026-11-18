@@ -38,10 +38,6 @@
     "PUBLIC_SITE_URL": "https://playunpause.com",
     "SUPPORT_EMAIL": "hello@playunpause.com",
     "SPONSOR_EMAIL": "sponsors@playunpause.com",
-    "ALLOW_DEMO_UNLOCK": "false",
-    "WHOP_PASS_CHECKOUT_URL": "https://whop.com/playunpause/unpause-one-time-all-access-pass/",
-    "WHOP_SPONSOR_CHECKOUT_URL": "https://whop.com/playunpause/unpause-24-hour-featured-header-sponsor/",
-    "WHOP_PASS_PLAN_ID": "prod_oMcH19N9BCoDO",
-    "WHOP_SPONSOR_PLAN_ID": "prod_QrrVpAuy4GAUm"
+    "ALLOW_DEMO_UNLOCK": "false"
   }
 }

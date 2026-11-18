@@ -1,7 +1,24 @@
-export const MAX_FREE_PINS_PER_GAME = 5;
+export const MAX_FREE_PINS_PER_GAME = 120;
 export const MAX_SYNC_PINS_TOTAL = 120;
-export const MAX_FREE_PROFILES = 2;
+export const MAX_FREE_PROFILES = 16;
 export const MAX_SYNC_PROFILES = 16;
+
+const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+export function stripDangerousKeys(input, depth = 0) {
+  if (depth > 8 || input === null || typeof input !== 'object') {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    return input.map((item) => stripDangerousKeys(item, depth + 1));
+  }
+  const clean = {};
+  for (const key of Object.keys(input)) {
+    if (DANGEROUS_OBJECT_KEYS.has(key)) continue;
+    clean[key] = stripDangerousKeys(input[key], depth + 1);
+  }
+  return clean;
+}
 
 export const VALID_CONSOLE_IDS = new Set([
   'ps5-base',
@@ -198,10 +215,11 @@ export function sanitizeCrewPresets(arr, maxItems = MAX_SYNC_PROFILES) {
   return out;
 }
 
-export function sanitizeSyncState(rawState) {
-  if (!isPlainObject(rawState)) {
+export function sanitizeSyncState(rawInput) {
+  if (!isPlainObject(rawInput)) {
     return null;
   }
+  const rawState = stripDangerousKeys(rawInput);
 
   const rawSafes = Array.isArray(rawState.crackedSafeIds)
     ? rawState.crackedSafeIds

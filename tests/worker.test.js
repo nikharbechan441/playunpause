@@ -141,7 +141,7 @@ test('Cloudflare Worker handles SEO prerender, /api/config, Whop ws_ webhook, sy
   assert.equal(cfgRes.status, 200);
   const cfg = await cfgRes.json();
   assert.equal(cfg.demoUnlockEnabled, false);
-  assert.equal(cfg.passCheckoutUrl, 'https://whop.com/playunpause/unpause-one-time-all-access-pass/');
+  assert.equal(cfg.passCheckoutUrl, '');
 
   // 3. GET /api/webhooks/whop passes Whop URL reachability probe
   const probeRes = await worker.fetch(new Request('https://playunpause.com/api/webhooks/whop'), env);

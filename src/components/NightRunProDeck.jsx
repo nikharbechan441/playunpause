@@ -525,9 +525,14 @@ export default function NightRunProDeck({
                   <span>All Weeknight Routes Unlocked Free</span>
                 </div>
                 {isPro && deckCode && (
-                  <button type="button" className="subtle-pill-btn" onClick={handleCopyDeckCode}>
+                  <button
+                    type="button"
+                    className="subtle-pill-btn"
+                    onClick={handleCopyDeckCode}
+                    title="Masked for OBS stream safety — click to copy"
+                  >
                     {copiedCode === 'ok' ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
-                    <span className="mono">{deckCode}</span>
+                    <span className="mono">{`UP-••••${deckCode.slice(-4)}`}</span>
                   </button>
                 )}
               </div>

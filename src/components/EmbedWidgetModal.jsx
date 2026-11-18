@@ -42,7 +42,7 @@ export default function EmbedWidgetModal({
     [selectedEmbedPath]
   );
 
-  const obsActive = Boolean(obsMode && isPro);
+  const obsActive = Boolean(obsMode);
   const iframeSrc = `${CANONICAL_ORIGIN}${activeRoute?.path || '/embed/gta-6/storage'}${obsActive ? '?mode=obs' : ''}`;
   const parentHref = `${CANONICAL_ORIGIN}${activeRoute?.parentCanonicalPath || '/gta-6/storage'}`;
   const parentLabel = activeRoute?.shortLabel || 'Unpause Calculator';
@@ -172,39 +172,22 @@ export default function EmbedWidgetModal({
         <div className="embed-obs-box">
           <div className="embed-obs-head">
             <div>
-              <span className="section-label">Streamer &amp; OBS Overlay Mode (?mode=obs)</span>
+              <span className="section-label">Streamer &amp; OBS Overlay Mode (?mode=obs · 100% Free)</span>
               <p className="embed-obs-sub">
-                {isPro
-                  ? 'Stripped unbranded HUD framing for OBS Browser Sources and stream overlays.'
-                  : 'Remove embed chrome & attribution footer for OBS Browser Sources via one-time Sync Pass.'}
+                Stripped unbranded HUD framing for OBS Browser Sources and stream overlays (100% Free).
               </p>
             </div>
-            {isPro ? (
-              <button
-                type="button"
-                aria-pressed={obsMode}
-                className={`filter-pill ${obsMode ? 'active' : ''}`}
-                onClick={() => {
-                  playSwitchTick(soundEnabled, 740);
-                  setObsMode((prev) => !prev);
-                }}
-              >
-                {obsMode ? 'OBS Mode On' : 'Enable OBS Mode'}
-              </button>
-            ) : (
-              onOpenProModal && (
-                <button
-                  type="button"
-                  className="secondary-key-btn"
-                  onClick={() => {
-                    playSwitchTick(soundEnabled, 740);
-                    onOpenProModal();
-                  }}
-                >
-                  Unlock OBS Mode · Sync Pass
-                </button>
-              )
-            )}
+            <button
+              type="button"
+              aria-pressed={obsMode}
+              className={`filter-pill ${obsMode ? 'active' : ''}`}
+              onClick={() => {
+                playSwitchTick(soundEnabled, 740);
+                setObsMode((prev) => !prev);
+              }}
+            >
+              {obsMode ? 'OBS Mode On' : 'Enable OBS Mode'}
+            </button>
           </div>
         </div>
 

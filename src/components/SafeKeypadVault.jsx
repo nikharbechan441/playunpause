@@ -96,10 +96,13 @@ export default function SafeKeypadVault({
     [safes, selectedSafeId, filteredSafes]
   );
 
-  const codeDigits = useMemo(
-    () => String(selectedSafe?.code || '0000').split('').slice(0, 4),
-    [selectedSafe]
-  );
+  const codeDigits = useMemo(() => {
+    const rawCode = String(selectedSafe?.code || '');
+    if (!selectedSafe?.verified || !/^\d{4}$/.test(rawCode)) {
+      return ['-', '-', '-', '-'];
+    }
+    return rawCode.split('').slice(0, 4);
+  }, [selectedSafe]);
 
   const safeCrackedIds = useMemo(
     () => (Array.isArray(crackedSafeIds) ? crackedSafeIds.filter((id) => typeof id === 'string') : []),
@@ -128,6 +131,7 @@ export default function SafeKeypadVault({
   };
 
   const copyCode = async (code) => {
+    if (!/^\d{4}$/.test(String(code || ''))) return;
     playSwitchTick(soundEnabled, 880);
     triggerHaptic(10);
     const ok = await copyTextReliably(code);
@@ -135,8 +139,10 @@ export default function SafeKeypadVault({
     setTimedCopiedState(ok ? code : 'blocked', 1800);
   };
 
+  const selectedSafeVerified = Boolean(selectedSafe?.verified && /^\d{4}$/.test(String(selectedSafe?.code || '')));
+
   const handlePlaySequence = () => {
-    if (!selectedSafe) return;
+    if (!selectedSafe || !selectedSafeVerified) return;
     clearTimers();
     setIsPlayingSeq(true);
     triggerHaptic(12);
@@ -228,7 +234,7 @@ export default function SafeKeypadVault({
               <KeyRound size={13} aria-hidden="true" />
               <span>
                 {isPreLaunch
-                  ? 'PRE-LAUNCH VAULT ENGINE · UI PREVIEW DEMO · VERIFIES LIVE NOV 18 (11:00 UTC)'
+                  ? 'PRE-UNLOCK TRACKER · VERIFIED KEYPAD CODES POPULATE LIVE STARTING NOV 19 AT 11:00 UTC'
                   : 'LIVE SAFE COMBINATION VAULT · INSTANT KEYPAD PLAYBACK'}
               </span>
             </div>
@@ -238,7 +244,7 @@ export default function SafeKeypadVault({
             </div>
             <p className="panel-subtitle">
               {isPreLaunch
-                ? 'Interactive UI preview with fictional placeholder codes ahead of launch — verified live on Nov 18 as safe combos are confirmed in-game.'
+                ? 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock. Zero fake placeholder combinations are shown before verification.'
                 : 'Search any Leonida district while paused, copy the 4-digit pin in one tap, or step through the tone sequence on the tactile 10-key pad.'}
             </p>
           </div>
@@ -255,7 +261,7 @@ export default function SafeKeypadVault({
             <KeyRound size={15} color="var(--coral)" aria-hidden="true" />
             <h2 className="panel-title">GTA VI Safe &amp; Door Keypad Vault</h2>
             <span className="district-pill">
-              {isPreLaunch ? 'Launch UI Preview' : 'Unofficial Companion'}
+              {isPreLaunch ? 'Pre-Unlock · Syncs Nov 19 11:00 UTC' : 'Unofficial Companion'}
             </span>
           </div>
           <div className="hud-readout" aria-live="polite">
@@ -267,20 +273,41 @@ export default function SafeKeypadVault({
       )}
 
       <div className="deck-body-pad">
+        <div
+          className="nz-compact-card"
+          role="status"
+          style={{
+            marginTop: 0,
+            marginBottom: '12px',
+            borderColor: 'var(--gold-border)',
+            background: 'var(--gold-soft)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <Info size={15} color="var(--gold)" style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock.</strong>{' '}
+            GTA VI launches as single-player only on November 19, 2026 ($79.99 Standard / $99.99 Ultimate) — zero unverified combinations are published prior to retail confirmation.
+          </span>
+        </div>
+
         {selectedSafe && (
           <div className="mobile-keypad-strip" aria-label="Quick Mobile Safe Controls">
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '0.77rem', color: 'var(--ink-muted)', fontWeight: 600 }}>
-                {selectedSafe.district} · PIN
+                {selectedSafe.district} · STATUS
               </div>
-              <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.1em' }}>
-                {selectedSafe.code}
+              <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.06em' }}>
+                {selectedSafeVerified ? selectedSafe.code : 'Pending Live Unlock'}
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
               <button
                 type="button"
                 className="secondary-key-btn"
+                disabled={!selectedSafeVerified}
                 onClick={() => copyCode(selectedSafe.code)}
               >
                 {copiedCode === selectedSafe.code ? <Check size={15} /> : <Copy size={15} />}
@@ -290,7 +317,7 @@ export default function SafeKeypadVault({
                 type="button"
                 className="primary-coral-btn"
                 onClick={handlePlaySequence}
-                disabled={isPlayingSeq}
+                disabled={isPlayingSeq || !selectedSafeVerified}
               >
                 <Volume2 size={15} />
                 <span>{isPlayingSeq ? 'Playing' : 'Play'}</span>
@@ -358,9 +385,9 @@ export default function SafeKeypadVault({
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                           <span className="district-pill">{safe.district}</span>
-                          {isPreLaunch ? (
+                          {!safe.verified ? (
                             <span className="district-pill" style={{ color: 'var(--gold)' }}>
-                              Fictional UI Demo
+                              Pre-Unlock · Syncs Nov 19 11:00 UTC
                             </span>
                           ) : safe.verifiedStatus ? (
                             <span className="district-pill" style={{ color: 'var(--teal-dark)' }}>
@@ -385,11 +412,14 @@ export default function SafeKeypadVault({
                       </button>
 
                       <div className="safe-card-actions">
-                        <span className="safe-code-badge">{safe.code}</span>
+                        <span className="safe-code-badge">
+                          {safe.verified && /^\d{4}$/.test(String(safe.code || '')) ? safe.code : 'PENDING'}
+                        </span>
                         <button
                           type="button"
                           className="subtle-pill-btn"
-                          aria-label={`Copy ${safe.title} code ${safe.code}`}
+                          disabled={!safe.verified || !/^\d{4}$/.test(String(safe.code || ''))}
+                          aria-label={`Copy ${safe.title} code`}
                           onClick={() => copyCode(safe.code)}
                         >
                           {copiedCode === safe.code ? <Check size={14} /> : <Copy size={14} />}
@@ -420,17 +450,17 @@ export default function SafeKeypadVault({
                 <Cloud size={15} color="var(--ocean)" />
                 <span>
                   {isPro
-                    ? 'Cloud Sync Active — cracked safes mirror cleanly between Phone and Desktop.'
-                    : 'Every safe code and keypad works 100% free. Sync Pass adds QR checklist backup across Phone + PC.'}
+                    ? 'Free Cloud Sync Active — cracked safes mirror cleanly between Phone and Desktop.'
+                    : 'Every safe code, keypad tone, and Phone ↔ PC QR backup works 100% free.'}
                 </span>
               </div>
-              {!isPro && (
+              {onOpenProModal && (
                 <button
                   type="button"
                   className="subtle-pill-btn"
                   onClick={onOpenProModal}
                 >
-                  Sync Phone + PC
+                  {isPro ? 'Manage QR Sync' : 'Free QR Sync'}
                 </button>
               )}
             </div>
@@ -492,7 +522,7 @@ export default function SafeKeypadVault({
                   type="button"
                   className="primary-coral-btn"
                   onClick={handlePlaySequence}
-                  disabled={isPlayingSeq}
+                  disabled={isPlayingSeq || !selectedSafeVerified}
                 >
                   <Volume2 size={15} />
                   <span>{isPlayingSeq ? 'Playing…' : 'Play Sequence'}</span>
@@ -500,6 +530,7 @@ export default function SafeKeypadVault({
                 <button
                   type="button"
                   className="secondary-key-btn"
+                  disabled={!selectedSafeVerified}
                   onClick={() => selectedSafe && copyCode(selectedSafe.code)}
                 >
                   {copiedCode === selectedSafe?.code ? <Check size={15} /> : <Copy size={15} />}
@@ -580,8 +611,7 @@ export default function SafeKeypadVault({
                 >
                   <Info size={13} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <span>
-                    Pre-launch UI preview samples shown cleanly prior to launch; verified in-game codes
-                    go live starting Nov 18 at 11:00 UTC.
+                    Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock. Test 10-key WebAudio tones directly above.
                   </span>
                 </div>
               )}

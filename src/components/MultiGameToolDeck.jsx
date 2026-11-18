@@ -120,10 +120,10 @@ export default function MultiGameToolDeck({
   );
 
   useEffect(() => {
-    if (isPro || gamePins.length < 5) {
+    if (gamePins.length < 120) {
       setPinLimitAlert(false);
     }
-  }, [isPro, gamePins.length]);
+  }, [gamePins.length]);
 
   const flashCopied = (key) => {
     playSwitchTick(soundEnabled, 840);
@@ -145,10 +145,10 @@ export default function MultiGameToolDeck({
 
   const handlePinSnapshot = (label, value) => {
     if (!onSavePin) return;
-    if (!isPro && gamePins.length >= 5) {
+    if (gamePins.length >= 120) {
       playSwitchTick(soundEnabled, 660);
       setPinLimitAlert(true);
-      setPinNotice('Free tier saves up to 5 pins per game.');
+      setPinNotice('Reached 120 saved pins — remove an older pin first.');
       return;
     }
     playSwitchTick(soundEnabled, 820);
@@ -299,6 +299,18 @@ export default function MultiGameToolDeck({
   const [rbxRateId, setRbxRateId] = useState(() => initialPreset?.devexRate ?? 'std-2025');
   const [rbxGroupSplit, setRbxGroupSplit] = useState(() => initialPreset?.groupSplit ?? 100);
   const [rbxDesiredNet, setRbxDesiredNet] = useState(() => initialPreset?.desiredNet ?? 30000);
+  const [rbxMode, setRbxMode] = useState(() => (initialPreset?.rbxMode === 'net' ? 'net' : 'gross'));
+
+  useEffect(() => {
+    if (!initialPreset) return;
+    if (initialPreset.robux !== undefined) setRbxGross(initialPreset.robux);
+    if (initialPreset.devexRate) setRbxRateId(initialPreset.devexRate);
+    if (initialPreset.groupSplit !== undefined) setRbxGroupSplit(initialPreset.groupSplit);
+    if (initialPreset.desiredNet !== undefined) setRbxDesiredNet(initialPreset.desiredNet);
+    if (initialPreset.rbxMode !== undefined) {
+      setRbxMode(initialPreset.rbxMode === 'net' ? 'net' : 'gross');
+    }
+  }, [presetKey]);
 
   const safeDesiredNet = clampNum(Math.round(parseSafeNum(rbxDesiredNet, 30000)), 1, 15000000);
   const safeGroupSplit = clampNum(Math.round(parseSafeNum(rbxGroupSplit, 100)), 1, 100);
@@ -312,8 +324,9 @@ export default function MultiGameToolDeck({
         rateId: rbxRateId,
         groupSplitPct: safeGroupSplit,
         targetUsd: desiredTargetUsd,
+        isNetEarned: rbxMode === 'net',
       }),
-    [rbxGross, rbxRateId, safeGroupSplit, desiredTargetUsd]
+    [rbxGross, rbxRateId, safeGroupSplit, desiredTargetUsd, rbxMode]
   );
   const reverseGamepassPrice = Math.ceil(safeDesiredNet / (0.7 * (safeGroupSplit / 100)));
 
@@ -1164,6 +1177,8 @@ export default function MultiGameToolDeck({
                 setRbxGroupSplit={setRbxGroupSplit}
                 rbxDesiredNet={rbxDesiredNet}
                 setRbxDesiredNet={setRbxDesiredNet}
+                rbxMode={rbxMode}
+                setRbxMode={setRbxMode}
                 rbxResult={rbxResult}
                 reverseGamepassPrice={reverseGamepassPrice}
               />

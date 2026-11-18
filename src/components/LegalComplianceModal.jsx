@@ -64,7 +64,7 @@ export default function LegalComplianceModal({
               Legal, Privacy &amp; Buyer Protection Center
             </h2>
             <p className="legal-modal-sub">
-              Plain-English terms for <strong>playunpause.com</strong> · Effective November 12, 2026
+              Plain-English terms for <strong>playunpause.com</strong> · Updated November 18, 2026
             </p>
           </div>
           <button
@@ -123,35 +123,36 @@ export default function LegalComplianceModal({
           {activeSection === 'terms' && (
             <div>
               <h3 className="legal-heading">
-                1. Operator, Age Rule &amp; Statutory Disclosures (ECTA s. 43 · CPA)
+                1. Operator, Free Consumer Utility &amp; Statutory Disclosures (ECTA s. 43 · CPA)
               </h3>
               <p className="legal-copy">
                 <strong>Unpause</strong> (<code>https://playunpause.com</code>) is operated from South Africa by{' '}
                 <strong>{legalOperatorName}</strong>
                 {legalServiceAddress ? ` (${legalServiceAddress})` : ''}
                 {legalContactPhone ? ` · Tel: ${legalContactPhone}` : ''}
-                , running on global cloud infrastructure. We provide an independent, unofficial read-only browser calculator and checklist utility—never games, keys, cheats, injectors, modded accounts, or RMT currency. Support, Information Officer &amp; statutory notices:{' '}
+                . All 10 game calculators, GTA VI weeknight routes, saved console setups, OBS overlays, and CSV/JSON backups are <strong>100% free with zero self-serve consumer checkout</strong>. We never sell games, keys, cheats, injectors, modded accounts, or RMT currency. Support, Information Officer &amp; statutory notices:{' '}
                 <a href={`mailto:${supportEmail}`} className="legal-inline-link">
                   {supportEmail}
                 </a>
-                . Paid Sync Pass purchases require buyers aged <strong>18+ or competent parent/guardian consent</strong>. Consumer disputes may be referred to South Africa&rsquo;s <strong>National Consumer Commission</strong> (<code>nccsa.org.za</code>) or <strong>CGSO</strong>.
+                . Formal ECTA s. 43(1) physical service address and direct operator telephone particulars for B2B sponsor contracts are provided on written request via{' '}
+                <a href={`mailto:${sponsorEmail}`} className="legal-inline-link">
+                  {sponsorEmail}
+                </a>{' '}
+                prior to invoicing. Consumer queries may also be referred to South Africa&rsquo;s <strong>National Consumer Commission</strong> (<code>nccsa.org.za</code>) or <strong>CGSO</strong>.
               </p>
 
               <h3 className="legal-heading">
-                2. Unpause Sync Pass (${passPrice} USD One-Time)
+                2. Free Tools, Pre-Launch Alignment &amp; Sync Safety
               </h3>
               <ul className="legal-list">
                 <li>
-                  <strong>Merchant of Record &amp; Tax Transparency:</strong> Checkout is processed by <strong>Whop Inc. / Stripe</strong> as Merchant of Record for the <strong>Unpause Sync Pass</strong> (${passPrice} USD single non-recurring payment&mdash;never rebilled). Listed USD prices exclude local VAT/GST/sales tax, which Whop calculates and collects clearly prior to final payment.
+                  <strong>100% Free Interactive Calculators (Zero Consumer Billing):</strong> Every calculator, console SSD headroom planner, 16 saved console/crew setups, 120 cross-game pins, 45m/90m/120m weeknight routes, portable JSON/CSV backup, OBS overlay mode (<code>?mode=obs</code>), and Phone &harr; PC QR sync is free with zero Paywall or active Whop consumer checkout.
                 </li>
                 <li>
-                  <strong>Service Scope &amp; Minimum Term (EU DCD 2019/770):</strong> Unlocks instant QR + <code>UP-XXXXXXXX</code> cross-device cloud sync, up to 16 saved console SSD setups, 16 squad heist roster presets, extended 90m/120m GTA VI weeknight chains, up to 120 cross-game saved pins, portable JSON/CSV deck export, and top sponsor-bar removal. Requires a modern Web browser; backed by a <strong>minimum 12-month operational commitment</strong> and at least 30 days&rsquo; notice prior to any future sunset.
+                  <strong>Release Dates &amp; Gameplay Math:</strong> Grand Theft Auto VI launches on <strong>November 19, 2026</strong> as single-player ($79.99 Standard / $99.99 Ultimate), with pre-load live since November 10 (up to 212 GB on PS5 &amp; Xbox Series X|S) and rolling Xbox NZ access starting November 18 at 11:00 UTC. Unverified regional keypad entries remain blank until confirmed live on launch. All calculators (including EA Sports FC&trade; coin math, CS2/Apex odds summaries, and Roblox DevEx USD estimates) are informational gameplay math only&mdash;<strong>not financial, tax, or investment advice, gambling, or RMT</strong>.
                 </li>
                 <li>
-                  <strong>Pre-Launch Estimates &amp; Non-Financial Gameplay Math:</strong> GTA VI install sizes (212/225 GB), NZ timing estimates, safe keypad previews, heist splits, and story stock flips are simulated UI previews ahead of Nov 18, 2026 (zero leaked publisher material). All calculators (including EA Sports FC™ coin math, CS2/Apex odds summaries, and Roblox DevEx USD estimates) are informational gameplay math only—<strong>not financial, tax, or investment advice, gambling, or RMT</strong>. Roblox DevEx payouts remain governed solely by Roblox Corp.
-                </li>
-                <li>
-                  <strong>Bearer Code Safety &amp; Acceptable Use:</strong> Your <code>UP-XXXXXXXX</code> code (and <code>#sync=</code> URL) acts as a personal sync key—anyone holding it can read or edit synced checklists, so keep it private. Automated scraping, brute-forcing APIs, or reselling sync codes is prohibited.
+                  <strong>Bearer Sync Key Safety &amp; Acceptable Use:</strong> Optional free <code>UP-XXXXXXXX</code> sync keys (and <code>#sync=</code> QR URLs) allow checklist sync between your own devices—anyone holding your code can read or edit that checklist, so keep screenshots private on stream. Automated scraping or API abuse is prohibited.
                 </li>
               </ul>
 
@@ -159,7 +160,7 @@ export default function LegalComplianceModal({
                 3. Warranty Disclaimer &amp; Limitation of Liability
               </h3>
               <p className="legal-copy flush">
-                Game publishers frequently adjust weapon tuning, XP curves, marketplace rules, and install sizes via live patches. Unpause calculators are provided &ldquo;as is&rdquo; for entertainment utility; our maximum aggregate liability to any Sync Pass holder shall not exceed the amount paid for the pass. Nothing in these terms limits non-waivable statutory consumer rights under South African CPA/ECTA, UK CRA 2015, EU DCD/CRD, or US law.
+                Game publishers frequently adjust weapon tuning, XP curves, marketplace rules, and install sizes via live patches. Unpause calculators are provided free &ldquo;as is&rdquo; for entertainment utility; nothing in these terms limits non-waivable statutory consumer rights under South African CPA/ECTA, UK CRA 2015, EU law, or US law.
               </p>
             </div>
           )}
@@ -179,17 +180,17 @@ export default function LegalComplianceModal({
               </p>
 
               <h3 className="legal-heading">
-                2. Data Inventory, Indirect Sources &amp; Lawful Bases (POPIA s. 18)
+                2. Data Inventory &amp; Lawful Bases (POPIA s. 18)
               </h3>
               <ul className="legal-list">
                 <li>
-                  <strong>Free Calculators (Voluntary · Browser-Only):</strong> Theme, audio mute, Sync state flags (<code>isPro</code>, <code>deckCode</code>), <code>crackedSafeIds</code>, <code>checkedRouteIds</code>, <code>savedPins</code>, <code>storageProfiles</code>, and <code>crewPresets</code> are stored strictly in browser <code>localStorage</code> (<code>unpause_deck_state_v5</code>) until you clear them or export a portable JSON/CSV deck backup. Zero server data is created for free calculator use.
+                  <strong>Local-First Calculator Data (Voluntary · Browser-Only):</strong> Theme, audio mute, sync keys, <code>crackedSafeIds</code>, <code>checkedRouteIds</code>, <code>savedPins</code>, <code>storageProfiles</code>, and <code>crewPresets</code> stay strictly in browser <code>localStorage</code> (<code>unpause_deck_state_v5</code>) until you clear them or export portable JSON/CSV backups.
                 </li>
                 <li>
-                  <strong>Sync Pass &amp; Cloud Sync (Contract — GDPR Art. 6(1)(b) / POPIA s. 11):</strong> Checkout is processed by <strong>Whop Inc. / Stripe</strong> (US), which indirectly supplies your receipt ID (<code>whop_ref</code>), USD amount, currency, and checkout email via signed webhooks (mandatory to provision &amp; restore a Sync Pass). Our database stores a <strong>keyed HMAC-SHA256 hash</strong> of checkout email (<code>email_hash</code>—never plaintext emails), <code>whop_ref</code>, order ledger metadata, and your synced checklist JSON (<code>sync_decks</code>). Anyone holding your <code>UP-XXXXXXXX</code> bearer code or <code>#sync=</code> QR link can access or edit synced checklists.
+                  <strong>Optional QR Sync &amp; Legacy Ledger Storage:</strong> When you generate a free <code>UP-XXXXXXXX</code> sync code or restore a legacy deck, only your sanitized game-checklist JSON (<code>sync_decks</code>) is synced via Cloudflare Workers &amp; D1—zero personal names or payment cards are stored for free calculator use. Any historical transaction hashes are unlinked on DSAR erasure.
                 </li>
                 <li>
-                  <strong>Sponsors, Replay Ledger &amp; Edge Security (Contract / Legitimate Interest — Art. 6(1)(b),(f)):</strong> Active 24h sponsor metadata (<code>badge_text</code>, <code>target_url</code>, flight dates) is stored in <code>sponsors</code>; <code>processed_webhooks</code> stores cryptographic SHA-256 webhook body/ID replay hashes (auto-pruned after 30 days) solely to block duplicate delivery. Edge IP rate limits reset automatically every <strong>60 seconds</strong>. All typography fonts are <strong>self-hosted</strong> on <code>playunpause.com</code> with zero external Google Fonts requests; cookie-free <strong>Cloudflare Web Analytics</strong> (<code>cloudflareinsights.com</code>) captures aggregate telemetry without cookies or cross-site profiling.
+                  <strong>Sponsors &amp; Edge Security:</strong> Active 24h sponsor metadata (<code>badge_text</code>, <code>target_url</code>) is stored in <code>sponsors</code>. Edge per-IP and per-code rate limits reset automatically every <strong>60 seconds</strong>. All typography fonts are <strong>self-hosted</strong> on <code>playunpause.com</code>; cookie-free <strong>Cloudflare Web Analytics</strong> captures aggregate telemetry without cookies or cross-site profiling.
                 </li>
               </ul>
 
@@ -197,18 +198,18 @@ export default function LegalComplianceModal({
                 3. Children &amp; Minors (COPPA · GDPR-K · POPIA s. 35)
               </h3>
               <p className="legal-copy">
-                Free calculators for titles including <em>Minecraft</em>, <em>Roblox</em>, and <em>Fortnite</em> collect zero server-side personal data and display zero targeted behavioral ads. Paid Sync Pass checkouts, cloud sync, and support emails are strictly for users aged <strong>18+ (or 13+ US/UK and 16+ EU with parent/guardian authorization; under POPIA s. 35, South African minors under 18 require competent parental consent)</strong>. Parents may email <code>{supportEmail}</code> for prompt removal of any minor&rsquo;s data.
+                Free calculators for titles including <em>Minecraft</em>, <em>Roblox</em>, and <em>Fortnite</em> collect zero server-side personal data, have zero consumer checkouts, and display zero behavioral ads or adult gear promotions.
               </p>
 
               <h3 className="legal-heading">
-                4. Retention, Cross-Border Transfers &amp; Verified DSAR Rights
+                4. Retention &amp; Verified DSAR Rights
               </h3>
               <p className="legal-copy flush">
-                Active <code>sync_decks</code> persist until verified deletion (use automated <code>DELETE /api/sync/:code</code> with your <code>receiptRef</code> or email support); refunded or deactivated decks have <code>email_hash</code> and <code>state_json</code> scrubbed immediately upon revocation (retaining only an opaque deactivation marker), and <code>processed_webhooks</code> replay hashes prune after 30 days. Mandatory <code>orders</code> ledger records (<code>transaction_id</code>, amount, currency, timestamp) are retained <strong>5–7 years</strong> for statutory tax compliance (SA Tax Administration Act s. 29; GDPR Art. 6(1)(c)), with email hashes unlinked upon erasure requests. Infrastructure runs across <strong>Cloudflare Workers &amp; D1</strong> (encrypted at rest globally), <strong>Whop / Stripe / Google</strong> (US under EU Standard Contractual Clauses, UK IDTA, and EU-US Data Privacy Framework where certified), and support operations from South Africa (POPIA s. 72 safeguards). Email{' '}
+                You may delete local state anytime via Clear Local Data or purge synced checklists via <code>DELETE /api/sync/:code</code> or by emailing{' '}
                 <a href={`mailto:${supportEmail}`} className="legal-inline-link">
                   {supportEmail}
-                </a>{' '}
-                to access, correct, export, restrict, object, or erase your record—we respond to verified requests within <strong>7 days</strong> (well within GDPR&rsquo;s 1-month / POPIA statutory timeframe) upon matching checkout email, Whop <code>mem_</code> / <code>pay_</code> receipt ID (including Apple Pay Private Relay), or your <code>UP-XXXXXXXX</code> code. Escalate unresolved complaints to South Africa&rsquo;s <strong>Information Regulator</strong> (<code>POPIAComplaints@inforegulator.org.za</code>, POPIA Form 5, <code>inforegulator.org.za</code>), the UK ICO, or your EU authority.
+                </a>
+                . We respond to access, correction, or erasure requests within <strong>7 days</strong>. Escalate unresolved complaints to South Africa&rsquo;s <strong>Information Regulator</strong> (<code>POPIAComplaints@inforegulator.org.za</code>, POPIA Form 5, <code>inforegulator.org.za</code>), the UK ICO, or your EU authority.
               </p>
             </div>
           )}
@@ -216,35 +217,32 @@ export default function LegalComplianceModal({
           {activeSection === 'refunds' && (
             <div>
               <h3 className="legal-heading">
-                1. 14-Day Hassle-Free Sync Pass Refund Policy
+                1. Zero Active Consumer Billing &amp; Legacy Receipt Support
               </h3>
               <p className="legal-copy">
-                <strong>Whop Inc.</strong> acts as Merchant of Record. Despite instant <code>UP-XXXXXXXX</code> cloud activation, statutory EU/UK 14-day cancellation rights and UK CRA 2015 digital-content remedies remain fully intact alongside our <strong>voluntary 14-day unconditional refund guarantee</strong>. If you purchased by mistake, cannot locate an Apple Pay Private Relay receipt, or aren&rsquo;t satisfied, email{' '}
+                All Unpause calculators, routes, OBS overlays, and QR sync features are <strong>100% free</strong> with no active consumer subscription or Merchant-of-Record checkout. For legacy receipt questions or data erasure requests, email{' '}
                 <a href={`mailto:${supportEmail}`} className="legal-inline-link">
                   {supportEmail}
                 </a>{' '}
-                with your checkout email, <code>UP-XXXXXXXX</code> code, or Whop <code>mem_</code> / <code>pay_</code> ID for a 100% refund. Refunded or disputed orders automatically deactivate associated access.
-              </p>
-              <p className="legal-copy fine-note">
-                Billing descriptor &amp; tax note: Charges appear via Whop (e.g., <code>WHOP*PLAYUNPAUSE</code>); VAT/GST/sales tax is itemized at checkout.
+                with your <code>UP-XXXXXXXX</code> code or legacy reference.
               </p>
 
               <h3 className="legal-heading">
-                2. ${sponsorPrice}/Day Top-Bar Sponsorship &amp; Acceptable Ad Policy
+                2. ${sponsorPrice}/Day Top-Bar Sponsorship &amp; B2B Acceptable Ad Policy
               </h3>
               <ul className="legal-list flush">
                 <li>
-                  <strong>Manual Review &amp; Slot Queueing:</strong> Every 24-hour top-bar placement is manually reviewed within 4–12 hours after you email your 60-character copy and <code>https://</code> destination URL to{' '}
+                  <strong>Manual Review Before Invoicing (ECTA s. 43 Compliant):</strong> Every 24-hour top-bar placement is manually reviewed within 4&ndash;12 hours after business buyers email their copy and <code>https://</code> destination URL to{' '}
                   <a href={`mailto:${sponsorEmail}`} className="legal-inline-link">
                     {sponsorEmail}
                   </a>
-                  . All live placements display an explicit <strong>Sponsored</strong> label and <code>rel=&quot;sponsored&quot;</code> link attribute, and are hidden for Sync Pass holders. If a date is already booked, your 24-hour window runs in the next open slot or qualifies for a full refund prior to publication.
+                  . Complete operator legal name, physical service address, and contact telephone disclosures are provided directly on B2B quotes/invoices prior to accepting payment. All live placements display an explicit <strong>Sponsored</strong> label and <code>rel=&quot;sponsored&quot;</code> link attribute.
                 </li>
                 <li>
                   <strong>Strictly Prohibited Categories:</strong> Game cheats, hacks, aimbots, modded accounts, in-game currency/coin/RMT sellers, skin gambling, casinos/betting, crypto tokens/NFTs, URL shorteners, malware, adult content, or trademark-infringing pages.
                 </li>
                 <li>
-                  <strong>Right to Decline &amp; Revocation:</strong> Unpause reserves sole discretion to reject any ad. Declined legitimate bookings receive a 100% refund; refunded/disputed sponsor orders or links altered post-approval to deceptive/prohibited destinations are terminated immediately without refund.
+                  <strong>Right to Decline &amp; Revocation:</strong> Unpause reserves sole discretion to reject any ad before publication or terminate any destination altered post-approval to prohibited content.
                 </li>
               </ul>
             </div>
@@ -266,7 +264,7 @@ export default function LegalComplianceModal({
                 2. Zero UGC Hosting, Zero Leaks &amp; DMCA Notices (17 U.S.C. § 512(c)(3))
               </h3>
               <p className="legal-copy">
-                Unpause hosts <strong>zero user-generated uploads</strong>, ripped publisher assets, or NDA leak material—pre-launch GTA VI safe entries and route stops are fictional UI previews until Nov 18, 2026 release. Rights holders or authorized agents may submit formal takedown notices (identifying the copyrighted work, exact URL, contact details, good-faith belief statement, and accuracy/authority signature under penalty of perjury) to our IP/DMCA contact at{' '}
+                Unpause hosts <strong>zero user-generated uploads</strong>, ripped publisher assets, or NDA leak material—pre-launch GTA VI safe entries remain unpopulated until verified live following the November 19, 2026 release (starting with 11:00 UTC Nov 18 NZ rollout). Rights holders or authorized agents may submit formal takedown notices (identifying the copyrighted work, exact URL, contact details, good-faith belief statement, and accuracy/authority signature under penalty of perjury) to our IP/DMCA contact at{' '}
                 <a href="mailto:dmca@playunpause.com" className="legal-inline-link">
                   dmca@playunpause.com
                 </a>{' '}

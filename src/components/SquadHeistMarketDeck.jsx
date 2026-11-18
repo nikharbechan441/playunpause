@@ -321,18 +321,10 @@ export default function SquadHeistMarketDeck({
 
   const handleSaveCrewPreset = () => {
     if (!onSaveCrewPreset) return;
-    if (!isPro && crewPresets.length >= MAX_FREE_PROFILES) {
-      playSwitchTick(soundEnabled, 660);
-      setPresetLimitAlert(true);
-      setPresetNotice(
-        `Free tier saves ${MAX_FREE_PROFILES} squad rosters locally. Unlock ${MAX_SYNC_PROFILES} cloud-synced rosters with Sync Pass.`
-      );
-      return;
-    }
-    if (isPro && crewPresets.length >= MAX_SYNC_PROFILES) {
+    if (crewPresets.length >= MAX_SYNC_PROFILES) {
       playSwitchTick(soundEnabled, 640);
       setPresetLimitAlert(false);
-      setPresetNotice(`Reached ${MAX_SYNC_PROFILES} synced squad rosters — remove an older roster first.`);
+      setPresetNotice(`Reached ${MAX_SYNC_PROFILES} saved squad rosters — remove an older roster first.`);
       return;
     }
 
@@ -419,7 +411,7 @@ export default function SquadHeistMarketDeck({
           setSubTab('heist');
         }}
       >
-        Heist Cut Splitter
+        GTA Online / Future Crew Payout Estimator
       </button>
       <button
         id="squad-tab-market"
@@ -448,18 +440,15 @@ export default function SquadHeistMarketDeck({
             <div className="panel-eyebrow">
               <Users size={13} aria-hidden="true" />
               <span>
-                {isPreLaunch
-                  ? 'INTEGER-EXACT 100% LOCK SPLITTER · UI ESTIMATE / PREVIEW SAMPLES'
-                  : 'INTEGER-EXACT 100% LOCK SPLITTER · NPC FEE DEDUCTION'}
+                INTEGER-EXACT 100% LOCK SPLITTER · GTA ONLINE / FUTURE CREW PAYOUT ESTIMATOR
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <h1 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h1>
-              <span className="district-pill">Gameplay Math Only</span>
+              <h1 className="panel-title">GTA Online / Future Crew Payout Estimator &amp; Stock Flip</h1>
+              <span className="district-pill">Single-Player Nov 19</span>
             </div>
             <p className="panel-subtitle">
-              Lock individual player cuts without rounding drift, settle lobby arguments cleanly with
-              a shareable Payout PNG, or plan post-heist dual-character stock rebounds.
+              Grand Theft Auto VI launches November 19 as single-player ($79.99 Standard / $99.99 Ultimate). Use the 2/3/4-player estimator below for GTA Online or future multiplayer crews.
             </p>
           </div>
           {subTabBarNode}
@@ -468,8 +457,8 @@ export default function SquadHeistMarketDeck({
         <div className="studio-compact-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <Users size={15} color="var(--coral)" aria-hidden="true" />
-            <h2 className="panel-title">Squad Heist Split &amp; Dual-Lead Market Compounder</h2>
-            <span className="district-pill">Gameplay Math Only</span>
+            <h2 className="panel-title">GTA Online / Future Crew Payout Estimator</h2>
+            <span className="district-pill">Single-Player Launch Nov 19</span>
           </div>
           {subTabBarNode}
         </div>
@@ -477,12 +466,25 @@ export default function SquadHeistMarketDeck({
 
       <div className="deck-body-pad">
         {subTab === 'heist' ? (
-          <div
-            id="squad-panel-heist"
-            role="tabpanel"
-            aria-labelledby="squad-tab-heist"
-            className="squad-stage-grid"
-          >
+          <>
+            <div
+              className="nz-compact-card"
+              role="note"
+              style={{
+                marginTop: 0,
+                marginBottom: '14px',
+                borderColor: 'var(--gold-border)',
+                background: 'var(--gold-soft)',
+              }}
+            >
+              <strong>Note:</strong> GTA VI launches November 19, 2026 as a <strong>single-player story release ($79.99 Standard / $99.99 Ultimate)</strong>. This 2/3/4-player splitter is a <strong>GTA Online / Future Crew Payout Estimator</strong>.
+            </div>
+            <div
+              id="squad-panel-heist"
+              role="tabpanel"
+              aria-labelledby="squad-tab-heist"
+              className="squad-stage-grid"
+            >
             {/* LEFT CONTROLS */}
             <div>
               <div className="meter-labels" style={{ marginBottom: '8px' }}>
@@ -864,8 +866,7 @@ export default function SquadHeistMarketDeck({
                       <div className="saved-preset-title">
                         <Bookmark size={14} color="var(--ocean)" aria-hidden="true" />
                         <span>
-                          Saved Squad Rosters ({crewPresets.length}
-                          {isPro ? ` / ${MAX_SYNC_PROFILES} Synced` : ` / ${MAX_FREE_PROFILES} Free`})
+                          Saved Squad Rosters ({crewPresets.length} / {MAX_SYNC_PROFILES} Free)
                         </span>
                       </div>
                       <button
@@ -879,21 +880,10 @@ export default function SquadHeistMarketDeck({
                     </div>
 
                     <div role="status" aria-live="polite">
-                      {presetLimitAlert && !isPro ? (
-                        <div className="pin-limit-alert">
-                          <span>{presetNotice}</span>
-                          {onOpenProModal && (
-                            <button type="button" className="subtle-pill-btn" onClick={onOpenProModal}>
-                              Unlock Sync Pass
-                            </button>
-                          )}
+                      {presetNotice && (
+                        <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
+                          {presetNotice}
                         </div>
-                      ) : (
-                        presetNotice && (
-                          <div className="inline-status-note ok mono" style={{ marginBottom: '8px' }}>
-                            {presetNotice}
-                          </div>
-                        )
                       )}
                     </div>
 
@@ -937,6 +927,7 @@ export default function SquadHeistMarketDeck({
               </div>
             </SpotlightPanel>
           </div>
+          </>
         ) : (
           <div id="squad-panel-market" role="tabpanel" aria-labelledby="squad-tab-market">
             <div className="meter-box" style={{ maxWidth: '520px' }}>

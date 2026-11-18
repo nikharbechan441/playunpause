@@ -7,23 +7,23 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ## 1. GTA VI Console Storage Estimates (Pre-Launch Guide Until Nov 19, 2026)
 | Console | Usable OS Storage | GTA VI Base Est. | With +35 GB Day-1 Patch | NZ Unlock Rule |
 | --- | --- | --- | --- | --- |
-| Xbox Series S (512 GB) | 364 GB usable | 225 GB base | 260 GB (+35 GB Day-1 patch) | Est. via Settings |
-| Xbox Series S (1 TB) | 802 GB usable | 225 GB base | 260 GB (+35 GB Day-1 patch) | Est. via Settings |
-| Xbox Series X (1 TB) | 802 GB usable | 225 GB base | 260 GB (+35 GB Day-1 patch) | Est. via Settings |
-| PS5 Base Launch Edition | 667 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
-| PS5 Slim (1 TB) | 848 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
-| PS5 Pro (2 TB) | 1890 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+| Xbox Series S (512 GB) | 364 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | Est. via Settings |
+| Xbox Series S (1 TB) | 802 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | Est. via Settings |
+| Xbox Series X (1 TB) | 802 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | Est. via Settings |
+| PS5 Base / Slim Digital (825GB - 667 GB usable) | 667 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+| PS5 Slim Disc (1TB - 848 GB usable) | 848 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+| PS5 Pro (2TB - 1,890 GB usable) | 1890 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
 
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
-| Connection Speed | PS5 Base (212 GB) | Xbox Base (225 GB) | Xbox + Patch (260 GB) |
-| --- | --- | --- | --- |
-| 25 Mbps | 20h 56m (1256m) | 22h 13m (1333m) | 25h 41m (1541m) |
-| 50 Mbps | 10h 28m (628m) | 11h 7m (667m) | 12h 50m (770m) |
-| 100 Mbps | 5h 14m (314m) | 5h 33m (333m) | 6h 25m (385m) |
-| 150 Mbps | 3h 29m (209m) | 3h 42m (222m) | 4h 17m (257m) |
-| 300 Mbps | 1h 45m (105m) | 1h 51m (111m) | 2h 8m (128m) |
-| 500 Mbps | 1h 3m (63m) | 1h 7m (67m) | 1h 17m (77m) |
-| 1000 Mbps | 31m | 33m | 39m |
+| Connection Speed | PS5 & Xbox Base (212 GB) | With +35 GB Patch (247 GB) |
+| --- | --- | --- |
+| 25 Mbps | 20h 56m (1256m) | 24h 24m (1464m) |
+| 50 Mbps | 10h 28m (628m) | 12h 12m (732m) |
+| 100 Mbps | 5h 14m (314m) | 6h 6m (366m) |
+| 150 Mbps | 3h 29m (209m) | 4h 4m (244m) |
+| 300 Mbps | 1h 45m (105m) | 2h 2m (122m) |
+| 500 Mbps | 1h 3m (63m) | 1h 13m (73m) |
+| 1000 Mbps | 31m | 37m |
 
 ## 2. Call of Duty: Warzone / BO7 (300 HP Armor Plate TTK Matrix)
 | Weapon | Fire Rate | Base Body Damage | 300 HP (1 HS) | 300 HP (Body Only) |
@@ -88,7 +88,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ## 9. Game Roster Summary
 ### Grand Theft Auto VI
 - Category: Open-World Action
-- Tagline: 212–225 GB SSD Fit Check, Safe Keypad Vault Demo & Heist Payout Splitter
+- Tagline: 212 GB SSD Fit Check, Live Keypad Tracker & GTA Online / Crew Payout Splitter
 
 ### Call of Duty: Warzone & Multiplayer
 - Category: First-Person Shooter
@@ -128,9 +128,9 @@ Important attribution note: playunpause.com is an independent unofficial utility
 
 ## 10. Complete Canonical Route Index (132 Pages)
 - https://playunpause.com/ — Unpause — Instant Console Storage & Game Math Tools
-- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212–225 GB) — Unpause
+- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB Preload) — Unpause
 - https://playunpause.com/gta-6/safe-codes — GTA 6 Safe & Door Combinations Keypad — Unpause
-- https://playunpause.com/gta-6/heist-split — GTA 6 Heist Cut Splitter & Stock Flip — Unpause
+- https://playunpause.com/gta-6/heist-split — GTA Online / Crew Payout Estimator & Split — Unpause
 - https://playunpause.com/gta-6/night-run — GTA 6 Weeknight Routes & Missables Shield — Unpause
 - https://playunpause.com/cod-warzone — CoD Warzone 300 HP TTK & Camo Tracker — Unpause
 - https://playunpause.com/fortnite — Fortnite Battle Pass XP Pace Calculator — Unpause
@@ -141,10 +141,10 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - https://playunpause.com/valorant — Valorant Round Buy Matrix & Ranked RR — Unpause
 - https://playunpause.com/apex-legends — Apex Heirloom 500-Pack & Ranked RP Tool — Unpause
 - https://playunpause.com/gta-online — GTA Online Cayo Perico Payout Splitter — Unpause
-- https://playunpause.com/gta-6/storage/xbox-series-s-512gb — GTA 6 Xbox Series S 512GB Fit Check (225 GB?) — Unpause
-- https://playunpause.com/gta-6/storage/xbox-series-s-1tb — GTA 6 Xbox Series S 1TB Storage Check (225 GB) — Unpause
+- https://playunpause.com/gta-6/storage/xbox-series-s-512gb — GTA 6 Xbox Series S 512GB Fit Check (212 GB) — Unpause
+- https://playunpause.com/gta-6/storage/xbox-series-s-1tb — GTA 6 Xbox Series S 1TB Storage Check (212 GB) — Unpause
 - https://playunpause.com/gta-6/storage/xbox-series-x-1tb — GTA 6 Xbox Series X 1TB Storage & NZ Unlock — Unpause
-- https://playunpause.com/gta-6/storage/ps5-base-825gb — GTA 6 Base PS5 825GB Storage Check (212 GB) — Unpause
+- https://playunpause.com/gta-6/storage/ps5-base-825gb — GTA 6 PS5 825GB & CFI-2100 Storage Check — Unpause
 - https://playunpause.com/gta-6/storage/ps5-slim-1tb — GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause
 - https://playunpause.com/gta-6/storage/ps5-pro-2tb — GTA 6 PS5 Pro 2TB Storage & Patch Check — Unpause
 - https://playunpause.com/gta-6/storage/212gb-day-one-patch — GTA 6 212 GB + Day-1 Patch Storage Buffer — Unpause

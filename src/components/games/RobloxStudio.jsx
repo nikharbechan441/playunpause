@@ -22,16 +22,23 @@ export default function RobloxStudio({
   setRbxGroupSplit,
   rbxDesiredNet,
   setRbxDesiredNet,
+  rbxMode = 'gross',
+  setRbxMode = null,
   rbxResult,
   reverseGamepassPrice,
 }) {
+  const isNetMode = rbxMode === 'net';
   const safeGross = rbxResult.gross;
   const safeSplit = clampNum(Math.round(parseSafeNum(rbxGroupSplit, 100)), 1, 100);
   const safeDesiredNet = clampNum(Math.round(parseSafeNum(rbxDesiredNet, 30000)), 1, 15000000);
   const gatePct = Math.min(100, Math.round((rbxResult.creatorNetRobux / 30000) * 100));
-  const afterFeePct = safeGross > 0 ? Math.round((rbxResult.afterMarketFee / safeGross) * 100) : 70;
+  const afterFeePct = safeGross > 0 ? Math.round((rbxResult.afterMarketFee / safeGross) * 100) : isNetMode ? 100 : 70;
   const creatorKeepPct =
-    safeGross > 0 ? Math.round((rbxResult.creatorNetRobux / safeGross) * 100) : Math.round(70 * (safeSplit / 100));
+    safeGross > 0
+      ? Math.round((rbxResult.creatorNetRobux / safeGross) * 100)
+      : isNetMode
+        ? 100
+        : Math.round(70 * (safeSplit / 100));
 
   return (
     <div className="gs-studio-stack gs-rbx-studio">
@@ -109,7 +116,7 @@ export default function RobloxStudio({
       <SpotlightPanel className="gs-work-card gs-rbx-waterfall-card">
         <div className="gs-rbx-waterfall" aria-label="Robux to USD deduction waterfall">
           <div className="gs-wf-stage">
-            <span className="mono gs-micro-label">1. GROSS SALES</span>
+            <span className="mono gs-micro-label">{isNetMode ? '1. EARNED BALANCE' : '1. GROSS SALES'}</span>
             <strong className="mono">
               <AnimatedValue value={safeGross} suffix=" R$" />
             </strong>
@@ -119,7 +126,7 @@ export default function RobloxStudio({
           </div>
           <ArrowRight size={15} className="gs-wf-arrow" aria-hidden="true" />
           <div className="gs-wf-stage">
-            <span className="mono gs-micro-label">2. AFTER 30% FEE</span>
+            <span className="mono gs-micro-label">{isNetMode ? '2. NO 30% CUT (NET)' : '2. AFTER 30% FEE'}</span>
             <strong className="mono">
               <AnimatedValue value={rbxResult.afterMarketFee} suffix=" R$" />
             </strong>
@@ -129,7 +136,9 @@ export default function RobloxStudio({
           </div>
           <ArrowRight size={15} className="gs-wf-arrow" aria-hidden="true" />
           <div className="gs-wf-stage">
-            <span className="mono gs-micro-label">3. GROUP ({safeSplit}%)</span>
+            <span className="mono gs-micro-label">
+              {isNetMode ? '3. DEVEX BALANCE (100%)' : `3. GROUP (${safeSplit}%)`}
+            </span>
             <strong className="mono">
               <AnimatedValue value={rbxResult.creatorNetRobux} suffix=" R$" />
             </strong>
@@ -146,6 +155,34 @@ export default function RobloxStudio({
             <span className="mono gs-wf-rate">${rbxResult.rate} / R$</span>
           </div>
         </div>
+
+        {/* Input Mode Switch */}
+        {typeof setRbxMode === 'function' && (
+          <div className="filter-row" role="group" aria-label="Robux input mode">
+            <button
+              type="button"
+              aria-pressed={isNetMode}
+              className={`filter-pill ${isNetMode ? 'active' : ''}`}
+              onClick={() => {
+                playTick?.(soundEnabled, 720);
+                setRbxMode('net');
+              }}
+            >
+              Net Earned Robux (DevEx Balance)
+            </button>
+            <button
+              type="button"
+              aria-pressed={!isNetMode}
+              className={`filter-pill ${!isNetMode ? 'active' : ''}`}
+              onClick={() => {
+                playTick?.(soundEnabled, 700);
+                setRbxMode('gross');
+              }}
+            >
+              Gross Store Sales (-30% Cut)
+            </button>
+          </div>
+        )}
 
         {/* Rate Tier Selector Pills */}
         <div className="filter-row" role="group" aria-label="DevEx tier rate">
@@ -170,7 +207,9 @@ export default function RobloxStudio({
 
         <div className="mg-field-grid">
           <div className="mg-field">
-            <label htmlFor="rbx-gross">Gross Gamepass Sales (R$)</label>
+            <label htmlFor="rbx-gross">
+              {isNetMode ? 'Net Earned Robux (R$)' : 'Gross Gamepass Sales (R$)'}
+            </label>
             <NumericField
               id="rbx-gross"
               min={0}
