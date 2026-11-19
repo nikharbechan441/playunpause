@@ -1457,23 +1457,23 @@ export const CORE_ROUTES = [
     shortLabel: 'Platinum & 15 Save Slots',
     priority: '0.92',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Platinum Tracker (Missable, 15 Saves & WAiNK) — Unpause'),
+    title: clampTitle('GTA 6 100% Tracker (Missable, 15 Saves & Collectibles) — Unpause'),
     description: clampDesc(
-      'Avoid the Ch. 1 Balcony Meditation ("Positive Mental Attitude") missable, manage 15 manual save slots & tap counters for 200 WAiNK Scans & 100 Animals.'
+      'Track 0 in-game 100% missables + Ch. 1 Positive Mental Attitude trophy, 15 manual save slots, WAiNK 200, Wildlife 100, Flamingos 100, Stunts 300 & Cards 15.'
     ),
-    h1: 'GTA VI Platinum Tracker: Missables, 15 Save Slots & WAiNK 200',
+    h1: 'GTA VI 100% & Platinum Tracker (Missables + 15 Save Slots)',
     answerSummary:
-      'Complete Chapter 1 Balcony Meditation ("Positive Mental Attitude") before leaving Ch. 1, organize all 15 manual save slots locally, and track 200 WAiNK Scans + 100 Animals with haptic thumb counters.',
+      '0 missables for the in-game 100% Completion menu (hidden until after the story). 1 potentially missable trophy: Positive Mental Attitude (Ch. 1 Balcony Meditation after Down to Earth). Use the 15-Slot Manual Save Planner (10 chapter + 5 free-roam), 5 thumb counters, and #s= share links.',
     ogImage: '/og/gta-6-platinum.png',
-    ogAlt: 'Unpause GTA VI Platinum & 15-Save-Slot Collectible Tracker',
+    ogAlt: 'Unpause GTA VI 100% Completion & 15-Save-Slot Tracker',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'Platinum Tracker', path: '/gta-6/platinum' },
+      { name: 'Platinum & 100% Tracker', path: '/gta-6/platinum' },
     ],
     preset: { subTab: 'platinum' },
     metaRows: [
-      { label: 'Critical Ch. 1 Missable', val: 'Balcony Meditation — "Positive Mental Attitude"' },
-      { label: 'Collectible Totals', val: '200 WAiNK Scans · 100 Animals · 15 Save Slot Log' },
+      { label: '100% Menu Missables', val: '0 In-Game 100% Missables · 1 Missable Trophy (Ch. 1)' },
+      { label: 'Hidden 100% Targets', val: '200 WAiNK · 100 Wildlife · 100 Flamingos · 300 Stunts · 15 Cards' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
