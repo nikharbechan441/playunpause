@@ -16,6 +16,7 @@ import {
   renderLaunchGraveyardCanvas,
   shareOrDownloadCanvas,
 } from '../../utils/canvasCards.js';
+import WakeLockToggle from './WakeLockToggle.jsx';
 import { SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import { playSwitchTick, triggerHaptic } from '../../utils/soundHaptics.js';
 
@@ -138,9 +139,12 @@ export default function Gta6SettingsTunerDeck({
         </div>
 
         {/* Digital Foundry 4-Console 30fps Comparison Grid */}
-        <div className="section-label">
-          <Monitor size={13} aria-hidden="true" />
-          <span>DIGITAL FOUNDRY 4-CONSOLE 30FPS LAUNCH SPEC COMPARISON (TAP TO SELECT FOR PNG)</span>
+        <div className="cheat-controls-row">
+          <div className="section-label">
+            <Monitor size={13} aria-hidden="true" />
+            <span>DIGITAL FOUNDRY 4-CONSOLE 30FPS LAUNCH SPEC COMPARISON (TAP TO SELECT FOR PNG)</span>
+          </div>
+          <WakeLockToggle soundEnabled={soundEnabled} />
         </div>
 
         <div className="tuner-console-grid" role="radiogroup" aria-label="Select console for launch card">

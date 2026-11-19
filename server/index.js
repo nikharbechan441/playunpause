@@ -1062,7 +1062,9 @@ export function createApp({ dbPath, env = process.env } = {}) {
         if (cacheControl) {
           res.setHeader('Cache-Control', cacheControl);
         }
-        if (rel === '/robots.txt' || rel === '/llms.txt' || rel === '/llms-full.txt' || rel.endsWith('.txt')) {
+        if (rel === '/manifest.webmanifest') {
+          res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+        } else if (rel === '/robots.txt' || rel === '/llms.txt' || rel === '/llms-full.txt' || rel.endsWith('.txt')) {
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         }
       },

@@ -12,6 +12,7 @@ import {
   GTA6_ROBBERY_TIERS,
 } from '../../data/games/gta6LaunchTools.js';
 import { SpoilerGuard } from './Gta6SpoilerShieldBar.jsx';
+import WakeLockToggle from './WakeLockToggle.jsx';
 import { SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import { playSwitchTick, triggerHaptic } from '../../utils/soundHaptics.js';
 
@@ -91,36 +92,39 @@ export default function Gta6MoneyRobberyDeck({
           </div>
         </div>
 
-        {/* Subtab Navigation */}
-        <div className="filter-row" role="tablist" aria-label="Money and Robbery Views">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subTab === 'money'}
-            className={`filter-pill tactile-press ${subTab === 'money' ? 'active' : ''}`}
-            onClick={() => {
-              playSwitchTick(soundEnabled, 700);
-              triggerHaptic(25);
-              setSubTab('money');
-            }}
-          >
-            <DollarSign size={13} aria-hidden="true" />
-            <span>Story Money ROI Slider</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subTab === 'robberies'}
-            className={`filter-pill tactile-press ${subTab === 'robberies' ? 'active' : ''}`}
-            onClick={() => {
-              playSwitchTick(soundEnabled, 700);
-              triggerHaptic(25);
-              setSubTab('robberies');
-            }}
-          >
-            <Lock size={13} aria-hidden="true" />
-            <span>4-Tier Robbery Protocol ({checkedTiers.length}/4)</span>
-          </button>
+        {/* Subtab Navigation + Keep Screen Awake */}
+        <div className="cheat-controls-row">
+          <div className="filter-row" role="tablist" aria-label="Money and Robbery Views" style={{ marginBottom: 0 }}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={subTab === 'money'}
+              className={`filter-pill tactile-press ${subTab === 'money' ? 'active' : ''}`}
+              onClick={() => {
+                playSwitchTick(soundEnabled, 700);
+                triggerHaptic(25);
+                setSubTab('money');
+              }}
+            >
+              <DollarSign size={13} aria-hidden="true" />
+              <span>Story Money ROI Slider</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={subTab === 'robberies'}
+              className={`filter-pill tactile-press ${subTab === 'robberies' ? 'active' : ''}`}
+              onClick={() => {
+                playSwitchTick(soundEnabled, 700);
+                triggerHaptic(25);
+                setSubTab('robberies');
+              }}
+            >
+              <Lock size={13} aria-hidden="true" />
+              <span>4-Tier Robbery Protocol ({checkedTiers.length}/4)</span>
+            </button>
+          </div>
+          <WakeLockToggle soundEnabled={soundEnabled} />
         </div>
 
         {subTab === 'money' ? (

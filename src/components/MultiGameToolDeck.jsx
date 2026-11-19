@@ -36,16 +36,16 @@ import {
 import { playSwitchTick } from '../utils/soundHaptics.js';
 import { copyTextReliably } from '../utils/clipboard.js';
 import { GameStudioHeaderEmbed, GameStudioSideDock } from './games/GameStudioDock.jsx';
+import EaFc27Studio from './games/EaFc27Studio.jsx';
+import GtaOnlineStudio from './games/GtaOnlineStudio.jsx';
 
 const CodWarzoneStudio = lazy(() => import('./games/CodWarzoneStudio.jsx'));
 const FortniteStudio = lazy(() => import('./games/FortniteStudio.jsx'));
 const MinecraftStudio = lazy(() => import('./games/MinecraftStudio.jsx'));
-const EaFc27Studio = lazy(() => import('./games/EaFc27Studio.jsx'));
 const RobloxStudio = lazy(() => import('./games/RobloxStudio.jsx'));
 const Cs2EconomyStudio = lazy(() => import('./games/Cs2EconomyStudio.jsx'));
 const ValorantStudio = lazy(() => import('./games/ValorantStudio.jsx'));
 const ApexLegendsStudio = lazy(() => import('./games/ApexLegendsStudio.jsx'));
-const GtaOnlineStudio = lazy(() => import('./games/GtaOnlineStudio.jsx'));
 
 const ICON_MAP = {
   Crosshair,
@@ -300,6 +300,8 @@ export default function MultiGameToolDeck({
   const [rbxGroupSplit, setRbxGroupSplit] = useState(() => initialPreset?.groupSplit ?? 100);
   const [rbxDesiredNet, setRbxDesiredNet] = useState(() => initialPreset?.desiredNet ?? 30000);
   const [rbxMode, setRbxMode] = useState(() => (initialPreset?.rbxMode === 'gross' ? 'gross' : 'net'));
+  const [rbxWithholdingPct, setRbxWithholdingPct] = useState(0);
+  const [rbxPaypalFee, setRbxPaypalFee] = useState(false);
 
   useEffect(() => {
     if (!initialPreset) return;
@@ -312,6 +314,8 @@ export default function MultiGameToolDeck({
     } else {
       setRbxMode('net');
     }
+    setRbxWithholdingPct(0);
+    setRbxPaypalFee(false);
   }, [presetKey]);
 
   const safeDesiredNet = clampNum(Math.round(parseSafeNum(rbxDesiredNet, 30000)), 1, 15000000);
@@ -327,8 +331,10 @@ export default function MultiGameToolDeck({
         groupSplitPct: safeGroupSplit,
         targetUsd: desiredTargetUsd,
         isNetEarned: rbxMode === 'net',
+        withholdingPct: rbxWithholdingPct,
+        includePaypalFee: rbxPaypalFee,
       }),
-    [rbxGross, rbxRateId, safeGroupSplit, desiredTargetUsd, rbxMode]
+    [rbxGross, rbxRateId, safeGroupSplit, desiredTargetUsd, rbxMode, rbxWithholdingPct, rbxPaypalFee]
   );
   const reverseGamepassPrice = Math.ceil(safeDesiredNet / (0.7 * (safeGroupSplit / 100)));
 
@@ -830,12 +836,16 @@ export default function MultiGameToolDeck({
             { label: '11-Player SBC', value: `${eaSbcResult.rating} OVR` },
           ],
         };
-      case 'roblox':
+      case 'roblox': {
+        const netOrGrossUsd =
+          rbxResult.withholdingPct > 0 || rbxResult.includePaypalFee
+            ? rbxResult.netPayoutUsd
+            : rbxResult.usdPayout;
         return {
           gameTitle: game.shortTitle,
           toolTitle: 'DevEx Cashout Spec',
           heroLabel: 'DEVEX USD PAYOUT',
-          heroValue: `$${rbxResult.usdPayout.toLocaleString('en-US', {
+          heroValue: `$${netOrGrossUsd.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`,
@@ -844,7 +854,7 @@ export default function MultiGameToolDeck({
           fileSlug: 'unpause-roblox-devex',
           rows: [
             {
-              label: 'After 30% Cut',
+              label: rbxMode === 'net' ? 'Earned Balance' : 'After 30% Cut',
               value: `${rbxResult.afterMarketFee.toLocaleString('en-US')} R$`,
             },
             {
@@ -853,6 +863,7 @@ export default function MultiGameToolDeck({
             },
           ],
         };
+      }
       case 'cs2': {
         const csNextOnLoss = Math.min(16000, csResult.curCash + csResult.nextBonusOnLoss);
         return {
@@ -1038,13 +1049,53 @@ export default function MultiGameToolDeck({
 
       <div className="mg-split-grid gs-split-grid">
         <div className="mg-stack-cards">
-          <Suspense
-            fallback={
-              <div className="deck-panel gs-studio-skeleton" aria-busy="true">
-                Loading {game.shortTitle} studio…
-              </div>
-            }
-          >
+          {(game.id === 'ea-fc-27' || game.id === 'ea-fc-25') && (
+            <EaFc27Studio
+              game={game}
+              soundEnabled={soundEnabled}
+              playTick={playSwitchTick}
+              onPinSnapshot={handlePinSnapshot}
+              eaBuyCoins={eaBuyCoins}
+              setEaBuyCoins={setEaBuyCoins}
+              eaSellCoins={eaSellCoins}
+              setEaSellCoins={setEaSellCoins}
+              eaQty={eaQty}
+              setEaQty={setEaQty}
+              sbcRatings={sbcRatings}
+              setSbcRatings={setSbcRatings}
+              eaTaxResult={eaTaxResult}
+              eaSbcResult={eaSbcResult}
+              fcTab={studioTab}
+              setFcTab={setStudioTab}
+            />
+          )}
+
+          {game.id === 'gta-v' && (
+            <GtaOnlineStudio
+              soundEnabled={soundEnabled}
+              playTick={playSwitchTick}
+              onPinSnapshot={handlePinSnapshot}
+              cayoPrimaryVal={cayoPrimaryVal}
+              setCayoPrimaryVal={setCayoPrimaryVal}
+              cayoSecondaryVal={cayoSecondaryVal}
+              setCayoSecondaryVal={setCayoSecondaryVal}
+              cayoPlayers={cayoPlayers}
+              setCayoPlayers={setCayoPlayers}
+              cayoHostPct={cayoHostPct}
+              setCayoHostPct={setCayoHostPct}
+              cayoHardMode={cayoHardMode}
+              setCayoHardMode={setCayoHardMode}
+              cayoEliteBonus={cayoEliteBonus}
+              setCayoEliteBonus={setCayoEliteBonus}
+              cayoResult={cayoResult}
+              cayoEliteDollars={cayoEliteDollars}
+            />
+          )}
+
+          {game.id !== 'ea-fc-27' && game.id !== 'ea-fc-25' && game.id !== 'gta-v' && (
+            <Suspense
+              fallback={<div className="deck-panel gs-studio-skeleton" aria-busy="true" />}
+            >
             {game.id === 'cod-warzone' && (
               <CodWarzoneStudio
                 game={game}
@@ -1145,28 +1196,7 @@ export default function MultiGameToolDeck({
               />
             )}
 
-            {(game.id === 'ea-fc-27' || game.id === 'ea-fc-25') && (
-              <EaFc27Studio
-                game={game}
-                soundEnabled={soundEnabled}
-                playTick={playSwitchTick}
-                onPinSnapshot={handlePinSnapshot}
-                eaBuyCoins={eaBuyCoins}
-                setEaBuyCoins={setEaBuyCoins}
-                eaSellCoins={eaSellCoins}
-                setEaSellCoins={setEaSellCoins}
-                eaQty={eaQty}
-                setEaQty={setEaQty}
-                sbcRatings={sbcRatings}
-                setSbcRatings={setSbcRatings}
-                eaTaxResult={eaTaxResult}
-                eaSbcResult={eaSbcResult}
-                fcTab={studioTab}
-                setFcTab={setStudioTab}
-              />
-            )}
-
-            {game.id === 'roblox' && (
+            {(game.id === 'roblox') && (
               <RobloxStudio
                 soundEnabled={soundEnabled}
                 playTick={playSwitchTick}
@@ -1181,6 +1211,10 @@ export default function MultiGameToolDeck({
                 setRbxDesiredNet={setRbxDesiredNet}
                 rbxMode={rbxMode}
                 setRbxMode={setRbxMode}
+                rbxWithholdingPct={rbxWithholdingPct}
+                setRbxWithholdingPct={setRbxWithholdingPct}
+                rbxPaypalFee={rbxPaypalFee}
+                setRbxPaypalFee={setRbxPaypalFee}
                 rbxResult={rbxResult}
                 reverseGamepassPrice={reverseGamepassPrice}
               />
@@ -1266,29 +1300,8 @@ export default function MultiGameToolDeck({
                 setApexMode={setStudioTab}
               />
             )}
-
-            {game.id === 'gta-v' && (
-              <GtaOnlineStudio
-                soundEnabled={soundEnabled}
-                playTick={playSwitchTick}
-                onPinSnapshot={handlePinSnapshot}
-                cayoPrimaryVal={cayoPrimaryVal}
-                setCayoPrimaryVal={setCayoPrimaryVal}
-                cayoSecondaryVal={cayoSecondaryVal}
-                setCayoSecondaryVal={setCayoSecondaryVal}
-                cayoPlayers={cayoPlayers}
-                setCayoPlayers={setCayoPlayers}
-                cayoHostPct={cayoHostPct}
-                setCayoHostPct={setCayoHostPct}
-                cayoHardMode={cayoHardMode}
-                setCayoHardMode={setCayoHardMode}
-                cayoEliteBonus={cayoEliteBonus}
-                setCayoEliteBonus={setCayoEliteBonus}
-                cayoResult={cayoResult}
-                cayoEliteDollars={cayoEliteDollars}
-              />
-            )}
-          </Suspense>
+            </Suspense>
+          )}
         </div>
 
         <GameStudioSideDock

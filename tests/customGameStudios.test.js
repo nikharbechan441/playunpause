@@ -65,21 +65,26 @@ test('RobloxStudio includes 30,000 R$ DevEx eligibility gate and creator disclai
   assert.match(rbxSrc, /Zero data\s+is collected on minors/i);
 });
 
-test('MultiGameToolDeck lazy-loads all 9 game studios and connects shared dock', () => {
+test('MultiGameToolDeck synchronously imports EaFc27/GtaOnline, lazy-loads other 7 studios, and has zero Loading studio text', () => {
   const deckSrc = fs.readFileSync(
     path.join(ROOT, 'src/components/MultiGameToolDeck.jsx'),
     'utf8'
   );
+  for (const eagerStudio of ['EaFc27Studio', 'GtaOnlineStudio']) {
+    assert.match(
+      deckSrc,
+      new RegExp(`import\\s+${eagerStudio}\\s+from\\s+['"]\\./games/${eagerStudio}\\.jsx['"]`),
+      `MultiGameToolDeck should statically import ${eagerStudio} to prevent Loading flash`
+    );
+  }
   for (const studioImport of [
     'CodWarzoneStudio',
     'MinecraftStudio',
     'Cs2EconomyStudio',
     'ValorantStudio',
-    'EaFc27Studio',
     'FortniteStudio',
     'RobloxStudio',
     'ApexLegendsStudio',
-    'GtaOnlineStudio',
   ]) {
     assert.match(
       deckSrc,
@@ -87,6 +92,7 @@ test('MultiGameToolDeck lazy-loads all 9 game studios and connects shared dock',
       `MultiGameToolDeck should lazy-load ${studioImport}`
     );
   }
+  assert.doesNotMatch(deckSrc, /Loading .*studio/i);
   assert.match(deckSrc, /GameStudioSideDock/);
   assert.match(deckSrc, /import\s*\{\s*buildMultiGameShareUrl\s*\}\s*from\s*['"]\.\.\/utils\/shareUrlHelpers\.js['"]/);
 });

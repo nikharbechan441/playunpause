@@ -1236,7 +1236,9 @@ async function handleWorkerRequest(request, env = {}) {
         if (cacheControl) {
           headers.set('Cache-Control', cacheControl);
         }
-        if (pathname === '/robots.txt' || pathname === '/llms.txt' || pathname === '/llms-full.txt' || pathname.endsWith('.txt')) {
+        if (pathname === '/manifest.webmanifest') {
+          headers.set('Content-Type', 'application/manifest+json; charset=utf-8');
+        } else if (pathname === '/robots.txt' || pathname === '/llms.txt' || pathname === '/llms-full.txt' || pathname.endsWith('.txt')) {
           headers.set('Content-Type', 'text/plain; charset=utf-8');
         }
         return new Response(method === 'HEAD' ? null : assetResp.body, {

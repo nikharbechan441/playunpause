@@ -586,3 +586,157 @@ export async function shareOrDownloadCanvas(canvas, filename = 'unpause-card.png
     }, 'image/png');
   });
 }
+
+export async function renderPlatinumProgressCard9x16Canvas(rawOpts = {}) {
+  if (typeof document === 'undefined') return null;
+  try {
+    if (document.fonts && typeof document.fonts.ready?.then === 'function') {
+      await document.fonts.ready;
+    }
+  } catch {
+    // Fallback cleanly to system-ui fonts
+  }
+
+  const opts = rawOpts && typeof rawOpts === 'object' ? rawOpts : {};
+  const spoilerLabel = sanitizeCanvasText(opts.spoilerLabel || 'Spoiler Shield: Ch. 1', 'Spoiler Shield: Ch. 1', 42);
+  const savedSlots = Math.round(finiteNum(opts.savedSlots, 0, 0, 15));
+  const balconyDone = Boolean(opts.balconyDone);
+  const counters = Array.isArray(opts.counters) ? opts.counters.slice(0, 6) : [];
+
+  const width = 1080;
+  const height = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.fillStyle = '#080B11';
+  ctx.fillRect(0, 0, width, height);
+
+  const grad = ctx.createRadialGradient(220, 180, 40, 220, 180, 760);
+  grad.addColorStop(0, 'rgba(255, 89, 100, 0.20)');
+  grad.addColorStop(1, 'rgba(8, 11, 17, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+
+  const pad = 54;
+  drawRoundedRect(ctx, pad, pad, width - pad * 2, height - pad * 2, 28);
+  ctx.fillStyle = '#121722';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#FF5964';
+  ctx.fillRect(pad + 32, pad, width - pad * 2 - 64, 6);
+
+  const left = pad + 48;
+  const right = width - pad - 48;
+  const span = right - left;
+  let y = pad + 88;
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '700 24px "JetBrains Mono", ui-monospace, monospace';
+  ctx.fillText('PLAYUNPAUSE // GTA VI 100% PROGRESS', left, y);
+
+  y += 58;
+  ctx.fillStyle = '#F2F5FA';
+  ctx.font = '700 56px "Space Grotesk", system-ui, -apple-system, sans-serif';
+  ctx.fillText('Leonida 100% Tracker', left, y);
+
+  y += 44;
+  drawRoundedRect(ctx, left, y, span, 62, 14);
+  ctx.fillStyle = 'rgba(255, 89, 100, 0.14)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 89, 100, 0.48)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#FF8A93';
+  ctx.font = '700 24px "JetBrains Mono", ui-monospace, monospace';
+  ctx.fillText(fitCanvasText(ctx, spoilerLabel.toUpperCase(), span - 40), left + 20, y + 40);
+
+  const totalCurrent = counters.reduce((s, c) => s + finiteNum(c.current, 0, 0, 10000), 0);
+  const totalTarget = Math.max(1, counters.reduce((s, c) => s + finiteNum(c.target, 1, 1, 10000), 0));
+  const overallPct = Math.min(100, Math.round((totalCurrent / totalTarget) * 100));
+
+  y += 108;
+  drawRoundedRect(ctx, left, y, span, 174, 18);
+  ctx.fillStyle = '#090C12';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(44, 229, 181, 0.35)';
+  ctx.stroke();
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '600 22px "JetBrains Mono", ui-monospace, monospace';
+  ctx.fillText('OVERALL MENU PROGRESS', left + 28, y + 48);
+
+  ctx.fillStyle = '#2CE5B5';
+  ctx.font = '700 72px "Space Grotesk", system-ui, -apple-system, sans-serif';
+  ctx.fillText(`${overallPct}%`, left + 28, y + 128);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#CBD5E1';
+  ctx.font = '600 22px "JetBrains Mono", ui-monospace, monospace';
+  ctx.fillText(`${savedSlots} / 15 SAVES`, right - 28, y + 72);
+  ctx.fillStyle = balconyDone ? '#2CE5B5' : '#F5B731';
+  ctx.fillText(balconyDone ? 'CH.1 TROPHY OK' : 'CH.1 TROPHY WATCH', right - 28, y + 114);
+
+  ctx.textAlign = 'left';
+  y += 228;
+
+  for (const item of counters) {
+    const label = sanitizeCanvasText(item.label || 'Counter', 'Counter', 42);
+    const cur = Math.round(finiteNum(item.current, 0, 0, 10000));
+    const tgt = Math.max(1, Math.round(finiteNum(item.target, 1, 1, 10000)));
+    const pct = Math.min(1, cur / tgt);
+
+    drawRoundedRect(ctx, left, y, span, 168, 16);
+    ctx.fillStyle = '#0D1119';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#F2F5FA';
+    ctx.font = '700 30px "Space Grotesk", system-ui, -apple-system, sans-serif';
+    ctx.fillText(fitCanvasText(ctx, label, span - 240), left + 26, y + 54);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#2CE5B5';
+    ctx.font = '700 28px "JetBrains Mono", ui-monospace, monospace';
+    ctx.fillText(`${cur} / ${tgt}`, right - 26, y + 54);
+    ctx.textAlign = 'left';
+
+    const barX = left + 26;
+    const barY = y + 92;
+    const barW = span - 52;
+    drawRoundedRect(ctx, barX, barY, barW, 24, 12);
+    ctx.fillStyle = '#1A2232';
+    ctx.fill();
+
+    const fillW = cur > 0 ? Math.max(24, Math.round(barW * pct)) : 0;
+    if (fillW > 0) {
+      drawRoundedRect(ctx, barX, barY, fillW, 24, 12);
+      ctx.fillStyle = pct >= 1 ? '#2CE5B5' : '#FF5964';
+      ctx.fill();
+    }
+
+    if (item.hint) {
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '500 20px "Space Grotesk", system-ui, -apple-system, sans-serif';
+      ctx.fillText(fitCanvasText(ctx, sanitizeCanvasText(item.hint, '', 64), barW), left + 26, y + 148);
+    }
+
+    y += 194;
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#2CE5B5';
+  ctx.font = '700 28px "JetBrains Mono", ui-monospace, monospace';
+  ctx.fillText('playunpause.com/gta-6/platinum', width / 2, height - pad - 54);
+
+  return canvas;
+}

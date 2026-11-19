@@ -37,6 +37,8 @@ export const TAB_TO_CANONICAL_PATH = {
   settings: '/gta-6/settings',
   platinum: '/gta-6/platinum',
   ultimate: '/gta-6/ultimate',
+  fixes: '/gta-6/fixes',
+  radio: '/gta-6/radio',
 };
 
 export const LEGAL_META = {
@@ -1504,6 +1506,86 @@ export const CORE_ROUTES = [
     faqs: getGameFaqs('gta-6'),
   },
   {
+    path: '/gta-6/fixes',
+    gameId: 'gta-6',
+    tab: 'fixes',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: 'Crash, PSN & Offline Fixes',
+    priority: '0.93',
+    changefreq: 'daily',
+    title: clampTitle('GTA 6 Launch Fixes (PS5 FW 26.07-14.23.00 & PSN Offline) — Unpause'),
+    description: clampDesc(
+      'Fix GTA 6 not launching on PS5 (Firmware 26.07-14.23.00), bypass PSN Error WS-116449-5 with Offline Play, prevent autosave loss & spot PC scams.'
+    ),
+    h1: 'GTA VI Launch-Day Crash, PSN WS-116449-5 & Offline Play Fixes',
+    answerSummary:
+      'Step-by-step single-player launch triage: verify mandatory PS5 firmware 26.07-14.23.00 (1.267 GB, Nov 17, 2026), enable Console Sharing and Offline Play against WS-116449-5, protect your 1 overwriting autosave via 15 manual slots + Patch 1.002.001, and avoid fake PC download scams.',
+    ogImage: '/og/gta-6-fixes.png',
+    ogAlt: 'Unpause GTA VI Launch-Day Crash, PSN & Offline Play Triage',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: 'Launch Fixes', path: '/gta-6/fixes' },
+    ],
+    preset: { symptomId: 'ps5-wont-launch' },
+    metaRows: [
+      { label: 'Mandatory PS5 Firmware', val: '26.07-14.23.00 (1.267 GB · Nov 17, 2026)' },
+      { label: 'Patch 1.002.001 Size', val: '602.5 MB PS5 / 1.59 GB Xbox Series X|S' },
+      { label: 'PC Launch Status', val: 'Not Available — Console Only (Beware PC Scams)' },
+    ],
+    faqs: [
+      {
+        q: "Why won't GTA VI launch on PS5 on launch day?",
+        a: 'Install mandatory PS5 System Software 26.07-14.23.00 (1.267 GB, released Nov 17, 2026) via Settings -> System -> System Software -> Update System Software, then apply Patch 1.002.001 (602.5 MB PS5).',
+      },
+      {
+        q: 'How do I launch GTA VI offline during PSN Error WS-116449-5?',
+        a: 'Run a PS5 Network Connection Test to reset session state, then enable Settings -> Users and Accounts -> Other -> Console Sharing and Offline Play while PSN responds briefly so single-player boots offline.',
+      },
+      {
+        q: 'Is there a real GTA 6 free PC download on launch day?',
+        a: 'No. GTA VI launched Nov 19, 2026 exclusively on PS5 and Xbox Series X|S. Any site offering a "free PC download" is a phishing or malware scam.',
+      },
+    ],
+  },
+  {
+    path: '/gta-6/radio',
+    gameId: 'gta-6',
+    tab: 'radio',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: '6 Radio Stations & DMCA',
+    priority: '0.91',
+    changefreq: 'weekly',
+    title: clampTitle('GTA 6 Radio Stations (6 Official Preview, DMCA & Headphones) — Unpause'),
+    description: clampDesc(
+      'Explore 6 verified GTA 6 launch radio stations (Cocoteo FM, Back Country, AfroBank, The Chamber 106.6, Flash FM, Dirty South), DMCA mute & headphones.'
+    ),
+    h1: 'GTA VI Official Radio Stations Preview, DMCA Safe Audio & Headphones Guide',
+    answerSummary:
+      'Filter 6 official launch-featured GTA VI radio stations (out of 22 total in-game stations) with verified hosts and preview tracks, plus the Twitch/YouTube DMCA mute checklist and $100+ On-Foot Headphones Electronics Store tip.',
+    ogImage: '/og/gta-6-radio.png',
+    ogAlt: 'Unpause GTA VI Verified Radio Stations & Streamer DMCA Guide',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: 'Radio & DMCA', path: '/gta-6/radio' },
+    ],
+    preset: {},
+    metaRows: [
+      { label: 'Verified Stations Shown', val: '6 Official Launch-Featured · 22 Total In-Game' },
+      { label: 'Streamer DMCA Rule', val: 'Enable Settings -> Audio -> Mute Licensed Radio' },
+      { label: 'On-Foot Headphones', val: '$100+ Electronics Store · Separate for Jason/Lucia' },
+    ],
+    faqs: [
+      {
+        q: 'How many GTA 6 radio stations are confirmed in this launch preview?',
+        a: 'This guide lists 6 official launch-featured stations (Cocoteo FM, Back Country Radio, AfroBank FM, The Chamber 106.6, Flash FM, Dirty South Classics) out of 22 total in-game stations without unverified guesswork.',
+      },
+      {
+        q: 'How do on-foot radio headphones work for Jason and Lucia?',
+        a: 'Buy headphones for $100+ at Electronics Stores separately for Jason and Lucia. Be careful in combat: headphones are permanently lost if knocked off.',
+      },
+    ],
+  },
+  {
     path: '/cod-warzone',
     gameId: 'cod-warzone',
     cluster: 'Core Game Hubs',
@@ -1772,6 +1854,8 @@ export const EMBED_ELIGIBLE_PATHS = [
   '/gta-6/settings',
   '/gta-6/platinum',
   '/gta-6/ultimate',
+  '/gta-6/fixes',
+  '/gta-6/radio',
   '/cod-warzone',
   '/fortnite',
   '/minecraft',
@@ -1815,6 +1899,16 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
     searchParamsInput instanceof URLSearchParams
       ? new URLSearchParams(searchParamsInput.toString())
       : new URLSearchParams(searchParamsInput || '');
+
+  // 0. Bare /gta-6 and /gta-6/ -> single-hop 301 to /gta-6/storage
+  const lowerRaw = pathname.toLowerCase();
+  if (lowerRaw === '/gta-6' || lowerRaw === '/gta-6/') {
+    const qs = params.toString();
+    return {
+      status: 301,
+      redirectTo: `${CANONICAL_ORIGIN}/gta-6/storage${qs ? `?${qs}` : ''}`,
+    };
+  }
 
   // 1. Trailing slash cleanup (except root '/')
   if (pathname.length > 1 && pathname.endsWith('/')) {

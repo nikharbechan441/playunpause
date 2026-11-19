@@ -387,10 +387,12 @@ export function calcSbcSquadRating(ratings11) {
  * Roblox DevEx Calculator (Post-Sept 2025 + Legacy + Reverse Calculator)
  */
 export const ROBLOX_RATES = [
-  { id: 'std-2025', label: 'Standard DevEx ($0.0038 / R$)', usdPerRobux: 0.0038 },
-  { id: 'legacy', label: 'Pre-Sept 2025 Legacy ($0.0035 / R$)', usdPerRobux: 0.0035 },
-  { id: 'us-direct', label: 'US 18+ Direct Store ($0.0054 / R$)', usdPerRobux: 0.0054 },
+  { id: 'std-2025', label: 'Standard ($0.0038 / R$)', usdPerRobux: 0.0038 },
+  { id: 'us-direct', label: 'U.S. 18+ Eligible ($0.0054 / R$)', usdPerRobux: 0.0054 },
+  { id: 'legacy', label: 'Legacy ($0.0035 / R$)', usdPerRobux: 0.0035 },
 ];
+
+export const ROBLOX_WITHHOLDING_TIERS = [0, 10, 15, 24, 30];
 
 export function calcRobloxMinSalesFor30k(groupSplitPct = 100) {
   const split = clampNum(parseSafeNum(groupSplitPct, 100), 1, 100) / 100;
@@ -404,6 +406,8 @@ export function calcRobloxDevEx(opts = {}) {
     groupSplitPct = 100,
     targetUsd = 100,
     isNetEarned = false,
+    withholdingPct = 0,
+    includePaypalFee = false,
   } = opts && typeof opts === 'object' ? opts : {};
   const gross = clampNum(Math.round(parseSafeNum(grossRobux, 0)), 0, 1000000000);
   const split = clampNum(parseSafeNum(groupSplitPct, 100), 1, 100) / 100;
@@ -413,7 +417,18 @@ export function calcRobloxDevEx(opts = {}) {
   const creatorNetRobux = isNetEarned
     ? gross
     : normalizeZero(Math.round(afterMarketFee * split));
-  const usdPayout = normalizeZero(creatorNetRobux * rateObj.usdPerRobux);
+  const grossUsd = normalizeZero(Number((creatorNetRobux * rateObj.usdPerRobux).toFixed(2)));
+  const rawWithholding = Number(withholdingPct);
+  const safeWithholdingPct = ROBLOX_WITHHOLDING_TIERS.includes(rawWithholding) ? rawWithholding : 0;
+  const withholdingUsd = normalizeZero(Number((grossUsd * (safeWithholdingPct / 100)).toFixed(2)));
+  const paypalFeeUsd =
+    includePaypalFee && grossUsd > 0
+      ? normalizeZero(Number(Math.min(21, 1 + grossUsd * 0.02).toFixed(2)))
+      : 0;
+  const netPayoutUsd = normalizeZero(
+    Number(Math.max(0, grossUsd - withholdingUsd - paypalFeeUsd).toFixed(2))
+  );
+  const usdPayout = grossUsd;
   const eligible = creatorNetRobux >= 30000;
   const minSalesFor30k = calcRobloxMinSalesFor30k(groupSplitPct);
   const safeTargetUsd = clampNum(parseSafeNum(targetUsd, 100), 0, 100000000);
@@ -425,6 +440,12 @@ export function calcRobloxDevEx(opts = {}) {
     afterMarketFee,
     creatorNetRobux,
     usdPayout,
+    grossUsd,
+    withholdingPct: safeWithholdingPct,
+    withholdingUsd,
+    paypalFeeUsd,
+    netPayoutUsd,
+    includePaypalFee: Boolean(includePaypalFee),
     eligible,
     minSalesFor30k,
     shortfallForMin: Math.max(0, 30000 - creatorNetRobux),

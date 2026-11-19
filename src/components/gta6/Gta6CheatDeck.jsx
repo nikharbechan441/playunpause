@@ -14,6 +14,7 @@ import {
   GTA6_CONFIRMED_CHEATS,
 } from '../../data/games/gta6LaunchTools.js';
 import { SpoilerGuard } from './Gta6SpoilerShieldBar.jsx';
+import WakeLockToggle from './WakeLockToggle.jsx';
 import { SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import { playSwitchTick, playUnlockChime, triggerHaptic } from '../../utils/soundHaptics.js';
 
@@ -258,6 +259,7 @@ export default function Gta6CheatDeck({
             >
               Xbox Controller
             </button>
+            <WakeLockToggle soundEnabled={soundEnabled} />
           </div>
 
           <div className="filter-row" role="group" aria-label="Cheat category filter">

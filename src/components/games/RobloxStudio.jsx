@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles, AlertTriangle, ArrowRight } from 'lucide-react';
-import { ROBLOX_RATES, clampNum, parseSafeNum } from '../../utils/gameMath.js';
+import {
+  ROBLOX_RATES,
+  ROBLOX_WITHHOLDING_TIERS,
+  clampNum,
+  parseSafeNum,
+} from '../../utils/gameMath.js';
 import { AnimatedValue, SpotlightPanel } from '../../utils/motionPrimitives.jsx';
 import { NumericField, PinButton } from './GameStudioDock.jsx';
 
@@ -24,10 +29,20 @@ export default function RobloxStudio({
   setRbxDesiredNet,
   rbxMode = 'net',
   setRbxMode = null,
+  rbxWithholdingPct = 0,
+  setRbxWithholdingPct = null,
+  rbxPaypalFee = false,
+  setRbxPaypalFee = null,
   rbxResult,
   reverseGamepassPrice,
 }) {
+  const [showDeductions, setShowDeductions] = useState(
+    () => Boolean(rbxWithholdingPct > 0 || rbxPaypalFee)
+  );
   const isNetMode = rbxMode === 'net';
+  const hasDeductionsActive =
+    showDeductions || rbxResult.withholdingPct > 0 || rbxResult.includePaypalFee;
+  const displayUsd = hasDeductionsActive ? rbxResult.netPayoutUsd : rbxResult.usdPayout;
   const safeGross = rbxResult.gross;
   const safeSplit = clampNum(Math.round(parseSafeNum(rbxGroupSplit, 100)), 1, 100);
   const safeDesiredNet = clampNum(Math.round(parseSafeNum(rbxDesiredNet, 30000)), 1, 15000000);
@@ -52,7 +67,7 @@ export default function RobloxStudio({
             </span>
             <h2 className="gs-bench-heading">
               {rbxResult.eligible
-                ? `$${formatUsd(rbxResult.usdPayout)} USD DevEx Payout`
+                ? `$${formatUsd(displayUsd)} USD DevEx Payout`
                 : `Need +${rbxResult.shortfallForMin.toLocaleString('en-US')} Earned R$ for DevEx`}
             </h2>
           </div>
@@ -61,9 +76,9 @@ export default function RobloxStudio({
             label="Pin Target"
             onClick={() =>
               onPinSnapshot(
-                `${safeGross.toLocaleString('en-US')} R$ Gross`,
+                `${safeGross.toLocaleString('en-US')} R$ ${isNetMode ? 'Earned' : 'Gross'}`,
                 rbxResult.eligible
-                  ? `$${formatUsd(rbxResult.usdPayout)} USD (${rbxResult.creatorNetRobux.toLocaleString('en-US')} Net R$)`
+                  ? `$${formatUsd(displayUsd)} USD (${rbxResult.creatorNetRobux.toLocaleString('en-US')} Net R$)`
                   : `Locked (${rbxResult.shortfallForMin.toLocaleString('en-US')} R$ short of 30K)`
               )
             }
@@ -82,7 +97,7 @@ export default function RobloxStudio({
                 rbxResult.eligible ? 'gs-txt-teal' : 'gs-txt-gold'
               }`}
             >
-              $<AnimatedValue value={rbxResult.usdPayout} format={formatUsd} suffix=" USD" />
+              $<AnimatedValue value={displayUsd} format={formatUsd} suffix=" USD" />
             </div>
           </div>
           <div className="gs-pill-cluster">
@@ -150,7 +165,7 @@ export default function RobloxStudio({
           <div className="gs-wf-stage payout">
             <span className="mono gs-micro-label">4. USD VALUE</span>
             <strong className="mono gs-txt-teal">
-              $<AnimatedValue value={rbxResult.usdPayout} format={formatUsd} />
+              $<AnimatedValue value={displayUsd} format={formatUsd} />
             </strong>
             <span className="mono gs-wf-rate">${rbxResult.rate} / R$</span>
           </div>
@@ -168,7 +183,7 @@ export default function RobloxStudio({
                 setRbxMode('net');
               }}
             >
-              Net Earned Robux (DevEx Balance)
+              Already Earned Robux
             </button>
             <button
               type="button"
@@ -179,7 +194,7 @@ export default function RobloxStudio({
                 setRbxMode('gross');
               }}
             >
-              Gross Store Sales (-30% Cut)
+              Gross Player Spend (-30% cut)
             </button>
           </div>
         )}
@@ -248,6 +263,81 @@ export default function RobloxStudio({
             />
           </div>
         </div>
+
+        {/* Optional 2026 Payout Deductions (Default OFF) */}
+        {typeof setRbxWithholdingPct === 'function' && typeof setRbxPaypalFee === 'function' && (
+          <div className="rbx-deductions-panel">
+            <div className="cheat-controls-row" style={{ marginBottom: showDeductions ? '10px' : 0 }}>
+              <button
+                type="button"
+                aria-expanded={showDeductions}
+                className={`subtle-pill-btn ${hasDeductionsActive ? 'challenge-done' : ''}`}
+                onClick={() => {
+                  playTick?.(soundEnabled, 700);
+                  if (showDeductions) {
+                    setShowDeductions(false);
+                    setRbxWithholdingPct(0);
+                    setRbxPaypalFee(false);
+                  } else {
+                    setShowDeductions(true);
+                  }
+                }}
+              >
+                <span>
+                  {showDeductions
+                    ? 'Optional Payout Deductions: Shown (Tap to Reset OFF)'
+                    : 'Optional Payout Deductions (Nov 2026 Withholding / PayPal Fee — OFF)'}
+                </span>
+              </button>
+            </div>
+
+            {showDeductions && (
+              <div className="rbx-deductions-body">
+                <div className="mono gs-micro-label" style={{ marginBottom: '6px' }}>
+                  NOV 1, 2026 ROYALTY WITHHOLDING TIER
+                </div>
+                <div className="filter-row" role="group" aria-label="Nov 1, 2026 Royalty Withholding">
+                  {ROBLOX_WITHHOLDING_TIERS.map((pct) => {
+                    const active = rbxWithholdingPct === pct;
+                    const label = pct === 24 ? '24% Backup' : `${pct}%`;
+                    return (
+                      <button
+                        key={pct}
+                        type="button"
+                        aria-pressed={active}
+                        className={`filter-pill ${active ? 'active' : ''}`}
+                        onClick={() => {
+                          playTick?.(soundEnabled, 720);
+                          setRbxWithholdingPct(pct);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    aria-pressed={Boolean(rbxPaypalFee)}
+                    className={`filter-pill ${rbxPaypalFee ? 'active' : ''}`}
+                    onClick={() => {
+                      playTick?.(soundEnabled, 740);
+                      setRbxPaypalFee((v) => !v);
+                    }}
+                  >
+                    PayPal Fee (min($21, $1 + 2%)) {rbxPaypalFee ? '(On)' : '(Off)'}
+                  </button>
+                </div>
+
+                <div className="rbx-deductions-breakdown mono">
+                  <span>Gross DevEx: ${formatUsd(rbxResult.grossUsd)}</span>
+                  <span>Withholding ({rbxResult.withholdingPct}%): -${formatUsd(rbxResult.withholdingUsd)}</span>
+                  <span>PayPal Fee: -${formatUsd(rbxResult.paypalFeeUsd)}</span>
+                  <strong className="gs-txt-teal">Est. Net Payout: ${formatUsd(rbxResult.netPayoutUsd)}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Creator Store Price Tag Card */}
         <div className="gs-rbx-pass-tag">

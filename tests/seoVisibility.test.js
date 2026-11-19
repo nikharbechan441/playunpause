@@ -216,6 +216,8 @@ test('Worker enforces www redirect, zero redirect chains, scoped /embed headers,
   assert.equal(wwwRes.headers.get('location'), 'https://playunpause.com/cod-warzone?hp=300');
 
   for (const [legacy, dest] of [
+    ['https://playunpause.com/gta-6', 'https://playunpause.com/gta-6/storage'],
+    ['https://playunpause.com/gta-6/', 'https://playunpause.com/gta-6/storage'],
     ['https://playunpause.com/?game=cod-warzone', 'https://playunpause.com/cod-warzone'],
     ['https://playunpause.com/?tab=safes', 'https://playunpause.com/gta-6/robberies'],
     ['https://playunpause.com/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
@@ -280,6 +282,8 @@ test('Generated PNG OG assets, sitemap.xml, robots.txt, llms*.txt, IndexNow, and
   assert.ok(locs.includes('https://playunpause.com/gta-6/money'));
   assert.ok(locs.includes('https://playunpause.com/gta-6/settings'));
   assert.ok(locs.includes('https://playunpause.com/gta-6/platinum'));
+  assert.ok(locs.includes('https://playunpause.com/gta-6/fixes'));
+  assert.ok(locs.includes('https://playunpause.com/gta-6/radio'));
   assert.ok(!locs.some((u) => u.includes('/gta-6/safe-codes')));
   assert.equal(locs.some((loc) => loc.includes('?')), false);
 

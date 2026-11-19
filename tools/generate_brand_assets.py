@@ -166,6 +166,22 @@ OG_CARDS = [
         "sub": "Exact Secondary Gold/Cocaine Bag Fill Value, Pavel + Fence Cuts, Elite Bonus & Squad Payouts.",
         "pills": ["12% NPC FEES", "BAG CAPACITY", "ELITE BONUS"],
     },
+    {
+        "filename": "gta-6-fixes.png",
+        "accent": (255, 89, 100),
+        "category": "GTA VI LAUNCH TRIAGE",
+        "headline": "PS5 FW 26.07-14.23.00 & PSN Fixes",
+        "sub": "Fix Startup Crashes, WS-116449-5 Offline Play Setup, 1-Slot Autosave Protection & PC Scam Alerts.",
+        "pills": ["FW 26.07-14.23.00", "WS-116449-5", "NO PC BUILD"],
+    },
+    {
+        "filename": "gta-6-radio.png",
+        "accent": (44, 229, 181),
+        "category": "GTA VI RADIO PREVIEW",
+        "headline": "6 Official Launch Radio Stations",
+        "sub": "Verified Hosts & Preview Tracks (Out of 22 In-Game) Plus Streamer DMCA Mute & Headphones Tips.",
+        "pills": ["6 OF 22 STATIONS", "DMCA CHECKLIST", "$100+ HEADPHONES"],
+    },
 ]
 
 # Clean label override on cod card pill so it reads sharp

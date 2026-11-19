@@ -4,7 +4,7 @@
 
 - Canonical Site: https://playunpause.com/
 - Extended Reference & Formula Tables: https://playunpause.com/llms-full.txt
-- Full XML Sitemap (121 canonical pages): https://playunpause.com/sitemap.xml
+- Full XML Sitemap (123 canonical pages): https://playunpause.com/sitemap.xml
 - Embeddable Calculators: Every core deck supports chromeless iframe embedding at `https://playunpause.com/embed/<slug>`
 
 ## Core Game Calculators
@@ -16,6 +16,8 @@
 - [30fps Tuner & PNG Card](https://playunpause.com/gta-6/settings): Compare Digital Foundry 4-console 30fps specs (PS5 Pro 1440p PSSR, Series X 120Hz VRR, Series S FSR 4), check PS5 FW 26.07-14.23.00 & export PNG card.
 - [Platinum & 15 Save Slots](https://playunpause.com/gta-6/platinum): Avoid the Ch. 1 Balcony Meditation ("Positive Mental Attitude") missable, manage 15 manual save slots & tap counters for 200 WAiNK Scans & 100 Animals.
 - [$99.99 Ultimate Edition](https://playunpause.com/gta-6/ultimate): Track when GTA VI $99.99 Ultimate Edition rewards unlock: why the Shizu Typhoon Squalo boat requires Chapter 4 and when to claim bonus cash post-Ch. 1.
+- [Crash, PSN & Offline Fixes](https://playunpause.com/gta-6/fixes): Fix GTA 6 not launching on PS5 (Firmware 26.07-14.23.00), bypass PSN Error WS-116449-5 with Offline Play, prevent autosave loss & spot PC scams.
+- [6 Radio Stations & DMCA](https://playunpause.com/gta-6/radio): Explore 6 verified GTA 6 launch radio stations (Cocoteo FM, Back Country, AfroBank, The Chamber 106.6, Flash FM, Dirty South), DMCA mute & headphones.
 - [CoD / Warzone TTK](https://playunpause.com/cod-warzone): Compare live Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.
 - [Fortnite XP Pace](https://playunpause.com/fortnite): Calculate daily XP and matches to reach Level 100, Level 140 V-Bucks break-even, or Level 200 Super Styles with Daily Quests, Creative & LEGO.
 - [Minecraft 8:1 Linker](https://playunpause.com/minecraft): Convert Overworld & Nether coordinates using exact Java/Bedrock Math.floor rules, test 128-block portal collisions, and triangulate Strongholds in 2 throws.

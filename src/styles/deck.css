@@ -668,6 +668,7 @@ textarea {
 .gta-workspace-nav {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
   margin-bottom: 14px;
@@ -676,8 +677,6 @@ textarea {
   border-radius: var(--game-radius-card, 12px);
   box-shadow: var(--specular-top);
   max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .gta-workspace-nav::-webkit-scrollbar {
@@ -2735,9 +2734,12 @@ input[type='range']::-moz-range-thumb {
     bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 60;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(62px, 1fr);
     gap: 4px;
     padding: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
     border-radius: 14px;
     background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
     backdrop-filter: blur(18px) saturate(160%);
@@ -4833,4 +4835,147 @@ input[type='range']::-moz-range-thumb {
     padding: 8px 10px;
     gap: 8px;
   }
+}
+
+/* Wave 2 High-Retention Features: Fixes, Radio, WakeLock, Shared #s= & Roblox Deductions */
+.mobile-bottom-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.wake-lock-btn.active {
+  border-color: var(--teal-border);
+  background: var(--teal-soft);
+  color: var(--teal-dark);
+}
+
+.fix-scam-card {
+  border-color: rgba(255, 89, 100, 0.36);
+}
+
+.fix-scam-card.selected {
+  border-color: #FF5964;
+  background: rgba(255, 89, 100, 0.14);
+}
+
+.fix-scam-pill {
+  background: rgba(255, 89, 100, 0.18);
+  border-color: rgba(255, 89, 100, 0.45);
+  color: #FF5964;
+}
+
+.fix-detail-panel {
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+}
+
+.fix-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fix-steps-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fix-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.85rem;
+  line-height: 1.48;
+  color: var(--ink-primary);
+}
+
+.fix-step-num {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--teal-dark);
+}
+
+.radio-meta-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+  margin: 8px 0;
+}
+
+.radio-tracks-box {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.radio-track-list,
+.radio-guide-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+.shared-preview-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--teal-border);
+  background: var(--teal-soft);
+}
+
+.shared-preview-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: var(--ink-primary);
+}
+
+.shared-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rbx-deductions-panel {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+}
+
+.rbx-deductions-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: var(--ink-secondary);
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-subtle);
 }

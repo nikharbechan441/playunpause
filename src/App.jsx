@@ -23,6 +23,8 @@ import {
   Upload,
   FileSpreadsheet,
   Bookmark,
+  Wrench,
+  Radio,
 } from 'lucide-react';
 import {
   MAX_FREE_PINS_PER_GAME,
@@ -56,6 +58,7 @@ import { copyTextReliably } from './utils/clipboard.js';
 import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
 import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHero.jsx';
 import StorageUnlockDeck from './components/StorageUnlockDeck.jsx';
+import MultiGameToolDeck from './components/MultiGameToolDeck.jsx';
 import Gta6SpoilerShieldBar from './components/gta6/Gta6SpoilerShieldBar.jsx';
 import { isChunkLoadError, tryAutoReloadForStaleChunk } from './utils/chunkRecovery.js';
 
@@ -63,7 +66,8 @@ const loadGta6CheatDeck = () => import('./components/gta6/Gta6CheatDeck.jsx');
 const loadGta6MoneyRobberyDeck = () => import('./components/gta6/Gta6MoneyRobberyDeck.jsx');
 const loadGta6SettingsTunerDeck = () => import('./components/gta6/Gta6SettingsTunerDeck.jsx');
 const loadGta6PlatinumUltimateDeck = () => import('./components/gta6/Gta6PlatinumUltimateDeck.jsx');
-const loadMultiGameToolDeck = () => import('./components/MultiGameToolDeck.jsx');
+const loadGta6FixesDeck = () => import('./components/gta6/Gta6FixesDeck.jsx');
+const loadGta6RadioDeck = () => import('./components/gta6/Gta6RadioDeck.jsx');
 const loadGameSelectorModal = () => import('./components/GameSelectorModal.jsx');
 const loadLegalComplianceModal = () => import('./components/LegalComplianceModal.jsx');
 const loadEmbedWidgetModal = () => import('./components/EmbedWidgetModal.jsx');
@@ -72,7 +76,8 @@ const Gta6CheatDeck = lazy(loadGta6CheatDeck);
 const Gta6MoneyRobberyDeck = lazy(loadGta6MoneyRobberyDeck);
 const Gta6SettingsTunerDeck = lazy(loadGta6SettingsTunerDeck);
 const Gta6PlatinumUltimateDeck = lazy(loadGta6PlatinumUltimateDeck);
-const MultiGameToolDeck = lazy(loadMultiGameToolDeck);
+const Gta6FixesDeck = lazy(loadGta6FixesDeck);
+const Gta6RadioDeck = lazy(loadGta6RadioDeck);
 const GameSelectorModal = lazy(loadGameSelectorModal);
 const LegalComplianceModal = lazy(loadLegalComplianceModal);
 const EmbedWidgetModal = lazy(loadEmbedWidgetModal);
@@ -92,6 +97,8 @@ const GTA_MODES = [
   { id: 'money', label: 'Money & Robberies', mobileLabel: 'Money', icon: DollarSign },
   { id: 'settings', label: '30fps Tuner & PNG', mobileLabel: '30fps', icon: Clock },
   { id: 'platinum', label: 'Platinum & Ult', mobileLabel: 'Plat', icon: Sparkles },
+  { id: 'fixes', label: 'Crash & PSN Fixes', mobileLabel: 'Fixes', icon: Wrench },
+  { id: 'radio', label: '6 Radio Stations', mobileLabel: 'Radio', icon: Radio },
 ];
 
 export function sanitizeHttpsUrl(rawUrl, fallback = null) {
@@ -616,7 +623,8 @@ export default function App() {
         loadGta6MoneyRobberyDeck(),
         loadGta6SettingsTunerDeck(),
         loadGta6PlatinumUltimateDeck(),
-        loadMultiGameToolDeck(),
+        loadGta6FixesDeck(),
+        loadGta6RadioDeck(),
         loadGameSelectorModal(),
         loadLegalComplianceModal(),
         loadEmbedWidgetModal(),
@@ -1339,6 +1347,8 @@ export default function App() {
         money: '/embed/gta-6/money',
         settings: '/embed/gta-6/settings',
         platinum: '/embed/gta-6/platinum',
+        fixes: '/embed/gta-6/fixes',
+        radio: '/embed/gta-6/radio',
       };
       return map[activeTab] || '/embed/gta-6/storage';
     }
@@ -1414,13 +1424,7 @@ export default function App() {
       >
         <main className="app-shell embed-app-shell">
           <ChunkErrorBoundary resetKey={`embed:${activeGamePack.id}:${activeTab}`}>
-            <Suspense
-              fallback={
-                <div className="deck-panel embed-loading-card">
-                  Loading calculator module…
-                </div>
-              }
-            >
+            <Suspense fallback={<div className="deck-panel gs-studio-skeleton" aria-busy="true" />}>
             {activeGamePack.isGta6Suite ? (
               <div className="deck-stage-transition" key={`embed-gta-${activeTab}`}>
                 {activeTab === 'storage' && (
@@ -1464,6 +1468,17 @@ export default function App() {
                     initialPreset={routeState.preset}
                     presetKey={routeState.presetKey}
                   />
+                )}
+                {activeTab === 'fixes' && (
+                  <Gta6FixesDeck
+                    soundEnabled={deckState.soundEnabled}
+                    initialPreset={routeState.preset}
+                    presetKey={routeState.presetKey}
+                    onSelectTab={handleSelectTab}
+                  />
+                )}
+                {activeTab === 'radio' && (
+                  <Gta6RadioDeck soundEnabled={deckState.soundEnabled} />
                 )}
               </div>
             ) : (
@@ -1956,13 +1971,7 @@ export default function App() {
           onRecover={() => navigateToPath(activeHubPath)}
           recoverLabel={activeGamePack.isGta6Suite ? 'Back to SSD & Patch Calculator' : `Reload ${activeGamePack.shortTitle} Studio`}
         >
-          <Suspense
-            fallback={
-              <div className="deck-panel gs-fallback-card">
-                Loading calculator module…
-              </div>
-            }
-          >
+          <Suspense fallback={<div className="deck-panel gs-studio-skeleton" aria-busy="true" />}>
         {activeGamePack.isGta6Suite ? (
           <div>
             <Gta6SpoilerShieldBar
@@ -2050,6 +2059,19 @@ export default function App() {
                   initialPreset={routeState.preset}
                   presetKey={routeState.presetKey}
                 />
+              )}
+
+              {activeTab === 'fixes' && (
+                <Gta6FixesDeck
+                  soundEnabled={deckState.soundEnabled}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                  onSelectTab={handleSelectTab}
+                />
+              )}
+
+              {activeTab === 'radio' && (
+                <Gta6RadioDeck soundEnabled={deckState.soundEnabled} />
               )}
             </div>
           </div>

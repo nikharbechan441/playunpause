@@ -314,33 +314,171 @@ export const GTA6_DAY1_SETTINGS_CHECKLIST = [
 
 export const GTA6_PLATINUM_MISSABLES = {
   trophyName: 'Positive Mental Attitude',
-  chapter: 'Chapter 1 Only (Missable)',
+  chapter: 'Ch. 1 Missable Trophy (0 Missables for In-Game 100%)',
   warning:
-    'In Chapter 1, step onto the safehouse balcony at sunrise/dusk and complete the Balcony Meditation prompt before finishing Chapter 1’s finale mission. Leaving Chapter 1 locks out "Positive Mental Attitude" until a brand-new playthrough or backup save.',
+    "0 missables for the in-game 100% Completion menu (hidden until after the story). 1 potentially missable trophy: Positive Mental Attitude (Ch. 1 Jason's House Balcony Meditation after Down to Earth). No mission replay + only 1 overwriting autosave -> use the 15-Slot Manual Save Planner.",
 };
 
-export const GTA6_SAVE_SLOT_TEMPLATES = Array.from({ length: 15 }, (_, idx) => {
-  const slotNum = idx + 1;
-  const presets = {
-    1: 'Ch. 1 Start · Pre-Balcony Meditation backup',
-    2: 'End of Ch. 1 · Spend Cash Before Wipe',
-    3: 'Ch. 2 Entry · Moses Repeats Ready',
-    4: 'Ch. 3 Entry · Pre-Snap Gun & Jewelry',
-    5: 'Ch. 3 Dye Jammer & Randy Wish List',
-    6: 'Ch. 4 Entry · Ultimate Squalo Boat Unlock',
-    7: 'Ch. 4 Bank Vault Seed ($65K-$205K)',
-    15: 'Post-Story Clean Master Save (Uncheated)',
-  };
-  return {
-    slot: slotNum,
-    defaultLabel: presets[slotNum] || `Chapter Checkpoint Slot #${slotNum}`,
-  };
-});
+export const GTA6_SAVE_SLOT_TEMPLATES = [
+  // 10 Chapter Start/End Slots
+  { slot: 1, group: 'chapter', defaultLabel: "Ch. 1 Start · Down to Earth & Balcony Meditation" },
+  { slot: 2, group: 'chapter', defaultLabel: 'Ch. 1 End · Spend Cash Before Ch. 1 Wipe' },
+  { slot: 3, group: 'chapter', defaultLabel: 'Ch. 2 Start · Moses Repeats Open ($1K+ / 2m)' },
+  { slot: 4, group: 'chapter', defaultLabel: 'Ch. 2 End · Pre-Chapter 3 Transition' },
+  { slot: 5, group: 'chapter', defaultLabel: "Ch. 3 Start · Snap Gun, Jewelry & Randy's List" },
+  { slot: 6, group: 'chapter', defaultLabel: 'Ch. 3 End · Dye Pack Jammer Unlocked' },
+  { slot: 7, group: 'chapter', defaultLabel: 'Ch. 4 Start · Shizu Typhoon Squalo Boat Dock' },
+  { slot: 8, group: 'chapter', defaultLabel: 'Ch. 4 End · Large Bank Vault Seed ($65K-$205K)' },
+  { slot: 9, group: 'chapter', defaultLabel: 'Ch. 5 Start · Late Story Entry' },
+  { slot: 10, group: 'chapter', defaultLabel: 'Ch. 5 End · Finale Pre-Point-of-No-Return' },
+  // 5 Free-Roam Slots
+  { slot: 11, group: 'freeroam', defaultLabel: 'Free-Roam #1 · Post-Story Clean Master Save (Uncheated)' },
+  { slot: 12, group: 'freeroam', defaultLabel: 'Free-Roam #2 · WAiNK Vehicles & Stunts Sweep' },
+  { slot: 13, group: 'freeroam', defaultLabel: 'Free-Roam #3 · Wildlife & Cocaine Flamingos Log' },
+  { slot: 14, group: 'freeroam', defaultLabel: 'Free-Roam #4 · Pre-Cheat Experiment Backup (No Save/Trophy Lock)' },
+  { slot: 15, group: 'freeroam', defaultLabel: 'Free-Roam #5 · Redundant Clean Archive Slot' },
+];
 
 export const GTA6_COLLECTIBLE_TARGETS = [
-  { id: 'waink', label: 'WAiNK Scans', target: 200, hint: 'Leonida social media street photo & landmark scans' },
-  { id: 'animals', label: 'Animals Cataloged', target: 100, hint: 'Land, Grassrivers wetland & Keys marine wildlife species' },
+  { id: 'waink', field: 'wainkCount', label: 'WAiNK Base Vehicles', target: 200, hint: '277 eligible base; 280 Standouts excluded' },
+  { id: 'wildlife', field: 'animalCount', label: 'Wildlife Studied', target: 100, hint: '255 total wildlife species' },
+  { id: 'flamingos', field: 'flamingosCount', label: 'Cocaine Flamingos', target: 100, hint: '125 total, black-and-white beaks' },
+  { id: 'stunts', field: 'stuntsCount', label: 'Stunts Completed', target: 300, hint: '397 total across Leonida' },
+  { id: 'cards', field: 'cardsCount', label: 'Collectible Card Sets', target: 15, hint: '18 total sets' },
 ];
+
+export const GTA6_LAUNCH_FIXES = [
+  {
+    id: 'ps5-wont-launch',
+    title: "Game won't launch on PS5",
+    badge: 'PS5 FIRMWARE 26.07-14.23.00',
+    isScamWarning: false,
+    summary:
+      'PS5 systems running older OS builds refuse to boot GTA VI cleanly or fail startup handshake until updated to the Nov 17, 2026 mandatory firmware.',
+    steps: [
+      'Open PS5 Settings -> System -> System Software -> System Software Update and Settings.',
+      'Select Update System Software and verify firmware 26.07-14.23.00 (1.267 GB, released Nov 17, 2026) downloads and installs.',
+      'Restart your PlayStation 5 completely and confirm Game Version reflects Patch 1.002.001 (+0.6 GB / 602.5 MB PS5).',
+    ],
+  },
+  {
+    id: 'psn-error',
+    title: 'PSN Error WS-116449-5 or sporadic PSN outage',
+    badge: 'OFFLINE LAUNCH SETUP',
+    isScamWarning: false,
+    summary:
+      'Launch-day PlayStation Network congestion triggers WS-116449-5 license checks. Toggle Offline Play while PSN responds so single-player boots offline.',
+    steps: [
+      'Open PS5 Settings -> Network -> Connection Status -> Test Internet Connection to flush stale DNS/PSN session tokens.',
+      'While PSN is reachable for 10 seconds, navigate to Settings -> Users and Accounts -> Other -> Console Sharing and Offline Play and select Enable.',
+      'Relaunch GTA VI; single-player campaign boots cleanly even if PSN drops again.',
+    ],
+  },
+  {
+    id: 'crash-lost-progress',
+    title: 'PS5 / PS5 Pro crash or lost progress',
+    badge: 'SAVE PROTECTION',
+    isScamWarning: false,
+    summary:
+      'GTA VI ships with zero mission replay and only 1 overwriting autosave slot. A crash right after an autosave corruption risks progress unless manual slots are rotated.',
+    steps: [
+      'Apply Patch 1.002.001 immediately (602.5 MB on PS5 / 1.59 GB on Xbox Series X|S) before continuing Chapter 1+.',
+      'Never rely on the single overwriting autosave alone — rotate manual saves across all 15 slots in the Pause Menu -> Game -> Save Game.',
+      'Before testing any cheat code on /gta-6/cheats, lock a clean Free-Roam backup slot first because cheats disable trophies & saving.',
+    ],
+  },
+  {
+    id: 'pc-download-scam',
+    title: 'Looking for GTA 6 PC download',
+    badge: 'MALWARE / SCAM ALERT',
+    isScamWarning: true,
+    summary:
+      'CRITICAL WARNING: Grand Theft Auto VI launched November 19, 2026 exclusively on PS5 and Xbox Series X|S. There is NO PC version at launch.',
+    steps: [
+      'Any website, YouTube link, torrent, or executable claiming "GTA 6 Free PC Download" or "PC Early Access Crack" is a phishing or info-stealer malware scam.',
+      'Do NOT run ZIP/EXE installers or sign in with Rockstar / Steam / PlayStation credentials on third-party mirrors.',
+      'Wait strictly for official Rockstar Newswire announcements regarding any future PC release.',
+    ],
+  },
+];
+
+export const GTA6_RADIO_META = {
+  featuredCount: 6,
+  totalInGameStations: 22,
+  badgeLabel: '6 Official Launch-Featured Stations · 22 Total In-Game',
+};
+
+export const GTA6_RADIO_STATIONS = [
+  {
+    id: 'cocoteo-fm',
+    name: 'Cocoteo FM',
+    genre: 'Modern Latin',
+    hosts: ['Bad Bunny (El Martillo)', 'RaiNao (La Gata)'],
+    tracks: [],
+  },
+  {
+    id: 'back-country-radio',
+    name: 'Back Country Radio',
+    genre: 'Country',
+    hosts: ['Morgan Wallen (MW)', 'Lana Del Rey (Delta Dawne)', 'Jeremy Dufrene (Mud Dog Mike)'],
+    tracks: [],
+  },
+  {
+    id: 'afrobank-fm',
+    name: 'AfroBank FM',
+    genre: 'African Music',
+    hosts: ['Burna Boy (Burna)', 'Palms Trax (Palmsy)'],
+    tracks: [],
+  },
+  {
+    id: 'the-chamber-106-6',
+    name: 'The Chamber 106.6',
+    genre: 'Metal',
+    hosts: ['Kerry King (DJ Kerry)', 'Tom Araya (DJ Tom)'],
+    tracks: ['Black Sabbath — "I"', 'Pantera — "I\'m Broken"', 'Slayer — "Raining Blood"'],
+  },
+  {
+    id: 'flash-fm',
+    name: 'Flash FM',
+    genre: 'Pop',
+    hosts: ['Robyn', 'Alex Consani'],
+    tracks: [
+      'Charli xcx — "Good Ones"',
+      'MGMT — "Electric Feel"',
+      'Zara Larsson & PinkPantheress — "Midnight Sun (Girls Trip)"',
+    ],
+  },
+  {
+    id: 'dirty-south-classics',
+    name: 'Dirty South Classics',
+    genre: 'Southern Hip-Hop',
+    hosts: ['Trick Daddy', 'Trina'],
+    tracks: [
+      'David Banner ft. Lil\' Flip — "Like A Pimp"',
+      'JT Money ft. Sole — "Who Dat"',
+      'DJ Khaled ft. Trick Daddy, Rick Ross & Pitbull — "Born N Raised"',
+    ],
+  },
+];
+
+export const GTA6_RADIO_GUIDES = {
+  streamerDmca: {
+    title: 'Streamer-Safe Audio Checklist (Twitch / YouTube)',
+    bullets: [
+      'GTA VI licensed radio tracks trigger automated Content ID & Twitch VOD DMCA strikes on launch streams.',
+      'Before going live, open Settings -> Audio -> Mute Licensed Radio / Streamer Mode so vehicle and shop speakers strip copyright-claimed tracks cleanly.',
+      'Double-check ambient storefront radio when entering Electronics Stores or Pawn counters during VOD recording.',
+    ],
+  },
+  headphonesTip: {
+    title: 'On-Foot Headphones Tip ($100+ Electronics Store Rule)',
+    bullets: [
+      'On-foot radio headphones cost $100+ at Electronics Stores around Leonida and let Jason or Lucia listen while walking.',
+      'Headphones must be bought separately for Jason AND separately for Lucia — inventory does not cross over between protagonists.',
+      'Warning: Headphones are permanently lost if knocked off during melee or gun combat, so buy spares only after Chapter 1’s wallet wipe.',
+    ],
+  },
+};
 
 export const GTA6_ULTIMATE_CLAIMS = [
   {

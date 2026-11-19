@@ -74,17 +74,19 @@ function createDistAssetsMock() {
         const buf = fs.readFileSync(abs);
         const ext = path.extname(abs).toLowerCase();
         const ct =
-          ext === '.png'
-            ? 'image/png'
-            : ext === '.xml'
-              ? 'application/xml; charset=utf-8'
-              : ext === '.txt'
-                ? 'text/plain; charset=utf-8'
-                : ext === '.js' || ext === '.mjs'
-                  ? 'application/javascript; charset=utf-8'
-                  : ext === '.css'
-                    ? 'text/css; charset=utf-8'
-                    : 'application/octet-stream';
+          ext === '.webmanifest'
+            ? 'application/manifest+json; charset=utf-8'
+            : ext === '.png'
+              ? 'image/png'
+              : ext === '.xml'
+                ? 'application/xml; charset=utf-8'
+                : ext === '.txt'
+                  ? 'text/plain; charset=utf-8'
+                  : ext === '.js' || ext === '.mjs'
+                    ? 'application/javascript; charset=utf-8'
+                    : ext === '.css'
+                      ? 'text/css; charset=utf-8'
+                      : 'application/octet-stream';
         return new Response(buf, { status: 200, headers: { 'Content-Type': ct } });
       }
       return new Response('Not found', { status: 404 });
@@ -129,6 +131,7 @@ async function main() {
     { label: '"Shop Gear" masked affiliate CTA', regex: /Shop Gear/ },
     { label: '"0 / 5" legacy free pin limit', regex: /0\s*\/\s*5\b|0\/5 Free/ },
     { label: '"0 / 2 Free" legacy limit', regex: /0\s*\/\s*2\s*Free/i },
+    { label: 'Loading studio flash string', regex: /Loading\s+(?:\{[^}]+\}|GTA Online|EA FC 27|Cod|Fortnite|Minecraft|Roblox|CS2|Valorant|Apex)?\s*studio/i },
   ]);
 
   scanBannedPatterns([...srcFiles, ...walkFiles('worker', ['.js']), ...walkFiles('server', ['.js']), ...distBundles], [
@@ -185,11 +188,55 @@ async function main() {
     assert.match(src, /As an Amazon Associate I earn from qualifying purchases\./, `${affiliateFile} missing FTC disclosure`);
   }
 
-  // Direct test of Storage + Roblox Math
+  // Direct test of Storage + Roblox Math + Wave 2 Withholding/PayPal + #s= hash share
   const { calcRobloxDevEx } = await import('../src/utils/gameMath.js');
+  const { encodePlatinumShareHash, decodePlatinumShareHash } = await import('../src/utils/platinumHashShare.js');
   const { resolveSeoRequest, getSitemapRoutes } = await import('../src/data/seoRoutes.js');
   const net100k = calcRobloxDevEx({ grossRobux: 100000, isNetEarned: true });
   assert.equal(net100k.usdPayout, 380, 'calcRobloxDevEx 100k Net Earned must equal $380.00');
+  assert.equal(net100k.withholdingPct, 0);
+  assert.equal(net100k.paypalFeeUsd, 0);
+  assert.equal(net100k.netPayoutUsd, 380);
+
+  const net100kWithheld = calcRobloxDevEx({
+    grossRobux: 100000,
+    isNetEarned: true,
+    withholdingPct: 24,
+    includePaypalFee: true,
+  });
+  assert.equal(net100kWithheld.grossUsd, 380);
+  assert.equal(net100kWithheld.withholdingUsd, 91.2);
+  assert.equal(net100kWithheld.paypalFeeUsd, 8.6);
+  assert.equal(net100kWithheld.netPayoutUsd, 280.2);
+
+  // #s=... hash round-trip + malformed guard
+  const sampleHash = encodePlatinumShareHash({
+    waink: 120,
+    wildlife: 45,
+    flamingos: 30,
+    stunts: 201,
+    cards: 9,
+  });
+  assert.match(sampleHash, /^#s=[A-Za-z0-9_-]+$/);
+  const decodedHash = decodePlatinumShareHash(sampleHash);
+  assert.deepEqual(decodedHash, {
+    v: 1,
+    waink: 120,
+    wildlife: 45,
+    flamingos: 30,
+    stunts: 201,
+    cards: 9,
+  });
+  for (const badHash of [
+    '',
+    '#s=!!!not-base64!!!',
+    '#s=e30',
+    '#s=' + Buffer.from(JSON.stringify({ v: 1, waink: 999, wildlife: 0, flamingos: 0, stunts: 0, cards: 0 })).toString('base64url'),
+    '#s=' + Buffer.from(JSON.stringify({ v: 1, waink: -1, wildlife: 0, flamingos: 0, stunts: 0, cards: 0 })).toString('base64url'),
+    '#s=' + Buffer.from('{"__proto__":{"polluted":1},"v":1,"waink":1,"wildlife":1,"flamingos":1,"stunts":1,"cards":1}').toString('base64url'),
+  ]) {
+    assert.equal(decodePlatinumShareHash(badHash), null, `Malformed hash must return null: ${badHash}`);
+  }
 
   const devex100kRoute = resolveSeoRequest('/roblox/devex/100000-robux-to-usd');
   assert.equal(devex100kRoute.status, 200);
@@ -198,6 +245,10 @@ async function main() {
   for (const r of getSitemapRoutes().filter((x) => x.path.startsWith('/roblox/devex/'))) {
     assert.equal(r.preset?.rbxMode, 'net', `Expected rbxMode: 'net' on ${r.path}`);
   }
+
+  const sitemapXml = readRel('public/sitemap.xml');
+  assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/fixes'), 'sitemap.xml missing /gta-6/fixes');
+  assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/radio'), 'sitemap.xml missing /gta-6/radio');
 
   console.log('[verify] 4/5 Auditing Worker SSR, cache headers & 301 redirects...');
   const workerMod = await import('../worker/index.js');
@@ -213,7 +264,10 @@ async function main() {
     '/gta-6/settings',
     '/gta-6/platinum',
     '/gta-6/ultimate',
+    '/gta-6/fixes',
+    '/gta-6/radio',
     '/cod-warzone',
+    '/ea-fc-27',
     '/roblox',
     '/roblox/devex/100000-robux-to-usd',
     '/gta-online',
@@ -229,6 +283,7 @@ async function main() {
     /0\s*\/\s*2\s*Free/i,
     /0\s*\/\s*5\s*Free/i,
     /Shop Gear/,
+    /Loading .*studio/i,
   ];
 
   for (const routePath of required200Routes) {
@@ -236,8 +291,21 @@ async function main() {
     assert.equal(res.status, 200, `Worker expected 200 OK for ${routePath}, got ${res.status}`);
     const html = await res.text();
     assert.equal(/\sstyle="/i.test(html), false, `Worker SSR leaked inline style= on ${routePath}`);
+    assert.match(html, /<h1\b[^>]*>[\s\S]+?<\/h1>/i, `Worker SSR missing <h1> on ${routePath}`);
+    assert.match(html, /<link\s+rel="canonical"\s+href="https:\/\/playunpause\.com/i, `Worker SSR missing canonical on ${routePath}`);
+    assert.match(html, /<script\s+type="application\/ld\+json">/i, `Worker SSR missing JSON-LD on ${routePath}`);
     for (const badRe of bannedHtmlRegexes) {
       assert.doesNotMatch(html, badRe, `Worker SSR leaked ${badRe} on ${routePath}`);
+    }
+    if (routePath.startsWith('/gta-6/')) {
+      assert.doesNotMatch(
+        html,
+        /4-player heist|Crew Payout Estimator|GTA 6 Online/i,
+        `GTA VI route ${routePath} leaked multiplayer/4-player heist copy`
+      );
+    }
+    if (routePath === '/gta-6/fixes') {
+      assert.match(html, /FAQPage/i, '/gta-6/fixes SSR must include FAQPage JSON-LD');
     }
     if (routePath === '/roblox/devex/100000-robux-to-usd') {
       assert.ok(html.includes('$380.00'), '100k DevEx SSR must contain $380.00');
@@ -250,7 +318,22 @@ async function main() {
     }
   }
 
+  // Manifest JSON gate on Worker
+  const manifestRes = await worker.fetch(new Request('https://playunpause.com/manifest.webmanifest'), workerEnv);
+  assert.equal(manifestRes.status, 200, 'Worker /manifest.webmanifest must return 200');
+  const manifestJson = JSON.parse(await manifestRes.text());
+  assert.equal(manifestJson.name, 'PlayUnpause');
+  assert.equal(manifestJson.display, 'standalone');
+  assert.ok(Array.isArray(manifestJson.icons) && manifestJson.icons.length >= 2);
+
+  // www -> apex 301 check on Worker
+  const wwwWorkerRes = await worker.fetch(new Request('https://www.playunpause.com/gta-6/fixes?v=2'), workerEnv);
+  assert.equal(wwwWorkerRes.status, 301);
+  assert.equal(wwwWorkerRes.headers.get('location'), 'https://playunpause.com/gta-6/fixes?v=2');
+
   const requiredRedirects = [
+    ['/gta-6', 'https://playunpause.com/gta-6/storage'],
+    ['/gta-6/', 'https://playunpause.com/gta-6/storage'],
     ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/port-gellhorn', 'https://playunpause.com/gta-6/robberies'],
@@ -295,6 +378,12 @@ async function main() {
         assert.equal(html.includes('$266.00'), false);
       }
     }
+
+    const expManifest = await fetch(`${baseUrl}/manifest.webmanifest`);
+    assert.equal(expManifest.status, 200, 'Express /manifest.webmanifest must return 200');
+    const expManifestJson = await expManifest.json();
+    assert.equal(expManifestJson.name, 'PlayUnpause');
+    assert.equal(expManifestJson.display, 'standalone');
 
     for (const [srcPath, destUrl] of requiredRedirects) {
       const resp = await fetch(`${baseUrl}${srcPath}`, { redirect: 'manual' });

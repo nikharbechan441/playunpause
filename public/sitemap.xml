@@ -49,6 +49,18 @@
     <priority>0.88</priority>
   </url>
   <url>
+    <loc>https://playunpause.com/gta-6/fixes</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.93</priority>
+  </url>
+  <url>
+    <loc>https://playunpause.com/gta-6/radio</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.91</priority>
+  </url>
+  <url>
     <loc>https://playunpause.com/cod-warzone</loc>
     <lastmod>2026-11-16</lastmod>
     <changefreq>weekly</changefreq>

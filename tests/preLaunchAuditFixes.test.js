@@ -12,8 +12,12 @@ import {
   GTA6_COLLECTIBLE_TARGETS,
   GTA6_CONFIRMED_CHEATS,
   GTA6_CONSOLE_30FPS_SPECS,
+  GTA6_LAUNCH_FIXES,
   GTA6_MONEY_METHODS,
+  GTA6_PLATINUM_MISSABLES,
+  GTA6_RADIO_STATIONS,
   GTA6_ROBBERY_TIERS,
+  GTA6_SAVE_SLOT_TEMPLATES,
   GTA6_ULTIMATE_CLAIMS,
   SPOILER_CHAPTERS,
 } from '../src/data/games/gta6LaunchTools.js';
@@ -188,7 +192,15 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   assert.equal(GTA6_ROBBERY_TIERS.length, 4);
   assert.equal(GTA6_CONSOLE_30FPS_SPECS.length, 4);
   assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'waink')?.target, 200);
-  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'animals')?.target, 100);
+  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'wildlife')?.target, 100);
+  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'flamingos')?.target, 100);
+  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'stunts')?.target, 300);
+  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'cards')?.target, 15);
+  assert.equal(GTA6_SAVE_SLOT_TEMPLATES.filter((s) => s.group === 'chapter').length, 10);
+  assert.equal(GTA6_SAVE_SLOT_TEMPLATES.filter((s) => s.group === 'freeroam').length, 5);
+  assert.match(GTA6_PLATINUM_MISSABLES.warning, /0 missables for the in-game 100% Completion menu/i);
+  assert.equal(GTA6_LAUNCH_FIXES.length, 4);
+  assert.equal(GTA6_RADIO_STATIONS.length, 6);
   assert.ok(GTA6_ULTIMATE_CLAIMS.some((u) => /Shizu Typhoon Squalo/i.test(u.title)));
 
   const gta6Meta = TOP_GAMES.find((g) => g.id === 'gta-6');
@@ -203,11 +215,16 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
     'src/components/gta6/Gta6MoneyRobberyDeck.jsx',
     'src/components/gta6/Gta6SettingsTunerDeck.jsx',
     'src/components/gta6/Gta6PlatinumUltimateDeck.jsx',
+    'src/components/gta6/Gta6FixesDeck.jsx',
+    'src/components/gta6/Gta6RadioDeck.jsx',
+    'src/components/gta6/WakeLockToggle.jsx',
   ]) {
     assert.ok(fs.existsSync(path.join(ROOT, rel)), `Expected new GTA VI component ${rel}`);
   }
 
   for (const [oldPath, destUrl] of [
+    ['/gta-6', 'https://playunpause.com/gta-6/storage'],
+    ['/gta-6/', 'https://playunpause.com/gta-6/storage'],
     ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/heist-split', 'https://playunpause.com/gta-online'],
@@ -247,6 +264,29 @@ test('2. Roblox DevEx net-earned mode yields $380.00 for 100k Robux without doub
     grossValues.some((n) => Math.abs(n - 266) < 0.01),
     `Expected $266.00 in default Gross mode, got ${JSON.stringify(grossResult)}`,
   );
+
+  const netWithheld = calcRobloxDevEx({
+    grossRobux: 100000,
+    rateId: 'std-2025',
+    isNetEarned: true,
+    withholdingPct: 24,
+    includePaypalFee: true,
+  });
+  assert.equal(netWithheld.grossUsd, 380);
+  assert.equal(netWithheld.withholdingUsd, 91.2);
+  assert.equal(netWithheld.paypalFeeUsd, 8.6);
+  assert.equal(netWithheld.netPayoutUsd, 280.2);
+
+  const highPaypalCap = calcRobloxDevEx({
+    grossRobux: 1000000,
+    rateId: 'std-2025',
+    isNetEarned: true,
+    withholdingPct: 10,
+    includePaypalFee: true,
+  });
+  assert.equal(highPaypalCap.grossUsd, 3800);
+  assert.equal(highPaypalCap.paypalFeeUsd, 21);
+  assert.equal(highPaypalCap.netPayoutUsd, 3399);
 
   const preset100k = resolveSeoRequest('/roblox/devex/100000-robux-to-usd');
   assert.equal(preset100k.status, 200);
@@ -378,11 +418,17 @@ test('6. Worker single-hop 301s, YouTube slug 301s, UTF-8 robots.txt & complete 
     'http://playunpause.com/gta-6?src=short',
     'http://www.playunpause.com/gta-6?src=short',
     'https://www.playunpause.com/gta-6?src=short',
+    'https://playunpause.com/gta-6?src=short',
+    'https://playunpause.com/gta-6/?src=short',
   ]) {
     const res = await worker.fetch(new Request(url), env);
     assert.equal(res.status, 301, `Expected 301 for ${url}`);
-    assert.equal(res.headers.get('location'), 'https://playunpause.com/gta-6?src=short');
+    assert.equal(res.headers.get('location'), 'https://playunpause.com/gta-6/storage?src=short');
   }
+
+  const wwwRes = await worker.fetch(new Request('https://www.playunpause.com/cod-warzone?x=1'), env);
+  assert.equal(wwwRes.status, 301);
+  assert.equal(wwwRes.headers.get('location'), 'https://playunpause.com/cod-warzone?x=1');
 
   for (const [slug, target] of [
     ['https://playunpause.com/eafc-tax', 'https://playunpause.com/ea-fc-27'],
