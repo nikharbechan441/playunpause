@@ -7,6 +7,16 @@ import { DatabaseSync } from 'node:sqlite';
 
 import worker from '../worker/index.js';
 import { gta6Pack } from '../src/data/games/gta6Pack.js';
+import {
+  GTA6_CHEAT_META,
+  GTA6_COLLECTIBLE_TARGETS,
+  GTA6_CONFIRMED_CHEATS,
+  GTA6_CONSOLE_30FPS_SPECS,
+  GTA6_MONEY_METHODS,
+  GTA6_ROBBERY_TIERS,
+  GTA6_ULTIMATE_CLAIMS,
+  SPOILER_CHAPTERS,
+} from '../src/data/games/gta6LaunchTools.js';
 import { TOP_GAMES } from '../src/data/games/allGames.js';
 import { calcRobloxDevEx } from '../src/utils/gameMath.js';
 import {
@@ -135,22 +145,34 @@ function makeWorkerEnv(overrides = {}) {
   };
 }
 
-test('1. GTA VI ground-truth: 212 GB Xbox size, CFI-2100 PS5, scrubbed Safes, Crew Estimator copy', () => {
-  assert.match(gta6Pack.statusBadge, /212 GB/i);
+test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB), 4 new tools, retired safes 301s', () => {
+  assert.match(gta6Pack.statusBadge, /LAUNCH DAY/i);
+  assert.match(gta6Pack.statusBadge, /1\.002\.001/);
+  assert.equal(gta6Pack.dayOnePatchPs5Gb, 0.6);
+  assert.equal(gta6Pack.dayOnePatchXboxGb, 1.6);
+
   const serializedPack = JSON.stringify(gta6Pack);
   assert.doesNotMatch(serializedPack, /projected pre-preload/i);
   assert.doesNotMatch(serializedPack, /225\s*GB/i);
+  assert.doesNotMatch(serializedPack, /\+35\s*GB/i);
+
+  assert.equal(gta6Pack.safes, undefined);
+  assert.equal(gta6Pack.heistPresets, undefined);
+  assert.equal(gta6Pack.marketFlips, undefined);
+  assert.equal(gta6Pack.nightRoutes, undefined);
 
   const consoles = gta6Pack.consoles || [];
   const xboxProfiles = consoles.filter((c) => c.platform === 'xbox');
   assert.equal(xboxProfiles.length, 3, 'Expected 3 Xbox console profiles');
   for (const xb of xboxProfiles) {
     assert.equal(xb.installGb, 212, `Expected ${xb.id} installGb === 212`);
+    assert.equal(xb.patchGb, 1.6, `Expected ${xb.id} patchGb === 1.6`);
   }
 
   const ps5Base = consoles.find((c) => c.id === 'ps5-base');
   assert.ok(ps5Base, 'Expected ps5-base console option');
   assert.equal(ps5Base.name, 'PS5 Base / Slim Digital (825GB - 667 GB usable)');
+  assert.equal(ps5Base.patchGb, 0.6);
   assert.match(ps5Base.nzDetail, /CFI-2100/i);
 
   const ps5Slim = consoles.find((c) => c.id === 'ps5-slim');
@@ -159,28 +181,49 @@ test('1. GTA VI ground-truth: 212 GB Xbox size, CFI-2100 PS5, scrubbed Safes, Cr
   const ps5Pro = consoles.find((c) => c.id === 'ps5-pro');
   assert.equal(ps5Pro?.name, 'PS5 Pro (2TB - 1,890 GB usable)');
 
-  const safes = gta6Pack.safes || [];
-  assert.equal(safes.length, 6, 'Expected 6 regional safe entries');
-  for (const safe of safes) {
-    assert.equal(safe.code, '----');
-    assert.equal(safe.verified, false);
-    assert.match(safe.verifiedStatus, /Nov 19/i);
-    assert.match(safe.verifiedStatus, /11:00 UTC/i);
-  }
+  assert.equal(SPOILER_CHAPTERS.length, 6);
+  assert.equal(GTA6_CHEAT_META.totalCount, 61);
+  assert.equal(GTA6_CONFIRMED_CHEATS.length, 12);
+  assert.ok(GTA6_MONEY_METHODS.some((m) => /Moses/i.test(m.title)));
+  assert.equal(GTA6_ROBBERY_TIERS.length, 4);
+  assert.equal(GTA6_CONSOLE_30FPS_SPECS.length, 4);
+  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'waink')?.target, 200);
+  assert.equal(GTA6_COLLECTIBLE_TARGETS.find((c) => c.id === 'animals')?.target, 100);
+  assert.ok(GTA6_ULTIMATE_CLAIMS.some((u) => /Shizu Typhoon Squalo/i.test(u.title)));
 
   const gta6Meta = TOP_GAMES.find((g) => g.id === 'gta-6');
   assert.ok(gta6Meta);
   const serializedTop = JSON.stringify(gta6Meta);
   assert.match(serializedTop, /212 GB/);
-  assert.match(serializedTop, /Crew/i);
+  assert.match(serializedTop, /1\.002\.001/);
 
-  const squadSource = readRepoFile('src/components/SquadHeistMarketDeck.jsx');
-  assert.match(squadSource, /GTA Online \/ Future Crew Payout Estimator/);
-  assert.match(squadSource, /single-player/i);
+  for (const rel of [
+    'src/components/gta6/Gta6SpoilerShieldBar.jsx',
+    'src/components/gta6/Gta6CheatDeck.jsx',
+    'src/components/gta6/Gta6MoneyRobberyDeck.jsx',
+    'src/components/gta6/Gta6SettingsTunerDeck.jsx',
+    'src/components/gta6/Gta6PlatinumUltimateDeck.jsx',
+  ]) {
+    assert.ok(fs.existsSync(path.join(ROOT, rel)), `Expected new GTA VI component ${rel}`);
+  }
+
+  for (const [oldPath, destUrl] of [
+    ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
+    ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
+    ['/gta-6/heist-split', 'https://playunpause.com/gta-online'],
+    ['/gta-6/stock-market-planner', 'https://playunpause.com/gta-6/money'],
+    ['/gta-6/night-run', 'https://playunpause.com/gta-6/platinum'],
+  ]) {
+    const resolved = resolveSeoRequest(oldPath);
+    assert.equal(resolved.status, 301, `Expected 301 for ${oldPath}`);
+    assert.equal(resolved.redirectTo, destUrl);
+  }
 
   for (const rel of collectFiles('src', ['.js', '.jsx'])) {
     const content = readRepoFile(rel);
     assert.doesNotMatch(content, /225\s*GB|212[–-]225\s*GB/i, `Found stale 225 GB copy in ${rel}`);
+    assert.doesNotMatch(content, /\+35\s*GB|35\s*GB\s*Day-1/i, `Found stale +35 GB patch copy in ${rel}`);
+    assert.doesNotMatch(content, /0\s*\/\s*5\s*Free|0\s*\/\s*2\s*Free/i, `Found stale pin limit copy in ${rel}`);
   }
 });
 
@@ -254,8 +297,12 @@ test('3. Amazon Associates compliance, canonical /dp/ ASINs, GTA Online split li
 
   const storageSource = readRepoFile('src/components/StorageUnlockDeck.jsx');
   const dockSource = readRepoFile('src/components/games/GameStudioDock.jsx');
+  const tunerSource = readRepoFile('src/components/gta6/Gta6SettingsTunerDeck.jsx');
   assert.match(storageSource, /As an Amazon Associate I earn from qualifying purchases\./);
   assert.match(dockSource, /As an Amazon Associate I earn from qualifying purchases\./);
+  assert.match(tunerSource, /As an Amazon Associate I earn from qualifying purchases\./);
+  assert.match(tunerSource, /\/dp\/B0C47ZX1WB\?tag=playunpause-20/);
+  assert.match(tunerSource, /\/dp\/B0C44XVWCH\?tag=playunpause-20/);
   assert.match(dockSource, /amazon-plain-link/);
   assert.match(dockSource, /Check Price on Amazon/);
 

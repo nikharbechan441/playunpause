@@ -299,7 +299,7 @@ export default function MultiGameToolDeck({
   const [rbxRateId, setRbxRateId] = useState(() => initialPreset?.devexRate ?? 'std-2025');
   const [rbxGroupSplit, setRbxGroupSplit] = useState(() => initialPreset?.groupSplit ?? 100);
   const [rbxDesiredNet, setRbxDesiredNet] = useState(() => initialPreset?.desiredNet ?? 30000);
-  const [rbxMode, setRbxMode] = useState(() => (initialPreset?.rbxMode === 'net' ? 'net' : 'gross'));
+  const [rbxMode, setRbxMode] = useState(() => (initialPreset?.rbxMode === 'gross' ? 'gross' : 'net'));
 
   useEffect(() => {
     if (!initialPreset) return;
@@ -308,7 +308,9 @@ export default function MultiGameToolDeck({
     if (initialPreset.groupSplit !== undefined) setRbxGroupSplit(initialPreset.groupSplit);
     if (initialPreset.desiredNet !== undefined) setRbxDesiredNet(initialPreset.desiredNet);
     if (initialPreset.rbxMode !== undefined) {
-      setRbxMode(initialPreset.rbxMode === 'net' ? 'net' : 'gross');
+      setRbxMode(initialPreset.rbxMode === 'gross' ? 'gross' : 'net');
+    } else {
+      setRbxMode('net');
     }
   }, [presetKey]);
 

@@ -66,7 +66,8 @@ test('GTA VI pack defines 6 balanced consoles (3 Xbox @ 212GB + 3 PS5 @ 212GB) a
   assert.equal(ps5.length, 3);
   xbox.forEach((c) => assert.equal(c.installGb, 212));
   ps5.forEach((c) => assert.equal(c.installGb, 212));
-  assert.equal(gta6Pack.dayOnePatchGb, 35);
+  assert.equal(gta6Pack.dayOnePatchPs5Gb, 0.6);
+  assert.equal(gta6Pack.dayOnePatchXboxGb, 1.6);
   assert.equal(gta6Pack.routeWaypoints.length, 4);
 });
 

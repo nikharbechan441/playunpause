@@ -8,9 +8,9 @@ import React from 'react';
 
 export const WORLD_STRIP_PACK_A = {
   'gta-6': {
-    leftLabel: 'VICE DUSK · PRELOAD',
-    centerTicks: 'UP TO 212 GB PS5 & XBOX · CAUSEWAY SECTOR',
-    rightReadout: 'NOV 19 ROLLOUT',
+    leftLabel: 'LAUNCH DAY · LIVE',
+    centerTicks: '212 GB BASE · PATCH 1.002.001 · OUT NOW',
+    rightReadout: 'NOV 19 · LIVE',
   },
   'cod-warzone': {
     leftLabel: 'NIGHT OPS · RADAR',
@@ -183,7 +183,7 @@ function Gta6ViceDuskArt({ theme }) {
           {/* Subtle Corner HUD Telemetry */}
           <g fontFamily="ui-monospace, monospace" fontSize="9.5" fontWeight="700">
             <rect x="20" y="18" width="188" height="20" rx="10" fill="#120829" fillOpacity="0.72" stroke={rimStroke} strokeOpacity="0.65" />
-            <text x="31" y="31.5" fill="#FDE68A" letterSpacing="0.8">VICE BAY · UP TO 212 GB</text>
+            <text x="31" y="31.5" fill="#FDE68A" letterSpacing="0.8">VICE BAY · LAUNCH LIVE</text>
           </g>
         </g>
 

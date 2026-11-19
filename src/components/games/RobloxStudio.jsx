@@ -22,7 +22,7 @@ export default function RobloxStudio({
   setRbxGroupSplit,
   rbxDesiredNet,
   setRbxDesiredNet,
-  rbxMode = 'gross',
+  rbxMode = 'net',
   setRbxMode = null,
   rbxResult,
   reverseGamepassPrice,

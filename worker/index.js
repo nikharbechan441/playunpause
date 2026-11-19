@@ -1280,7 +1280,7 @@ async function handleWorkerRequest(request, env = {}) {
     const isEmbed = Boolean(seoRes.isEmbed);
     const headers = new Headers({
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': seoRes.notFound ? 'no-store' : 'no-cache',
+      'Cache-Control': seoRes.notFound ? 'no-store' : 'no-store, no-cache, must-revalidate',
       'CDN-Cache-Control': 'no-store',
       'Cloudflare-CDN-Cache-Control': 'no-store',
     });

@@ -21,7 +21,7 @@ export default function LegalComplianceModal({
 }) {
   const supportEmail = runtimeConfig?.supportEmail || 'hello@playunpause.com';
   const sponsorEmail = runtimeConfig?.sponsorEmail || 'sponsors@playunpause.com';
-  const passPrice = runtimeConfig?.passPriceUsd ?? 6.99;
+  const passPrice = 0;
   const sponsorPrice = runtimeConfig?.sponsorPriceUsd ?? 149;
   const legalOperatorName =
     runtimeConfig?.legalOperatorName || 'Unpause Interactive (Independent Operator, South Africa)';
@@ -64,7 +64,7 @@ export default function LegalComplianceModal({
               Legal, Privacy &amp; Buyer Protection Center
             </h2>
             <p className="legal-modal-sub">
-              Plain-English terms for <strong>playunpause.com</strong> · Updated November 18, 2026
+              Plain-English terms for <strong>playunpause.com</strong> · Updated November 19, 2026
             </p>
           </div>
           <button
@@ -130,7 +130,7 @@ export default function LegalComplianceModal({
                 <strong>{legalOperatorName}</strong>
                 {legalServiceAddress ? ` (${legalServiceAddress})` : ''}
                 {legalContactPhone ? ` · Tel: ${legalContactPhone}` : ''}
-                . All 10 game calculators, GTA VI weeknight routes, saved console setups, OBS overlays, and CSV/JSON backups are <strong>100% free with zero self-serve consumer checkout</strong>. We never sell games, keys, cheats, injectors, modded accounts, or RMT currency. Support, Information Officer &amp; statutory notices:{' '}
+                . All 10 game calculators, GTA VI launch companions, saved console setups, OBS overlays, and CSV/JSON backups are <strong>100% free with zero self-serve consumer checkout</strong>. We never sell games, keys, cheats, injectors, modded accounts, or RMT currency. Support, Information Officer &amp; statutory notices:{' '}
                 <a href={`mailto:${supportEmail}`} className="legal-inline-link">
                   {supportEmail}
                 </a>
@@ -146,10 +146,10 @@ export default function LegalComplianceModal({
               </h3>
               <ul className="legal-list">
                 <li>
-                  <strong>100% Free Interactive Calculators (Zero Consumer Billing):</strong> Every calculator, console SSD headroom planner, 16 saved console/crew setups, 120 cross-game pins, 45m/90m/120m weeknight routes, portable JSON/CSV backup, OBS overlay mode (<code>?mode=obs</code>), and Phone &harr; PC QR sync is free with zero Paywall or active Whop consumer checkout.
+                  <strong>100% Free Interactive Calculators (Zero Consumer Billing):</strong> Every calculator, console SSD headroom planner, 16 saved console/crew setups, 120 cross-game pins, GTA VI Haptic Cheat Deck, Money/Robbery &amp; Platinum trackers, portable JSON/CSV backup, OBS overlay mode (<code>?mode=obs</code>), and Phone &harr; PC QR sync is free with zero Paywall or active Whop consumer checkout.
                 </li>
                 <li>
-                  <strong>Release Dates &amp; Gameplay Math:</strong> Grand Theft Auto VI launches on <strong>November 19, 2026</strong> as single-player ($79.99 Standard / $99.99 Ultimate), with pre-load live since November 10 (up to 212 GB on PS5 &amp; Xbox Series X|S) and rolling Xbox NZ access starting November 18 at 11:00 UTC. Unverified regional keypad entries remain blank until confirmed live on launch. All calculators (including EA Sports FC&trade; coin math, CS2/Apex odds summaries, and Roblox DevEx USD estimates) are informational gameplay math only&mdash;<strong>not financial, tax, or investment advice, gambling, or RMT</strong>.
+                  <strong>Release Dates &amp; Gameplay Math:</strong> Grand Theft Auto VI launched on <strong>November 19, 2026</strong> as single-player ($79.99 Standard / $99.99 Ultimate) with Base 212 GB install + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox). In-world safe combinations are randomized per playthrough. All calculators (including EA Sports FC&trade; coin math, CS2/Apex odds summaries, and Roblox DevEx USD estimates) are informational gameplay math only&mdash;<strong>not financial, tax, or investment advice, gambling, or RMT</strong>.
                 </li>
                 <li>
                   <strong>Bearer Sync Key Safety &amp; Acceptable Use:</strong> Optional free <code>UP-XXXXXXXX</code> sync keys (and <code>#sync=</code> QR URLs) allow checklist sync between your own devices—anyone holding your code can read or edit that checklist, so keep screenshots private on stream. Automated scraping or API abuse is prohibited.
@@ -264,7 +264,7 @@ export default function LegalComplianceModal({
                 2. Zero UGC Hosting, Zero Leaks &amp; DMCA Notices (17 U.S.C. § 512(c)(3))
               </h3>
               <p className="legal-copy">
-                Unpause hosts <strong>zero user-generated uploads</strong>, ripped publisher assets, or NDA leak material—pre-launch GTA VI safe entries remain unpopulated until verified live following the November 19, 2026 release (starting with 11:00 UTC Nov 18 NZ rollout). Rights holders or authorized agents may submit formal takedown notices (identifying the copyrighted work, exact URL, contact details, good-faith belief statement, and accuracy/authority signature under penalty of perjury) to our IP/DMCA contact at{' '}
+                Unpause hosts <strong>zero user-generated uploads</strong>, ripped publisher assets, or NDA leak material—GTA VI safe strategies reflect randomized playthrough behavior confirmed on launch (November 19, 2026). Rights holders or authorized agents may submit formal takedown notices (identifying the copyrighted work, exact URL, contact details, good-faith belief statement, and accuracy/authority signature under penalty of perjury) to our IP/DMCA contact at{' '}
                 <a href="mailto:dmca@playunpause.com" className="legal-inline-link">
                   dmca@playunpause.com
                 </a>{' '}

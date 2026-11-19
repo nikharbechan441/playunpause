@@ -336,7 +336,7 @@ export function buildDeckSpreadsheetCsv(rawState) {
   }
 
   for (const stopId of state.checkedRouteIds) {
-    rows.push(['Route Stop', 'gta-6', stopId, 'Weeknight route stop', 'Completed']);
+    rows.push(['Route Stop', 'gta-6', stopId, 'Saved checklist stop', 'Completed']);
   }
 
   return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;

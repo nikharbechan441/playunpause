@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'rea
 import {
   HardDrive,
   KeyRound,
+  DollarSign,
   Users,
   Clock,
   Volume2,
@@ -15,7 +16,6 @@ import {
   Copy,
   X,
   Sparkles,
-  Megaphone,
   ExternalLink,
   RefreshCw,
   Code2,
@@ -56,25 +56,29 @@ import { copyTextReliably } from './utils/clipboard.js';
 import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
 import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHero.jsx';
 import StorageUnlockDeck from './components/StorageUnlockDeck.jsx';
+import Gta6SpoilerShieldBar from './components/gta6/Gta6SpoilerShieldBar.jsx';
 import { isChunkLoadError, tryAutoReloadForStaleChunk } from './utils/chunkRecovery.js';
 
-const loadSafeKeypadVault = () => import('./components/SafeKeypadVault.jsx');
-const loadSquadHeistMarketDeck = () => import('./components/SquadHeistMarketDeck.jsx');
-const loadNightRunProDeck = () => import('./components/NightRunProDeck.jsx');
+const loadGta6CheatDeck = () => import('./components/gta6/Gta6CheatDeck.jsx');
+const loadGta6MoneyRobberyDeck = () => import('./components/gta6/Gta6MoneyRobberyDeck.jsx');
+const loadGta6SettingsTunerDeck = () => import('./components/gta6/Gta6SettingsTunerDeck.jsx');
+const loadGta6PlatinumUltimateDeck = () => import('./components/gta6/Gta6PlatinumUltimateDeck.jsx');
 const loadMultiGameToolDeck = () => import('./components/MultiGameToolDeck.jsx');
 const loadGameSelectorModal = () => import('./components/GameSelectorModal.jsx');
 const loadLegalComplianceModal = () => import('./components/LegalComplianceModal.jsx');
 const loadEmbedWidgetModal = () => import('./components/EmbedWidgetModal.jsx');
 
-const SafeKeypadVault = lazy(loadSafeKeypadVault);
-const SquadHeistMarketDeck = lazy(loadSquadHeistMarketDeck);
-const NightRunProDeck = lazy(loadNightRunProDeck);
+const Gta6CheatDeck = lazy(loadGta6CheatDeck);
+const Gta6MoneyRobberyDeck = lazy(loadGta6MoneyRobberyDeck);
+const Gta6SettingsTunerDeck = lazy(loadGta6SettingsTunerDeck);
+const Gta6PlatinumUltimateDeck = lazy(loadGta6PlatinumUltimateDeck);
 const MultiGameToolDeck = lazy(loadMultiGameToolDeck);
 const GameSelectorModal = lazy(loadGameSelectorModal);
 const LegalComplianceModal = lazy(loadLegalComplianceModal);
 const EmbedWidgetModal = lazy(loadEmbedWidgetModal);
 
 const STORAGE_KEY = 'unpause_deck_state_v5';
+const SPOILER_STORAGE_KEY = 'unpause_gta6_spoiler_ch_v1';
 const LEGACY_KEYS = [
   'unpause_deck_state_v4',
   'unpause_deck_state_v3',
@@ -83,10 +87,11 @@ const LEGACY_KEYS = [
 ];
 
 const GTA_MODES = [
-  { id: 'storage', label: 'Preload & SSD', mobileLabel: 'SSD', icon: HardDrive },
-  { id: 'safes', label: 'Safe Keypads', mobileLabel: 'Safes', icon: KeyRound },
-  { id: 'squad', label: 'Squad & Cut', mobileLabel: 'Heist', icon: Users },
-  { id: 'nightrun', label: 'Weeknight Route', mobileLabel: 'Route', icon: Clock },
+  { id: 'storage', label: 'SSD & Patch 1.002.001', mobileLabel: 'SSD', icon: HardDrive },
+  { id: 'cheats', label: 'Cheats (61)', mobileLabel: 'Cheats', icon: KeyRound },
+  { id: 'money', label: 'Money & Robberies', mobileLabel: 'Money', icon: DollarSign },
+  { id: 'settings', label: '30fps Tuner & PNG', mobileLabel: '30fps', icon: Clock },
+  { id: 'platinum', label: 'Platinum & Ult', mobileLabel: 'Plat', icon: Sparkles },
 ];
 
 export function sanitizeHttpsUrl(rawUrl, fallback = null) {
@@ -457,6 +462,23 @@ export default function App() {
   const [backupNotice, setBackupNotice] = useState(null);
   const [revealSyncSecret, setRevealSyncSecret] = useState(false);
   const [isCreatingSync, setIsCreatingSync] = useState(false);
+  const [spoilerChapter, setSpoilerChapter] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    try {
+      const saved = Number(window.localStorage.getItem(SPOILER_STORAGE_KEY));
+      return saved >= 1 && saved <= 6 ? Math.round(saved) : 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SPOILER_STORAGE_KEY, String(spoilerChapter));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [spoilerChapter]);
 
   const gameModalRef = useRef(null);
   const proModalRef = useRef(null);
@@ -590,9 +612,10 @@ export default function App() {
     const warmChunks = () => {
       if (cancelled) return;
       Promise.allSettled([
-        loadSafeKeypadVault(),
-        loadSquadHeistMarketDeck(),
-        loadNightRunProDeck(),
+        loadGta6CheatDeck(),
+        loadGta6MoneyRobberyDeck(),
+        loadGta6SettingsTunerDeck(),
+        loadGta6PlatinumUltimateDeck(),
         loadMultiGameToolDeck(),
         loadGameSelectorModal(),
         loadLegalComplianceModal(),
@@ -1032,7 +1055,7 @@ export default function App() {
       });
       setBackupNotice({
         tone: 'ok',
-        text: 'Backup merged into this device (safes, routes, pins, consoles & rosters).',
+        text: 'Backup merged into this device (consoles, checklists, timers & game pins).',
       });
     } catch {
       setBackupNotice({ tone: 'err', text: 'Could not parse JSON backup file.' });
@@ -1312,9 +1335,10 @@ export default function App() {
     if (activeGameId === 'gta-6') {
       const map = {
         storage: '/embed/gta-6/storage',
-        safes: '/embed/gta-6/safe-codes',
-        squad: '/embed/gta-6/heist-split',
-        nightrun: '/embed/gta-6/night-run',
+        cheats: '/embed/gta-6/cheats',
+        money: '/embed/gta-6/money',
+        settings: '/embed/gta-6/settings',
+        platinum: '/embed/gta-6/platinum',
       };
       return map[activeTab] || '/embed/gta-6/storage';
     }
@@ -1411,43 +1435,32 @@ export default function App() {
                     presetKey={routeState.presetKey}
                   />
                 )}
-                {activeTab === 'safes' && (
-                  <SafeKeypadVault
-                    gamePack={activeGamePack}
-                    crackedSafeIds={deckState.crackedSafeIds}
-                    onToggleSafe={handleToggleSafe}
+                {activeTab === 'cheats' && (
+                  <Gta6CheatDeck
                     soundEnabled={deckState.soundEnabled}
-                    isPro={deckState.isPro}
-                    isPreLaunch={isPreLaunch}
-                    isEmbed
-                    initialQuery={routeState.preset?.query ?? ''}
-                    initialPreset={routeState.preset}
-                    presetKey={routeState.presetKey}
-                    onOpenProModal={handleOpenProTarget}
-                  />
-                )}
-                {activeTab === 'squad' && (
-                  <SquadHeistMarketDeck
-                    gamePack={activeGamePack}
-                    soundEnabled={deckState.soundEnabled}
-                    isPreLaunch={isPreLaunch}
-                    isEmbed
+                    spoilerChapter={spoilerChapter}
                     initialPreset={routeState.preset}
                     presetKey={routeState.presetKey}
                   />
                 )}
-                {activeTab === 'nightrun' && (
-                  <NightRunProDeck
-                    gamePack={activeGamePack}
-                    isPro={deckState.isPro}
-                    isPreLaunch={isPreLaunch}
-                    isEmbed
-                    deckCode={deckState.deckCode}
-                    checkedRouteIds={deckState.checkedRouteIds}
-                    onToggleRouteStop={handleToggleRouteStop}
-                    onOpenProModal={handleOpenProTarget}
+                {activeTab === 'money' && (
+                  <Gta6MoneyRobberyDeck
+                    soundEnabled={deckState.soundEnabled}
+                    spoilerChapter={spoilerChapter}
+                    initialPreset={routeState.preset}
+                    presetKey={routeState.presetKey}
+                  />
+                )}
+                {activeTab === 'settings' && (
+                  <Gta6SettingsTunerDeck
+                    soundEnabled={deckState.soundEnabled}
                     runtimeConfig={runtimeConfig}
+                  />
+                )}
+                {activeTab === 'platinum' && (
+                  <Gta6PlatinumUltimateDeck
                     soundEnabled={deckState.soundEnabled}
+                    spoilerChapter={spoilerChapter}
                     initialPreset={routeState.preset}
                     presetKey={routeState.presetKey}
                   />
@@ -1576,14 +1589,12 @@ export default function App() {
             {activeGamePack.isGta6Suite ? (
               <div
                 className="nz-hud-pill"
-                title={`Global launch Nov 19, 2026 · Xbox NZ earliest midnight: Nov 18 @ 11:00 UTC (${headerNzClock})`}
+                title="Grand Theft Auto VI is OUT NOW (Nov 19, 2026) · Patch 1.002.001 Live"
               >
                 <span className="nz-live-dot" aria-hidden="true" />
-                <span className="nz-full-text">
-                  {daysUntilLaunch > 0 ? `GTA VI · Nov 19 (${daysUntilLaunch}d)` : 'GTA VI · Live Nov 19'}
-                </span>
+                <span className="nz-full-text">GTA VI · OUT NOW</span>
                 <span className="nz-compact-text" aria-hidden="true">
-                  {daysUntilLaunch > 0 ? `Nov 19 (${daysUntilLaunch}d)` : 'Live Nov 19'}
+                  OUT NOW
                 </span>
               </div>
             ) : (
@@ -1894,7 +1905,7 @@ export default function App() {
               <p className="consumer-sub">
                 {activeRoute?.answerSummary ||
                   (activeGamePack.isGta6Suite
-                    ? 'Check exact PS5 & Xbox SSD headroom, download time, safe codes, and heist splits in seconds — free, zero popups, no account.'
+                    ? 'GTA VI is OUT NOW. Check 212 GB SSD + Patch 1.002.001 headroom, 61 haptic cheats, story money/robberies, 30fps DF tuning & Platinum tracking — free.'
                     : `${activeGamePack.tagline} · Free, instant browser math with zero ads.`)}
               </p>
             </div>
@@ -1943,7 +1954,7 @@ export default function App() {
         <ChunkErrorBoundary
           resetKey={`${activeGamePack.id}:${activeTab}`}
           onRecover={() => navigateToPath(activeHubPath)}
-          recoverLabel={activeGamePack.isGta6Suite ? 'Back to Preload Calculator' : `Reload ${activeGamePack.shortTitle} Studio`}
+          recoverLabel={activeGamePack.isGta6Suite ? 'Back to SSD & Patch Calculator' : `Reload ${activeGamePack.shortTitle} Studio`}
         >
           <Suspense
             fallback={
@@ -1954,7 +1965,13 @@ export default function App() {
           >
         {activeGamePack.isGta6Suite ? (
           <div>
-            <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Tools">
+            <Gta6SpoilerShieldBar
+              spoilerChapter={spoilerChapter}
+              onSelectChapter={setSpoilerChapter}
+              soundEnabled={deckState.soundEnabled}
+            />
+
+            <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Launch Tools">
               {GTA_MODES.map((m, idx) => {
                 const IconM = m.icon;
                 const active = activeTab === m.id;
@@ -2001,47 +2018,35 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'safes' && (
-                <SafeKeypadVault
-                  gamePack={activeGamePack}
-                  crackedSafeIds={deckState.crackedSafeIds}
-                  onToggleSafe={handleToggleSafe}
+              {activeTab === 'cheats' && (
+                <Gta6CheatDeck
                   soundEnabled={deckState.soundEnabled}
-                  isPro={deckState.isPro}
-                  isPreLaunch={isPreLaunch}
-                  initialQuery={routeState.preset?.query ?? ''}
-                  initialPreset={routeState.preset}
-                  presetKey={routeState.presetKey}
-                  onOpenProModal={() => setShowProModal(true)}
-                />
-              )}
-
-              {activeTab === 'squad' && (
-                <SquadHeistMarketDeck
-                  gamePack={activeGamePack}
-                  soundEnabled={deckState.soundEnabled}
-                  isPreLaunch={isPreLaunch}
-                  isPro={deckState.isPro}
-                  crewPresets={deckState.crewPresets}
-                  onSaveCrewPreset={handleSaveCrewPreset}
-                  onDeleteCrewPreset={handleDeleteCrewPreset}
-                  onOpenProModal={() => setShowProModal(true)}
+                  spoilerChapter={spoilerChapter}
                   initialPreset={routeState.preset}
                   presetKey={routeState.presetKey}
                 />
               )}
 
-              {activeTab === 'nightrun' && (
-                <NightRunProDeck
-                  gamePack={activeGamePack}
-                  isPro={deckState.isPro}
-                  isPreLaunch={isPreLaunch}
-                  deckCode={deckState.deckCode}
-                  checkedRouteIds={deckState.checkedRouteIds}
-                  onToggleRouteStop={handleToggleRouteStop}
-                  onOpenProModal={() => setShowProModal(true)}
+              {activeTab === 'money' && (
+                <Gta6MoneyRobberyDeck
+                  soundEnabled={deckState.soundEnabled}
+                  spoilerChapter={spoilerChapter}
+                  initialPreset={routeState.preset}
+                  presetKey={routeState.presetKey}
+                />
+              )}
+
+              {activeTab === 'settings' && (
+                <Gta6SettingsTunerDeck
+                  soundEnabled={deckState.soundEnabled}
                   runtimeConfig={runtimeConfig}
+                />
+              )}
+
+              {activeTab === 'platinum' && (
+                <Gta6PlatinumUltimateDeck
                   soundEnabled={deckState.soundEnabled}
+                  spoilerChapter={spoilerChapter}
                   initialPreset={routeState.preset}
                   presetKey={routeState.presetKey}
                 />
@@ -2081,19 +2086,15 @@ export default function App() {
         </>
         )}
 
-        {/* SCOPED PER-GAME DIRECTORY + COLLAPSIBLE CROSS-GAME INDEX */}
+        {/* SCOPED ACTIVE-GAME DIRECTORY + COLLAPSED "BROWSE OTHER 9 GAMES" DRAWER */}
         <section className="seo-directory-hub" aria-label="Unpause Calculator Directory">
           <div className="seo-directory-head">
             <div>
               <h2>
-                {isDedicatedGamePage
-                  ? `${activeGamePack.shortTitle} Calculators & Preset Scenarios`
-                  : 'Popular Unpause Calculators & Scenario Pages'}
+                {`${activeGamePack.shortTitle} Calculators & Launch Scenarios`}
               </h2>
               <p>
-                {isDedicatedGamePage
-                  ? `Dedicated zero-ad ${activeGamePack.fullTitle} scenario presets and deep links.`
-                  : 'Instant zero-ad companion pages indexed across GTA VI and Top 9 live games.'}
+                {`Zero-ad ${activeGamePack.fullTitle} scenario presets and deep links — expand below to jump across all 10 games.`}
               </p>
             </div>
             <button
@@ -2109,7 +2110,7 @@ export default function App() {
             </button>
           </div>
           <div className="seo-directory-grid">
-            {(isDedicatedGamePage ? activeGameGroups : directoryGroups).map((group) => (
+            {activeGameGroups.map((group) => (
               <div key={group.cluster} className="seo-directory-card">
                 <h3>{group.cluster}</h3>
                 <div className="seo-directory-links">
@@ -2131,10 +2132,10 @@ export default function App() {
             ))}
           </div>
 
-          {isDedicatedGamePage && otherGameGroups.length > 0 && (
+          {otherGameGroups.length > 0 && (
             <details className="cross-game-directory-drawer">
               <summary className="cross-game-directory-summary">
-                <span>Switch or Browse Other Unpause Game Suites (9 More Games)</span>
+                <span>Browse Other 9 Games</span>
                 <ChevronDown className="cross-game-drawer-icon" size={16} aria-hidden="true" />
               </summary>
               <div className="seo-directory-grid cross-game-directory-inner">
@@ -2248,14 +2249,6 @@ export default function App() {
                 onClick={handleClearLocalData}
               >
                 {localDataCleared ? 'Local Data Cleared' : 'Clear Local Data'}
-              </button>
-              <button
-                type="button"
-                className="subtle-pill-btn"
-                onClick={() => setShowSponsorModal(true)}
-              >
-                <Megaphone size={13} aria-hidden="true" />
-                <span>Sponsor Slot</span>
               </button>
             </div>
           </div>
@@ -2377,16 +2370,16 @@ export default function App() {
                       {syncInventory.consolesCount} / {MAX_SYNC_PROFILES} Consoles (Free)
                     </span>
                     <span>
-                      <Users size={12} aria-hidden="true" />
-                      {syncInventory.rostersCount} / {MAX_SYNC_PROFILES} Rosters (Free)
-                    </span>
-                    <span>
                       <Bookmark size={12} aria-hidden="true" />
                       {syncInventory.pinsCount} / {MAX_SYNC_PINS_TOTAL} Pins (Free)
                     </span>
                     <span>
                       <KeyRound size={12} aria-hidden="true" />
-                      {syncInventory.safesCount} Safes · {syncInventory.routesCount} Routes
+                      Free Phone ↔ PC QR Sync
+                    </span>
+                    <span>
+                      <Clock size={12} aria-hidden="true" />
+                      Spoiler Shield &amp; 15 Save Slots
                     </span>
                   </>
                 ) : (
@@ -2571,7 +2564,7 @@ export default function App() {
                   <div className="pass-feature-item">
                     <HardDrive size={14} color="var(--teal-dark)" aria-hidden="true" />
                     <span>
-                      {activeGamePack.isGta6Suite ? '16 Console & Squad Presets' : 'Unlimited Saved Pins & Checklists'}
+                      {activeGamePack.isGta6Suite ? '16 Saved Console Setups' : 'Unlimited Saved Pins & Checklists'}
                     </span>
                   </div>
                   <div className="pass-feature-item">
@@ -2583,7 +2576,7 @@ export default function App() {
                   <div className="pass-feature-item">
                     <Clock size={14} color="var(--game-accent)" aria-hidden="true" />
                     <span>
-                      {activeGamePack.isGta6Suite ? '90m & 120m Weeknight Routes' : 'Custom Clan Tag on Share PNGs'}
+                      {activeGamePack.isGta6Suite ? 'Ch. 1–Post Spoiler Shield & Cheats' : 'Custom Clan Tag on Share PNGs'}
                     </span>
                   </div>
                 </div>
@@ -2633,7 +2626,7 @@ export default function App() {
                 </div>
 
                 <p className="sync-legal-fineprint">
-                  All 10 game calculators, 90m/120m weeknight routes, and portable CSV/JSON backups are 100% free with zero checkout required. Questions? Email{' '}
+                  All 10 game calculators, GTA VI launch companions, and portable CSV/JSON backups are 100% free with zero checkout required. Questions? Email{' '}
                   <a
                     href={`mailto:${runtimeConfig.supportEmail}`}
                     className="legal-contact-link"

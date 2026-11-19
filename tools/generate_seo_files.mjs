@@ -119,7 +119,7 @@ function buildLlmsTxt() {
 
   return `# Unpause (playunpause.com)
 
-> Fast, dark-mode, zero-popup browser utility for GTA VI console storage checking, Vice City keypad vaults, integer-exact heist splitting, and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
+> Fast, dark-mode, zero-popup browser utility for GTA VI Launch Day (console storage + Patch 1.002.001, 61 haptic cheats, chapter-gated money & 4-tier robberies, 30fps DF tuner, platinum/15-save tracker) and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
 
 - Canonical Site: ${CANONICAL_ORIGIN}/
 - Extended Reference & Formula Tables: ${CANONICAL_ORIGIN}/llms-full.txt
@@ -131,9 +131,9 @@ ${toolLines}
 
 ## Compliance, Privacy & Attribution
 - All free interactive calculators execute 100% locally in the browser with zero ad-tech scripts and self-hosted fonts.
-- Pre-launch GTA VI figures are clearly labeled as estimates ahead of November 19, 2026 release.
+- GTA VI launch data reflects November 19, 2026 release specs (Base 212 GB + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox).
 - NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
-- All 10 game calculators, 90m/120m weeknight routes, saved console SSD setups, squad crew presets, and CSV/JSON exports are 100% free with zero consumer checkout.
+- All 10 game calculators, GTA VI launch companions, saved console SSD setups, and CSV/JSON exports are 100% free with zero consumer checkout.
 
 ## Legal & Trust Pages
 ${legalLines}
@@ -149,19 +149,21 @@ function formatDownloadEta(gb, mbps) {
 
 function buildLlmsFullTxt() {
   const routes = getSitemapRoutes();
-  const patchGb = gta6Pack.dayOnePatchGb ?? 35;
+  const ps5PatchGb = gta6Pack.dayOnePatchPs5Gb ?? 0.6;
+  const xboxPatchGb = gta6Pack.dayOnePatchXboxGb ?? 1.6;
 
   const consoleRows = (gta6Pack.consoles || [])
-    .map(
-      (c) =>
-        `| ${c.name} | ${c.usableGb} GB usable | ${c.installGb} GB base | ${c.installGb + patchGb} GB (+${patchGb} GB Day-1 patch) | ${c.nzTrickWorks ? 'Est. via Settings' : 'PSN Region Locked'} |`
-    )
+    .map((c) => {
+      const pGb = c.patchGb ?? (c.platform === 'ps5' ? ps5PatchGb : xboxPatchGb);
+      const totalGb = (c.installGb + pGb).toFixed(1);
+      return `| ${c.name} | ${c.usableGb} GB usable | ${c.installGb} GB base | ${totalGb} GB (+${pGb} GB Patch 1.002.001) | ${c.nzStatusShort} |`;
+    })
     .join('\n');
 
   const speedRows = [25, 50, 100, 150, 300, 500, 1000]
     .map(
       (mbps) =>
-        `| ${mbps} Mbps | ${formatDownloadEta(212, mbps)} | ${formatDownloadEta(212 + patchGb, mbps)} |`
+        `| ${mbps} Mbps | ${formatDownloadEta(212, mbps)} | ${formatDownloadEta(212 + xboxPatchGb, mbps)} |`
     )
     .join('\n');
 
@@ -207,8 +209,9 @@ function buildLlmsFullTxt() {
 
   const devexSample = [30000, 50000, 100000, 500000]
     .map((robux) => {
-      const direct = calcRobloxDevEx({ grossRobux: robux, rateId: 'std-2025', groupSplitPct: 100 });
-      return `| ${robux.toLocaleString('en-US')} R$ | $${(robux * 0.0038).toFixed(2)} USD (if already net) | ${direct.afterMarketFee.toLocaleString('en-US')} net R$ -> $${direct.usdPayout.toFixed(2)} USD (after 30% fee) |`;
+      const direct = calcRobloxDevEx({ grossRobux: robux, rateId: 'std-2025', groupSplitPct: 100, isNetEarned: true });
+      const grossAfter = calcRobloxDevEx({ grossRobux: robux, rateId: 'std-2025', groupSplitPct: 100, isNetEarned: false });
+      return `| ${robux.toLocaleString('en-US')} R$ | $${direct.usdPayout.toFixed(2)} USD ($0.0038/R$ Net) | ${grossAfter.afterMarketFee.toLocaleString('en-US')} R$ after 30% Gamepass cut |`;
     })
     .join('\n');
 
@@ -243,13 +246,13 @@ Canonical origin: ${CANONICAL_ORIGIN}
 Total indexable clean routes: ${routes.length}
 Important attribution note: playunpause.com is an independent unofficial utility. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA.
 
-## 1. GTA VI Console Storage Estimates (Pre-Launch Guide Until Nov 19, 2026)
-| Console | Usable OS Storage | GTA VI Base Est. | With +${patchGb} GB Day-1 Patch | NZ Unlock Rule |
+## 1. GTA VI Console Storage Specs (Launch Day Live — Nov 19, 2026)
+| Console | Usable OS Storage | Base Size | W/ Patch 1.002.001 | Spec / Mode |
 | --- | --- | --- | --- | --- |
 ${consoleRows}
 
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
-| Connection Speed | PS5 & Xbox Base (212 GB) | With +${patchGb} GB Patch (${212 + patchGb} GB) |
+| Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.002.001 (${(212 + xboxPatchGb).toFixed(1)} GB) |
 | --- | --- | --- |
 ${speedRows}
 

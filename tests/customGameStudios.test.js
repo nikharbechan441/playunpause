@@ -778,7 +778,7 @@ test('patchMeta feeds dynamic sitemap.xml lastmod and WebPage JSON-LD dateModifi
 
 test('non-GTA6 Sync copy, OBS embed mode, Pro Clan Tag, and multi-night studio checklists wire cleanly', () => {
   const appSrc = fs.readFileSync(path.join(ROOT, 'src/App.jsx'), 'utf8');
-  assert.match(appSrc, /All 10 game calculators, 90m\/120m weeknight routes/);
+  assert.match(appSrc, /All 10 game calculators, GTA VI launch companions/);
   assert.match(appSrc, /tag=playunpause-20/);
   assert.doesNotMatch(appSrc, /16 Cloud Profile Slots/);
   assert.match(appSrc, /isObsOverlayActive/);

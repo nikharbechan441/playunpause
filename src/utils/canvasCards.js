@@ -80,9 +80,9 @@ export function computeStorageDiagnosis(consoleId, deletedGames, fitsDrive) {
     const clipsSize = finiteNum(list.find((g) => g.id === 'media-gallery')?.sizeGb, 45, 0, 100000);
     return `STATUS: CAPTURE CLIPS PURGED (+${clipsSize} GB)`;
   }
-  if (consoleId === 'xss-512') return 'STATUS: 364 GB SERIES S ESTIMATED FIT';
+  if (consoleId === 'xss-512') return 'STATUS: 364 GB SERIES S LAUNCH FIT';
   if (list.length >= 4) return `STATUS: FULL QUEUE CLEARED (${list.length} ITEMS · +${freedGb} GB)`;
-  return 'STATUS: PRELOAD ESTIMATE · SUBJECT TO LAUNCH PATCHES';
+  return 'STATUS: LAUNCH DAY READY · PATCH 1.002.001';
 }
 
 export function computeHostGreedLabel(crewRows) {
@@ -103,7 +103,7 @@ export function renderStorageReceiptCanvas(rawOpts = {}) {
   const consoleName = sanitizeCanvasText(opts.consoleName, 'Console SSD', 64);
   const consoleId = sanitizeCanvasText(opts.consoleId, 'xss-512', 32);
   const usableGb = Math.round(finiteNum(opts.usableGb, 364, 0, 100000));
-  const installSizeGb = Math.round(finiteNum(opts.installSizeGb, 180, 0, 100000));
+  const installSizeGb = Math.round(finiteNum(opts.installSizeGb, 212, 0, 100000) * 10) / 10;
   const alreadyFreeGb = Math.round(finiteNum(opts.alreadyFreeGb, 0, 0, 100000));
   const mbps = Math.round(finiteNum(opts.mbps, 120, 1, 100000));
   const downloadTimeText = sanitizeCanvasText(opts.downloadTimeText, '—', 32).toUpperCase();
@@ -156,7 +156,7 @@ export function renderStorageReceiptCanvas(rawOpts = {}) {
   ctx.textAlign = 'left';
   ctx.font = '600 16px "JetBrains Mono", monospace';
   ctx.fillStyle = '#9CA8BC';
-  ctx.fillText('UNPAUSE // GTA VI PRELOAD SPEC CARD', left, y);
+  ctx.fillText('UNPAUSE // GTA VI LAUNCH SPEC CARD', left, y);
   ctx.textAlign = 'right';
   ctx.fillStyle = accent;
   ctx.fillText(fits ? 'READY' : 'SHORTAGE', right, y);
@@ -185,7 +185,7 @@ export function renderStorageReceiptCanvas(rawOpts = {}) {
   const specCols = [
     { label: 'CLEARED / TARGET', val: `${totalAvailable} / ${installSizeGb} GB`, color: '#F2F5FA' },
     { label: `ETA @ ${mbps} MBPS`, val: downloadTimeText, color: '#38BDF8' },
-    { label: 'NZ UNLOCK (NOV 18)', val: nzStatusLabel, color: '#CBD5E1' },
+    { label: 'LAUNCH STATUS', val: nzStatusLabel, color: '#CBD5E1' },
   ];
   specCols.forEach((col, i) => {
     const cx = left + 18 + colW * i;
@@ -259,9 +259,10 @@ export function renderStorageReceiptCanvas(rawOpts = {}) {
   ctx.textAlign = 'center';
   ctx.fillStyle = accent;
   ctx.font = '700 21px "Space Grotesk", sans-serif';
+  const diffAbs = Math.round(Math.abs(totalAvailable - installSizeGb) * 10) / 10;
   const bannerText = fits
-    ? `DRIVE READY · +${totalAvailable - installSizeGb} GB HEADROOM POST-INSTALL`
-    : `CLEAR ${installSizeGb - totalAvailable} GB MORE (OR UPGRADE INTERNAL NVME)`;
+    ? `DRIVE READY · +${diffAbs} GB HEADROOM POST-INSTALL`
+    : `CLEAR ${diffAbs} GB MORE (OR UPGRADE INTERNAL NVME)`;
   ctx.fillText(fitCanvasText(ctx, bannerText, right - left - 36), width / 2, y + 40);
 
   y += 102;
@@ -272,7 +273,103 @@ export function renderStorageReceiptCanvas(rawOpts = {}) {
   y += 32;
   ctx.fillStyle = '#94A3B8';
   ctx.font = '500 15px "JetBrains Mono", monospace';
-  ctx.fillText('NOV 19 GLOBAL · NOV 18 @ 11:00 UTC NZ · PLAYUNPAUSE.COM', width / 2, y);
+  ctx.fillText('OUT NOW · PATCH 1.002.001 · PLAYUNPAUSE.COM', width / 2, y);
+
+  return canvas;
+}
+
+export function renderLaunchGraveyardCanvas(rawOpts = {}) {
+  if (typeof document === 'undefined') return null;
+  const opts = rawOpts && typeof rawOpts === 'object' ? rawOpts : {};
+  const consoleTitle = sanitizeCanvasText(opts.consoleTitle, 'PS5 Pro (1440p PSSR + RT Shadows)', 72);
+  const fpsNote = sanitizeCanvasText(opts.fpsNote, '30fps Fidelity Spec · Patch 1.002.001', 72);
+  const sacrificedNames = Array.isArray(opts.sacrificedGames)
+    ? opts.sacrificedGames.slice(0, 6).map((s) => sanitizeCanvasText(s, 'Deleted Game', 48)).filter(Boolean)
+    : [];
+  const checkedSettings = Array.isArray(opts.checkedSettings)
+    ? opts.checkedSettings.slice(0, 6).map((s) => sanitizeCanvasText(s, 'Day-1 Setting Verified', 64)).filter(Boolean)
+    : [];
+
+  const width = 900;
+  const height = 740;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.fillStyle = '#0C0916';
+  ctx.fillRect(0, 0, width, height);
+
+  const pad = 42;
+  drawRoundedRect(ctx, pad, pad, width - pad * 2, height - pad * 2, 18);
+  ctx.fillStyle = '#151226';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 89, 100, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#FF5964';
+  ctx.fillRect(pad + 20, pad, width - pad * 2 - 40, 4);
+
+  const left = pad + 40;
+  const right = width - pad - 40;
+  let y = pad + 54;
+
+  ctx.textAlign = 'left';
+  ctx.font = '700 15px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#FF5964';
+  ctx.fillText('UNPAUSE // CONSOLE GRAVEYARD & LAUNCH CARD', left, y);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#2CE5B5';
+  ctx.fillText('OUT NOW · NOV 19', right, y);
+
+  y += 46;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#F8FAFC';
+  ctx.font = '700 30px "Space Grotesk", sans-serif';
+  ctx.fillText(fitCanvasText(ctx, consoleTitle, right - left), left, y);
+
+  y += 30;
+  ctx.fillStyle = '#38BDF8';
+  ctx.font = '600 17px "JetBrains Mono", monospace';
+  ctx.fillText(fitCanvasText(ctx, fpsNote, right - left), left, y);
+
+  y += 38;
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '700 14px "JetBrains Mono", monospace';
+  ctx.fillText('DAY-1 SETTINGS TUNED:', left, y);
+  y += 28;
+  const settingsList = checkedSettings.length
+    ? checkedSettings
+    : ['PS5 FW 26.07-14.23.00 Checked', 'Motion Blur 3 -> 0', 'Hidden Fuel Gauge ON'];
+  settingsList.forEach((item) => {
+    ctx.fillStyle = '#2CE5B5';
+    ctx.font = '600 18px "JetBrains Mono", monospace';
+    ctx.fillText(fitCanvasText(ctx, `✓  ${item}`, right - left), left + 8, y);
+    y += 32;
+  });
+
+  y += 18;
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '700 14px "JetBrains Mono", monospace';
+  ctx.fillText('SACRIFICED FOR 212 GB + PATCH 1.002.001 (GRAVEYARD):', left, y);
+  y += 28;
+  const graveList = sacrificedNames.length
+    ? sacrificedNames
+    : ['Call of Duty HQ (-148 GB)', 'Captured Video Clips (-45 GB)'];
+  graveList.forEach((item) => {
+    ctx.fillStyle = '#FDA4AF';
+    ctx.font = '600 18px "JetBrains Mono", monospace';
+    ctx.fillText(fitCanvasText(ctx, `✕  ${item}`, right - left), left + 8, y);
+    y += 32;
+  });
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FDE68A';
+  ctx.font = '700 16px "JetBrains Mono", monospace';
+  ctx.fillText('VERIFIED AT PLAYUNPAUSE.COM · ZERO POPUPS · 100% FREE', width / 2, height - pad - 24);
 
   return canvas;
 }

@@ -1,17 +1,20 @@
 /**
- * GTA VI Launch Game Pack for Unpause (playunpause.com)
- * 6 balanced console presets (3 Xbox @ 212 GB + 3 PS5 @ 212 GB, official Nov 10 preload) + tactical route waypoints.
+ * GTA VI Launch-Day Game Pack for Unpause (playunpause.com)
+ * 6 balanced console presets (3 Xbox @ 212 GB + 3 PS5 @ 212 GB) + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox).
  */
 export const gta6Pack = {
   id: 'gta-6',
   shortTitle: 'GTA VI',
   fullTitle: 'Grand Theft Auto VI',
-  statusBadge: 'Official Pre-Load: Up to 212 GB',
+  statusBadge: 'LAUNCH DAY · LIVE (Patch 1.002.001)',
   sourceNote:
-    'Retail Xbox/PS5 usable GB verified · Launch Nov 19, 2026 (Rockstar Games) · Up to 212 GB official preload live since Nov 10',
+    'Launch Day Live (Nov 19, 2026) · 212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)',
   installSizeGb: 212,
-  dayOnePatchGb: 35,
-  nzUnlockIsoUtc: '2026-11-18T11:00:00Z', // Midnight Nov 19 NZDT (UTC+13)
+  patchVersion: '1.002.001',
+  dayOnePatchPs5Gb: 0.6,
+  dayOnePatchXboxGb: 1.6,
+  dayOnePatchGb: 1.6,
+  nzUnlockIsoUtc: '2026-11-18T11:00:00Z',
 
   consoles: [
     {
@@ -20,12 +23,13 @@ export const gta6Pack = {
       shortName: 'Series S · 512GB',
       usableGb: 364,
       installGb: 212,
+      patchGb: 1.6,
       platform: 'xbox',
       nzTrickWorks: true,
-      nzStatusShort: 'Est. via Settings',
+      nzStatusShort: 'Live Now · 30fps FSR 4',
       nzDetail:
-        'Community estimate: Xbox rolling midnight unlocks historically follow System Location settings (Nov 18 at 11:00 UTC NZ time, subject to publisher rollout). Standard USB 3.0 drives CANNOT boot Series X|S titles—use compatible expansion cards.',
-      upgradeLabel: 'WD_Black C50 1TB Expansion Card (Plug & Play)',
+        'Digital Foundry launch spec: ~720p base upscaled with FSR 4 at 30fps. With Patch 1.002.001 (+1.6 GB), total install is 213.6 GB of 364 GB usable NVMe. Standard USB 3.0 drives cannot boot Series X|S builds—use Xbox Expansion Cards.',
+      upgradeLabel: 'WD_BLACK C50 1TB Xbox Expansion Card (Plug & Play)',
       upgradeKind: 'xboxCardUrl',
     },
     {
@@ -34,12 +38,13 @@ export const gta6Pack = {
       shortName: 'Series S · 1TB',
       usableGb: 802,
       installGb: 212,
+      patchGb: 1.6,
       platform: 'xbox',
       nzTrickWorks: true,
-      nzStatusShort: 'Est. via Settings',
+      nzStatusShort: 'Live Now · 30fps FSR 4',
       nzDetail:
-        'Based on 802 GB usable NVMe capacity; Xbox rolling midnight unlocks historically follow System Location (Nov 18 at 11:00 UTC NZ time, subject to store license/publisher rollout).',
-      upgradeLabel: 'WD_Black C50 1TB Expansion Card (Plug & Play)',
+        '802 GB usable NVMe capacity handles GTA VI (213.6 GB with Patch 1.002.001) comfortably alongside other installed games. Targets ~720p upscaled via FSR 4 at a locked 30fps.',
+      upgradeLabel: 'WD_BLACK C50 1TB Xbox Expansion Card (Plug & Play)',
       upgradeKind: 'xboxCardUrl',
     },
     {
@@ -48,12 +53,13 @@ export const gta6Pack = {
       shortName: 'Xbox Series X · 1TB',
       usableGb: 802,
       installGb: 212,
+      patchGb: 1.6,
       platform: 'xbox',
       nzTrickWorks: true,
-      nzStatusShort: 'Est. via Settings',
+      nzStatusShort: 'Live Now · 120Hz VRR',
       nzDetail:
-        'Xbox rolling midnight unlocks historically follow System Location settings (New Zealand unlocks Nov 18 at 11:00 UTC, subject to store license region checks).',
-      upgradeLabel: 'WD_Black C50 1TB/2TB Xbox Expansion Card',
+        'Digital Foundry launch spec: Series X supports 120Hz VRR frame-pacing options on 30fps output. Total footprint with Patch 1.002.001 (+1.6 GB) is 213.6 GB out of 802 GB usable storage.',
+      upgradeLabel: 'WD_BLACK C50 1TB Xbox Expansion Card',
       upgradeKind: 'xboxCardUrl',
     },
     {
@@ -62,12 +68,13 @@ export const gta6Pack = {
       shortName: 'PS5 Base / Slim Digital · 825GB',
       usableGb: 667,
       installGb: 212,
+      patchGb: 0.6,
       platform: 'ps5',
       nzTrickWorks: false,
-      nzStatusShort: 'PSN Region Locked',
+      nzStatusShort: 'FW 26.07-14.23.00 Req',
       nzDetail:
-        'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 PS5 Slim Digital share ~667 GB usable NVMe space. Changing system clock does NOT unlock early—PS5 unlocks strictly follow the region your PSN account was created in.',
-      upgradeLabel: '2TB PCIe Gen4 NVMe M.2 SSD w/ Heatsink (5,500+ MB/s)',
+        'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 PS5 Slim Digital expose ~667 GB usable SSD space (212.6 GB with Patch 1.002.001 +0.6 GB). Mandatory: verify PS5 system firmware 26.07-14.23.00 is installed to prevent launch stutter/crashes.',
+      upgradeLabel: 'WD_BLACK SN850P 2TB M.2 NVMe w/ Heatsink (PS5 Officially Licensed)',
       upgradeKind: 'ps5SsdUrl',
     },
     {
@@ -76,12 +83,13 @@ export const gta6Pack = {
       shortName: 'PS5 Slim Disc · 1TB',
       usableGb: 848,
       installGb: 212,
+      patchGb: 0.6,
       platform: 'ps5',
       nzTrickWorks: false,
-      nzStatusShort: 'PSN Region Locked',
+      nzStatusShort: 'FW 26.07-14.23.00 Req',
       nzDetail:
-        'PS5 digital pre-loads unlock strictly at midnight in your PSN Store billing country. System timezone changes have zero effect.',
-      upgradeLabel: '2TB Gen4 M.2 NVMe SSD w/ Integrated Heatsink',
+        'PS5 Slim Disc ships with 848 GB usable SSD storage (212.6 GB with Patch 1.002.001 +0.6 GB). Confirm system software 26.07-14.23.00 is applied before launching Campaign.',
+      upgradeLabel: 'WD_BLACK SN850P 2TB M.2 NVMe w/ Integrated Heatsink',
       upgradeKind: 'ps5SsdUrl',
     },
     {
@@ -90,12 +98,13 @@ export const gta6Pack = {
       shortName: 'PS5 Pro · 2TB',
       usableGb: 1890,
       installGb: 212,
+      patchGb: 0.6,
       platform: 'ps5',
       nzTrickWorks: false,
-      nzStatusShort: 'PSN Region Locked',
+      nzStatusShort: '1440p PSSR + RT Shadows',
       nzDetail:
-        'Plenty of internal SSD room for 212 GB + Day-1 patches. Reminder: physical disc copies require the separate Sony Detachable Disc Drive (CFI-ZDD1).',
-      upgradeLabel: 'Extra 2TB Gen4 M.2 NVMe Expansion Drive',
+        'Digital Foundry top console spec: 1440p PSSR reconstruction + Ray-Traced Shadows at 30fps, using 212.6 GB with Patch 1.002.001 (+0.6 GB). Ensure PS5 firmware 26.07-14.23.00 is installed.',
+      upgradeLabel: 'WD_BLACK SN850P 2TB/4TB M.2 NVMe Expansion Drive',
       upgradeKind: 'ps5SsdUrl',
     },
   ],
@@ -124,171 +133,10 @@ export const gta6Pack = {
     'Mount Kalaga',
   ],
 
-  safes: [
-    {
-      id: 'pg-pawn-backroom',
-      title: 'Port Gellhorn Regional Keypad Tracker',
-      district: 'Port Gellhorn',
-      code: '----',
-      clueLocation: 'Awaiting live in-game verification at launch',
-      reward: 'Verified Keypad Slot · Unlocks Live',
-      verified: false,
-      verifiedStatus: 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock',
-      freeTier: true,
-    },
-    {
-      id: 'vb-ocean-motel-204',
-      title: 'Vice Beach Regional Keypad Tracker',
-      district: 'Vice Beach',
-      code: '----',
-      clueLocation: 'Awaiting live in-game verification at launch',
-      reward: 'Verified Keypad Slot · Unlocks Live',
-      verified: false,
-      verifiedStatus: 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock',
-      freeTier: true,
-    },
-    {
-      id: 'lk-marina-boathouse',
-      title: 'Leonida Keys Regional Keypad Tracker',
-      district: 'Leonida Keys',
-      code: '----',
-      clueLocation: 'Awaiting live in-game verification at launch',
-      reward: 'Verified Keypad Slot · Unlocks Live',
-      verified: false,
-      verifiedStatus: 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock',
-      freeTier: true,
-    },
-    {
-      id: 'gr-airboat-shack',
-      title: 'Grassrivers Regional Keypad Tracker',
-      district: 'Grassrivers',
-      code: '----',
-      clueLocation: 'Awaiting live in-game verification at launch',
-      reward: 'Verified Keypad Slot · Unlocks Live',
-      verified: false,
-      verifiedStatus: 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock',
-      freeTier: true,
-    },
-    {
-      id: 'am-refinery-foreman',
-      title: 'Ambrosia Regional Keypad Tracker',
-      district: 'Ambrosia',
-      code: '----',
-      clueLocation: 'Awaiting live in-game verification at launch',
-      reward: 'Verified Keypad Slot · Unlocks Live',
-      verified: false,
-      verifiedStatus: 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock',
-      freeTier: true,
-    },
-    {
-      id: 'mk-ranger-tower',
-      title: 'Mount Kalaga Regional Keypad Tracker',
-      district: 'Mount Kalaga',
-      code: '----',
-      clueLocation: 'Awaiting live in-game verification at launch',
-      reward: 'Verified Keypad Slot · Unlocks Live',
-      verified: false,
-      verifiedStatus: 'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock',
-      freeTier: true,
-    },
-  ],
-
-  heistPresets: [
-    { id: 'ocean-vault', title: 'Vice Beach Reserve Job', grossDollars: 2_450_000, supportFeePct: 12 },
-    { id: 'keys-yacht', title: 'Keys Offshore Yacht Sweep', grossDollars: 1_320_000, supportFeePct: 14 },
-    { id: 'port-armored', title: 'Port Gellhorn Armored Depot', grossDollars: 680_000, supportFeePct: 10 },
-    { id: 'diner-blitz', title: 'Early Story Register & Brinks Run', grossDollars: 145_000, supportFeePct: 8 },
-  ],
-
-  marketFlips: [
-    {
-      id: 'flip-pharma',
-      step: 'Flip #1 · Pre-Mission Setup',
-      buyTicker: 'BETTA / Rival Bio-Lab',
-      timingRule: 'Invest 100% across BOTH protagonists BEFORE triggering the contract phone call',
-      estPeakPct: 68,
-      reboundTicker: 'Target Corp (48h post-drop)',
-      reboundPct: 45,
-    },
-    {
-      id: 'flip-shipping',
-      step: 'Flip #2 · Port Cargo Sabotage',
-      buyTicker: 'Coastline Freight Rival',
-      timingRule: 'Buy prior to dockyard briefing; sleep 2x in safehouse until chart plateaus, never hold past 36 in-game hrs',
-      estPeakPct: 82,
-      reboundTicker: 'Harbor Logistics Rebound',
-      reboundPct: 52,
-    },
-    {
-      id: 'flip-tech',
-      step: 'Flip #3 · Vice Media / Tech Tank',
-      buyTicker: 'Competitor Telecom Ticker',
-      timingRule: 'Save these side contracts for Act III to compound $1.5M+ heist seed capital toward $8M+',
-      estPeakPct: 95,
-      reboundTicker: 'Post-Crash Bounce Play',
-      reboundPct: 60,
-    },
-  ],
-
-  missablesShield: [
-    {
-      id: 'ch1-shield',
-      chapter: 'Act I · Port Gellhorn Lockdown Check',
-      freePreview: true,
-      alertLevel: 'amber',
-      triggerWarning: 'Before starting the final motel checkout mission in Port Gellhorn',
-      spoilerFreeRule:
-        'Clear the two roadside pawn stashes and grab the tuned coupe behind the strip auto shop first—the starter safehouse garage locks temporarily once you head east.',
-      itemsAtRisk: 3,
-    },
-    {
-      id: 'ch2-shield',
-      chapter: 'Act II · Vice Beach Burner Contract Hold',
-      freePreview: true,
-      alertLevel: 'coral',
-      triggerWarning: 'Before answering payphone / burner corporate hit contracts in Vice Beach',
-      spoilerFreeRule:
-        'Leave market-moving corporate contracts untouched with tiny starter cash. Wait until after your first major vault payout so dual-protagonist stock flips multiply 7-figure capital.',
-      itemsAtRisk: 4,
-    },
-    {
-      id: 'ch3-shield',
-      chapter: 'Act III · Grassrivers & Keys Marina Gate',
-      freePreview: true,
-      alertLevel: 'coral',
-      triggerWarning: 'Point-of-no-return staging prompt at the Keys charter dock',
-      spoilerFreeRule:
-        'Complete the Grassrivers airboat shed encounter and Mt. Kalaga lookout pickup before launching the marina finale sequence.',
-      itemsAtRisk: 2,
-    },
-  ],
-
   routeWaypoints: [
     { id: 'wp-pg', num: '01', name: 'Port Gellhorn', region: 'West Coast', x: 78, y: 112, color: '#FF5964' },
     { id: 'wp-gr', num: '02', name: 'Grassrivers', region: 'Wetlands', x: 204, y: 122, color: '#2CE5B5' },
     { id: 'wp-vb', num: '03', name: 'Vice Beach', region: 'East Coast', x: 342, y: 84, color: '#38BDF8' },
     { id: 'wp-lk', num: '04', name: 'Leonida Keys', region: 'Southern Chain', x: 286, y: 164, color: '#F59E0B' },
   ],
-
-  nightRoutes: {
-    45: [
-      { id: 'r45-1', waypointId: 'wp-pg', district: 'Port Gellhorn', mins: 8, title: 'Display Calibration & Night-Audio Check', detail: 'Disable Motion Blur + Chromatic Aberration; lock Performance RT before starting missions.' },
-      { id: 'r45-2', waypointId: 'wp-pg', district: 'Port Gellhorn', mins: 12, title: 'Port Gellhorn Pawn Safe + Suppressor Mod', detail: 'Quiet indoor pickup saving ~$9,200 on early gun-shop attachments.' },
-      { id: 'r45-3', waypointId: 'wp-gr', district: 'Grassrivers', mins: 15, title: 'Tuned Strip Coupe into Safehouse Bay', detail: 'Bank the free tuned coupe inside your starter bay for permanent zero-cost recovery.' },
-      { id: 'r45-4', waypointId: 'wp-vb', district: 'Vice Beach', mins: 10, title: 'Manual Save Slot #2 Before East Crossing', detail: 'Locks in Act I clean state prior to crossing into Vice Beach territory.' },
-    ],
-    90: [
-      { id: 'r90-1', waypointId: 'wp-pg', district: 'Port Gellhorn', mins: 10, title: 'Performance Mode + Night Dynamic Audio', detail: 'Enable Midnight Mix in Audio settings for crisp dialogue at low TV/headset volume.' },
-      { id: 'r90-2', waypointId: 'wp-pg', district: 'Port Gellhorn', mins: 18, title: 'Pawn Backroom Safe + US-1 Courier Sweep', detail: 'Chains Port Gellhorn safe + highway armored stop for clean $14k bankroll.' },
-      { id: 'r90-3', waypointId: 'wp-vb', district: 'Vice Beach', mins: 22, title: 'Ocean Drive Motel 204 Keycard & Stash', detail: 'Secures Vice Beach keycard and rooftop armor spawn near boardwalk.' },
-      { id: 'r90-4', waypointId: 'wp-gr', district: 'Grassrivers', mins: 25, title: 'One Core Story Beat + Grassrivers Shed', detail: 'Clears early Act bottleneck while leaving corporate phone hits unspent.' },
-      { id: 'r90-5', waypointId: 'wp-lk', district: 'Leonida Keys', mins: 15, title: 'Keys Fence Deposit & Clean Safehouse Exit', detail: 'Drop heat and deposit loose street cash before powering down for the night.' },
-    ],
-    120: [
-      { id: 'r120-1', waypointId: 'wp-pg', district: 'Port Gellhorn', mins: 15, title: 'Clockwise Port Gellhorn 3-Stash Circuit', detail: 'Clears northern strip safes in one zero-backtrack loop.' },
-      { id: 'r120-2', waypointId: 'wp-lk', district: 'Leonida Keys', mins: 30, title: 'Keys Marina Dockside Keypad & Heavy Frame', detail: 'Grabs the upgraded sidearm frame before heavy armor patrols start spawning.' },
-      { id: 'r120-3', waypointId: 'wp-vb', district: 'Vice Beach', mins: 45, title: 'Dual Story Missions + Crew Hacker Affinity', detail: 'Unlocks lower NPC cut tiers on upcoming heist planning boards.' },
-      { id: 'r120-4', waypointId: 'wp-gr', district: 'Grassrivers', mins: 30, title: 'Airboat Workshop Safe & Final Bank Wrap', detail: 'Natural 2-hour save cutoff with zero mid-chase cliffhangers.' },
-    ],
-  },
 };

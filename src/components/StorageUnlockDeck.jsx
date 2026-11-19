@@ -100,8 +100,14 @@ export default function StorageUnlockDeck({
   );
 
   const baseInstallGb = selectedConsole?.installGb ?? gamePack.installSizeGb ?? 212;
-  const patchGb = includeDayOnePatch ? (gamePack.dayOnePatchGb ?? 35) : 0;
-  const installTargetGb = Math.max(100, Math.min(600, baseInstallGb + patchGb + customOffsetGb));
+  const patchGb = includeDayOnePatch
+    ? (selectedConsole?.patchGb ??
+        (selectedConsole?.platform === 'ps5'
+          ? (gamePack.dayOnePatchPs5Gb ?? 0.6)
+          : (gamePack.dayOnePatchXboxGb ?? 1.6)))
+    : 0;
+  const roundGb = (val) => Math.round(val * 10) / 10;
+  const installTargetGb = roundGb(Math.max(100, Math.min(600, baseInstallGb + patchGb + customOffsetGb)));
   const usableGb = selectedConsole?.usableGb || 364;
   const clampedFreeGb = Math.min(alreadyFreeGb, usableGb);
 
@@ -116,8 +122,8 @@ export default function StorageUnlockDeck({
   );
 
   const totalClearedGb = Math.min(usableGb, clampedFreeGb + freedByUninstallGb);
-  const shortfallGb = Math.max(0, installTargetGb - totalClearedGb);
-  const surplusGb = Math.max(0, totalClearedGb - installTargetGb);
+  const shortfallGb = roundGb(Math.max(0, installTargetGb - totalClearedGb));
+  const surplusGb = roundGb(Math.max(0, totalClearedGb - installTargetGb));
   const fits = shortfallGb === 0;
 
   const nzCountdown = useMemo(() => {
@@ -215,11 +221,11 @@ export default function StorageUnlockDeck({
     }
     const res = await shareOrDownloadCanvas(
       canvas,
-      `unpause-preload-${selectedConsole.id}.png`,
-      'GTA VI Preload Spec Card'
+      `unpause-launch-${selectedConsole.id}.png`,
+      'GTA VI Launch Spec Card'
     );
     setIsExporting(false);
-    flashToast(res.method === 'shared' ? 'Spec card shared.' : 'Preload Spec PNG saved.');
+    flashToast(res.method === 'shared' ? 'Spec card shared.' : 'Launch Spec PNG saved.');
   };
 
   const handleCopyCard = async () => {
@@ -308,17 +314,17 @@ export default function StorageUnlockDeck({
   };
 
   return (
-    <section className="deck-panel" aria-label="Console SSD Preload & Launch Unlock Calculator">
+    <section className="deck-panel" aria-label="Console SSD & Patch 1.002.001 Calculator">
       {isEmbed && (
         <div className="studio-hero-band">
           <div>
             <div className="panel-eyebrow">
               <HardDrive size={13} aria-hidden="true" />
-              <span>CONSOLES &amp; LAUNCH SPEC · FREE STORAGE FIT PLANNER</span>
+              <span>CONSOLES &amp; PATCH 1.002.001 · FREE STORAGE FIT PLANNER</span>
             </div>
-            <h1 className="panel-title">GTA VI Storage &amp; Preload Unlock Planner</h1>
+            <h1 className="panel-title">GTA VI Storage &amp; Launch Fit Planner</h1>
             <p className="panel-subtitle">
-              Check PS5 &amp; Xbox SSD headroom, uninstall savings, and download ETA in seconds.
+              Check PS5 &amp; Xbox SSD headroom with Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) and download ETA.
             </p>
           </div>
         </div>
@@ -331,7 +337,7 @@ export default function StorageUnlockDeck({
             background: fits ? 'var(--teal-soft)' : 'var(--coral-soft)',
           }}
         >
-          <div>
+          <div style={{ flex: '1 1 180px', minWidth: 0 }}>
             <div className="mono" style={{ fontSize: '0.78rem', fontWeight: 700, color: fits ? 'var(--teal-dark)' : 'var(--coral)' }}>
               {fits ? `FITS ON ${selectedConsole.shortName.toUpperCase()}` : `SHORT BY ${shortfallGb} GB`}
             </div>
@@ -339,8 +345,8 @@ export default function StorageUnlockDeck({
               {totalClearedGb} GB free vs {installTargetGb} GB req · ETA {downloadTimeText}
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', maxWidth: '100%' }}>
               {!fits && (
                 <a
                   href={upgradeUrl}
@@ -358,7 +364,7 @@ export default function StorageUnlockDeck({
               </span>
             </div>
             {!fits && (
-              <small style={{ fontSize: '0.67rem', color: 'var(--ink-muted)' }}>
+              <small style={{ fontSize: '0.67rem', color: 'var(--ink-muted)', lineHeight: 1.35, maxWidth: '100%', overflowWrap: 'anywhere' }}>
                 (As an Amazon Associate I earn from qualifying purchases.)
               </small>
             )}
@@ -368,8 +374,8 @@ export default function StorageUnlockDeck({
         <div className="storage-stage-grid">
           {/* LEFT WORKBENCH */}
           <div>
-            <div className="meter-labels" style={{ marginBottom: '10px' }}>
-              <h2 className="section-label" style={{ margin: 0 }}>Pick your console</h2>
+            <div className="meter-labels" style={{ marginBottom: '10px', paddingTop: '2px' }}>
+              <h2 className="section-label" style={{ margin: 0, lineHeight: 1.35 }}>Pick your console</h2>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"
@@ -380,7 +386,7 @@ export default function StorageUnlockDeck({
                     setIncludeDayOnePatch((v) => !v);
                   }}
                 >
-                  +{gamePack.dayOnePatchGb ?? 35} GB Day-1 Patch {includeDayOnePatch ? '(On)' : '(Off)'}
+                  +0.6 GB PS5 / +1.6 GB Xbox (Patch 1.002.001) {includeDayOnePatch ? '(On)' : '(Off)'}
                 </button>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <button
@@ -714,12 +720,12 @@ export default function StorageUnlockDeck({
                   }}
                 >
                   {fits
-                    ? `READY FOR PRELOAD · +${surplusGb} GB BUFFER`
+                    ? `READY TO PLAY · +${surplusGb} GB BUFFER`
                     : `SHORT ${shortfallGb} GB · CLEAR MORE GAMES`}
                 </div>
 
                 <div className="receipt-diagnosis">{diagnosisLine}</div>
-                <div className="receipt-domain">NOV 19 GLOBAL · NOV 18 (11:00 UTC NZ) · PLAYUNPAUSE.COM</div>
+                <div className="receipt-domain">OUT NOW (NOV 19) · PATCH 1.002.001 · PLAYUNPAUSE.COM</div>
               </div>
             </div>
 

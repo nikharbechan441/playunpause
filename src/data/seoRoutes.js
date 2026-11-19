@@ -31,9 +31,12 @@ export const GAME_TO_CANONICAL_PATH = {
 
 export const TAB_TO_CANONICAL_PATH = {
   storage: '/gta-6/storage',
-  safes: '/gta-6/safe-codes',
-  squad: '/gta-6/heist-split',
-  nightrun: '/gta-6/night-run',
+  cheats: '/gta-6/cheats',
+  money: '/gta-6/money',
+  robberies: '/gta-6/robberies',
+  settings: '/gta-6/settings',
+  platinum: '/gta-6/platinum',
+  ultimate: '/gta-6/ultimate',
 };
 
 export const LEGAL_META = {
@@ -41,9 +44,9 @@ export const LEGAL_META = {
     path: '/legal/terms',
     title: 'Terms of Service & ECTA Disclosures — Unpause',
     description:
-      'Read Unpause Terms of Service, ECTA s.43 disclosures, Nov 19 GTA VI launch notes, and free utility terms. Support: hello@playunpause.com.',
+      'Read Unpause Terms of Service, ECTA s.43 disclosures, GTA VI launch-day tools, and free utility terms. Support: hello@playunpause.com.',
     h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, weeknight routes, OBS overlays, 16 saved setups, and CSV/JSON exports are 100% free with zero self-serve consumer checkout. Grand Theft Auto VI launches November 19, 2026 as single-player, with official preload live since November 10 (up to 212 GB on PS5 & Xbox). Full ECTA s.43(1) physical service address and phone particulars for $149/day B2B sponsor contracts are provided on written request via sponsors@playunpause.com prior to invoicing. Support: hello@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, GTA VI launch companions, OBS overlays, 16 saved setups, and CSV/JSON exports are 100% free with zero self-serve consumer checkout. Grand Theft Auto VI launched November 19, 2026 (212 GB Base + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox). Full ECTA s.43(1) physical service address and phone particulars for $149/day B2B sponsor contracts are provided on written request via sponsors@playunpause.com prior to invoicing. Support: hello@playunpause.com.',
   },
   privacy: {
     path: '/legal/privacy',
@@ -59,7 +62,7 @@ export const LEGAL_META = {
     description:
       'Explore Unpause moderation rules for $149/day verified header sponsorships, manual invoicing, and legacy receipt support details online.',
     h1: 'Sponsored Ad Rules & Support Policy',
-    body: 'All playunpause.com calculators, routes, and OBS overlays are 100% free with zero consumer billing. Header sponsors ($149/24h via direct inquiry to sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation plus ECTA s.43(1) supplier particulars prior to invoicing, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited. Legacy support: hello@playunpause.com.',
+    body: 'All playunpause.com calculators, GTA VI launch companions, and OBS overlays are 100% free with zero consumer billing. Header sponsors ($149/24h via direct inquiry to sponsors@playunpause.com) require 18+/business purchasers, public HTTPS links, manual moderation plus ECTA s.43(1) supplier particulars prior to invoicing, and explicit Sponsored: labeling; gambling, RMT, malware, NSFW, and Punycode domains are prohibited. Legacy support: hello@playunpause.com.',
   },
   ip: {
     path: '/legal/ip',
@@ -125,18 +128,18 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'Xbox Series S 512GB',
     title: 'GTA 6 Xbox Series S 512GB Fit Check (212 GB) — Unpause',
     description:
-      'Will GTA 6 fit on Xbox Series S 512GB? Calculate exact 212 GB vs 364 GB usable NVMe headroom, see which games to uninstall, and check expansion cards now.',
+      'Will GTA 6 fit on Xbox Series S 512GB? Calculate exact 212 GB + Patch 1.002.001 (+1.6 GB) vs 364 GB usable NVMe headroom and expansion cards.',
     h1: 'Will GTA VI Fit on Xbox Series S (512 GB)?',
     answer:
-      'Xbox Series S (512 GB) provides 364 GB of usable internal NVMe space. With Rockstar’s official up-to-212 GB preload live since Nov 10, GTA VI consumes 58.2% of your usable drive—leaving 152 GB free when empty, or requiring ~72 GB cleared if you have 140 GB open.',
+      'Xbox Series S (512 GB) provides 364 GB of usable internal NVMe space. With Base 212 GB + Patch 1.002.001 (+1.6 GB = 213.6 GB total), GTA VI uses 58.7% of your usable drive—leaving 150.4 GB spare.',
     faqs: [
       {
         q: 'Can Xbox Series S run GTA 6 off a cheap USB external drive?',
         a: 'No. Current-gen Xbox Series X|S titles must run from internal NVMe or an official Storage Expansion Card. Standard USB 3.0 drives only archive cold games.',
       },
       {
-        q: 'Does the Xbox New Zealand trick work on Series S?',
-        a: 'Historically, switching Xbox System Location to New Zealand unlocks participating digital titles at Nov 18 11:00 UTC (subject to publisher rollout).',
+        q: 'Does Xbox Series S support 30fps FSR 4?',
+        a: 'Yes. Digital Foundry launch testing confirms Series S renders ~720p native upscaled cleanly with FSR 4 at a 30fps target.',
       },
     ],
   },
@@ -148,10 +151,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'Xbox Series S 1TB',
     title: 'GTA 6 Xbox Series S 1TB Storage Check (212 GB) — Unpause',
     description:
-      'Check GTA 6 fit on the Carbon Black Xbox Series S 1TB (802 GB usable). Compare 212 GB install + Day-1 patch headroom and download time in seconds, ad-free.',
+      'Check GTA 6 fit on Xbox Series S 1TB (802 GB usable). Compare 212 GB base + Patch 1.002.001 (+1.6 GB Xbox) headroom and download ETA in seconds.',
     h1: 'GTA VI Storage Check for Xbox Series S (1 TB)',
     answer:
-      'The 1 TB Xbox Series S exposes 802 GB of usable NVMe storage. The official 212 GB preload leaves 590 GB for other titles—enough for Call of Duty HQ, Fortnite, and EA FC 27 alongside GTA VI with zero external card needed.',
+      'The 1 TB Xbox Series S exposes 802 GB of usable NVMe storage. GTA VI Base (212 GB) + Patch 1.002.001 (+1.6 GB = 213.6 GB) leaves 588.4 GB for CoD HQ, Fortnite, and EA FC 27 with zero expansion card needed.',
   },
   {
     slug: 'xbox-series-x-1tb',
@@ -159,12 +162,12 @@ const CONSOLE_SEO_SPECS = [
     freeGb: 260,
     includePatch: false,
     shortLabel: 'Xbox Series X 1TB',
-    title: 'GTA 6 Xbox Series X 1TB Storage & NZ Unlock — Unpause',
+    title: 'GTA 6 Xbox Series X 1TB Storage & 120Hz VRR — Unpause',
     description:
-      'Calculate Xbox Series X 1TB (802 GB usable) headroom for GTA 6 212 GB preload, Day-1 patch space, Mbps download ETA, and Nov 18 New Zealand midnight unlock rules.',
-    h1: 'GTA VI Storage Fit & NZ Unlock on Xbox Series X (1 TB)',
+      'Calculate Xbox Series X 1TB (802 GB usable) headroom for GTA 6 212 GB + Patch 1.002.001 (+1.6 GB), Mbps download ETA, and 120Hz VRR 30fps specs.',
+    h1: 'GTA VI Storage Fit & 120Hz VRR on Xbox Series X (1 TB)',
     answer:
-      'Xbox Series X 1 TB provides 802 GB of usable internal storage, so Rockstar’s official 212 GB GTA VI preload uses 26.4% of capacity (or 30.8% with a +35 GB Day-1 patch). Test your exact free space and download speed live below.',
+      'Xbox Series X 1 TB provides 802 GB of usable internal storage, so GTA VI Base (212 GB) + Patch 1.002.001 (+1.6 GB = 213.6 GB) uses 26.6% of capacity and supports 120Hz VRR output.',
   },
   {
     slug: 'ps5-base-825gb',
@@ -174,10 +177,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'PS5 Base / Slim Digital 825GB',
     title: 'GTA 6 PS5 825GB & CFI-2100 Storage Check — Unpause',
     description:
-      'Does 212 GB GTA 6 fit on a PS5 Base or Sept 2025 CFI-2100 Slim Digital (667 GB usable)? Clear installed games, check +35 GB patch headroom, and export Spec PNGs.',
+      'Does 212 GB GTA 6 fit on PS5 Base or Sept 2025 CFI-2100 Slim Digital (667 GB usable)? Check Patch 1.002.001 (+0.6 GB) & PS5 FW 26.07-14.23.00.',
     h1: 'Will GTA VI Fit on PS5 Base / Slim Digital (825 GB)?',
     answer:
-      'Both launch PS5 models and Sony’s Sept 2025 CFI-2100 Slim Digital 825GB expose 667 GB of usable SSD space. The official 212 GB GTA VI preload takes 31.8% of the drive (247 GB with a +35 GB Day-1 buffer), leaving room once older staples are cleared.',
+      'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 Slim Digital expose 667 GB of usable SSD space (212.6 GB with Patch 1.002.001 +0.6 GB). Always confirm PS5 Firmware 26.07-14.23.00 is installed.',
   },
   {
     slug: 'ps5-slim-1tb',
@@ -187,10 +190,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'PS5 Slim Disc 1TB',
     title: 'GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause',
     description:
-      'Test GTA 6 212 GB preload space on PS5 Slim Disc 1TB (848 GB usable). Check remaining NVMe headroom, download ETA by Mbps, and official PSN region unlock timing.',
+      'Test GTA 6 212 GB + Patch 1.002.001 (+0.6 GB) space on PS5 Slim Disc 1TB (848 GB usable). Check remaining NVMe headroom & FW 26.07-14.23.00 notes.',
     h1: 'GTA VI Storage Check for PS5 Slim Disc (1 TB · 848 GB)',
     answer:
-      'PS5 Slim Disc models ship with 848 GB of usable internal SSD capacity—181 GB more than 825GB models. GTA VI (up to 212 GB) fills exactly 25.0% of usable storage, leaving 636 GB for remaining games and capture clips.',
+      'PS5 Slim Disc models ship with 848 GB usable SSD capacity. GTA VI Base (212 GB) + Patch 1.002.001 (+0.6 GB = 212.6 GB) uses ~25.1% of the drive, leaving 635.4 GB spare.',
   },
   {
     slug: 'ps5-pro-2tb',
@@ -198,25 +201,25 @@ const CONSOLE_SEO_SPECS = [
     freeGb: 950,
     includePatch: false,
     shortLabel: 'PS5 Pro 2TB',
-    title: 'GTA 6 PS5 Pro 2TB Storage & Patch Check — Unpause',
+    title: 'GTA 6 PS5 Pro 2TB Storage & 1440p PSSR — Unpause',
     description:
-      'Check GTA 6 212 GB + 35 GB patch impact on PS5 Pro (1,890 GB usable SSD), calculate gigabit preload ETA, and confirm PSN regional midnight launch timing now.',
-    h1: 'GTA VI Storage & Gigabit ETA on PS5 Pro (2 TB)',
+      'Check GTA 6 212 GB + Patch 1.002.001 (+0.6 GB PS5) impact on PS5 Pro (1,890 GB usable SSD) plus Digital Foundry 1440p PSSR + RT Shadows specs.',
+    h1: 'GTA VI Storage & 1440p PSSR Spec on PS5 Pro (2 TB)',
     answer:
-      'PlayStation 5 Pro delivers 1,890 GB of usable SSD space, meaning Rockstar’s official 212 GB GTA VI preload uses just 11.2% of the internal drive. Calculate download duration at your fiber speed and check PSN disc-drive notes below.',
+      'PlayStation 5 Pro delivers 1,890 GB of usable SSD space, meaning GTA VI Base (212 GB) + Patch 1.002.001 (+0.6 GB = 212.6 GB) uses just 11.2% of internal storage while running at 1440p PSSR + RT Shadows.',
   },
   {
     slug: '212gb-day-one-patch',
     consoleId: 'ps5-base',
     freeGb: 190,
     includePatch: true,
-    shortLabel: '212 GB + 35 GB Patch',
-    title: 'GTA 6 212 GB + Day-1 Patch Storage Buffer — Unpause',
+    shortLabel: '212 GB + Patch 1.002.001',
+    title: 'GTA 6 Patch 1.002.001 Size (+0.6 GB PS5 / +1.6 GB Xbox) — Unpause',
     description:
-      'Plan for GTA 6 official up-to-212 GB preload plus an estimated 35 GB Day-1 launch patch buffer across PS5 and Xbox consoles so your download never stalls.',
-    h1: 'GTA VI 212 GB Preload + Estimated 35 GB Day-1 Patch Check',
+      'Compare GTA 6 Launch Patch 1.002.001 exact sizes: 212.6 GB total on PS5 (+0.6 GB patch) and 213.6 GB total on Xbox Series X|S (+1.6 GB patch).',
+    h1: 'GTA VI Base (212 GB) + Patch 1.002.001 Size Breakdown',
     answer:
-      'Including an optional +35 GB Day-1 launch patch brings total required space to ~247 GB across both PlayStation 5 and Xbox Series X|S. Keeping this buffer free avoids failed midnight unpacking or emergency uninstalls.',
+      'Launch Patch 1.002.001 adds +0.6 GB on PlayStation 5 (212.6 GB total) and +1.6 GB on Xbox Series X|S (213.6 GB total), keeping your SSD requirements lean without bloated extra buffers.',
   },
   {
     slug: 'external-usb-drive-xbox-ps5',
@@ -226,10 +229,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'USB vs NVMe Rules',
     title: 'Can GTA 6 Run From External USB Drive? Rules — Unpause',
     description:
-      'Check PS5 and Xbox Series S|X external drive rules before preloading GTA 6: why USB 3.0 drives only store cold games and which NVMe expansions actually boot.',
+      'Check PS5 and Xbox Series S|X external drive rules for GTA 6: why USB 3.0 drives only store cold games and which NVMe expansions actually boot.',
     h1: 'External USB Drive vs NVMe Expansion Rules for GTA VI',
     answer:
-      'Neither PS5 nor Xbox Series X|S can play current-gen titles from external USB 3.0 HDDs or SSDs. You can park Call of Duty or RDR2 on USB cold storage to clear 212 GB internally, or install a PCIe Gen4 M.2 SSD (PS5) / Xbox Expansion Card.',
+      'Neither PS5 nor Xbox Series X|S can play GTA VI from external USB 3.0 HDDs or SSDs. Park CoD or RDR2 on USB cold storage to clear 212+ GB internally, or install a PCIe Gen4 M.2 SSD (PS5) / Xbox Expansion Card.',
   },
 ];
 
@@ -238,23 +241,23 @@ const UNLOCK_SEO_SPECS = [
     slug: 'new-zealand-trick-xbox-ps5',
     path: '/gta-6/unlock-time/new-zealand-trick-xbox-ps5',
     consoleId: 'xsx-1tb',
-    title: 'GTA 6 New Zealand Unlock Trick (Xbox vs PS5) — Unpause',
+    title: 'GTA 6 Xbox vs PS5 Launch Specs & Patch 1.002.001 — Unpause',
     description:
-      'Does the GTA 6 New Zealand time trick work? Compare Xbox System Location vs PS5 PSN account locks, exact Nov 18 11:00 UTC countdown, and digital rollout rules.',
-    h1: 'GTA VI New Zealand Unlock Rules: Xbox vs PS5',
+      'Compare GTA VI Xbox Series X|S vs PS5 launch build behavior, Patch 1.002.001 sizes (+1.6 GB Xbox / +0.6 GB PS5), and Digital Foundry frame metrics.',
+    h1: 'GTA VI Console Edition Specs: Xbox Series X|S vs PS5',
     answer:
-      'Midnight in New Zealand lands at Nov 18, 2026 at 11:00 UTC (6:00 AM EST / 1:00 PM SAST). Xbox Series X|S historically respects console Location settings on local midnight launches, whereas PS5 locks strictly to the country of your PSN purchase account.',
+      'Grand Theft Auto VI is live worldwide on Nov 19, 2026 across PS5 & Xbox Series X|S with Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox). Compare storage headroom and 30fps performance profiles below.',
   },
   {
     slug: 'ps5-midnight-region-lock',
     path: '/gta-6/unlock-time/ps5-midnight-region-lock',
     consoleId: 'ps5-base',
-    title: 'Why Changing PS5 Clock Does Not Unlock Early — Unpause',
+    title: 'PS5 Firmware 26.07-14.23.00 & SSD Space Check — Unpause',
     description:
-      'Learn why switching PS5 timezone settings fails for early GTA 6 access, how PSN Store region locks work, and check your local preload timer without ads.',
-    h1: 'PS5 Midnight Region-Lock Guide & Preload Timer',
+      'Confirm PS5 Firmware 26.07-14.23.00 before running GTA VI, verify 212.6 GB w/ Patch 1.002.001 on 825GB & CFI-2100 consoles, and export a Spec PNG.',
+    h1: 'PS5 Firmware 26.07-14.23.00 & CFI-2100 SSD Checklist',
     answer:
-      'PlayStation 5 validates release timers against the PSN Store account that owns the digital license—never your system clock or timezone menu. Pre-loads typically unlock at midnight in that PSN store’s regional timezone (subject to publisher global sync).',
+      'PlayStation 5 users should confirm System Software 26.07-14.23.00 plus Patch 1.002.001 (+0.6 GB) are applied for smooth 30fps frame pacing across Base PS5, Slim CFI-2100, and PS5 Pro.',
   },
 ];
 
@@ -269,106 +272,6 @@ const DOWNLOAD_SPEED_SPECS = [
   { slug: '1000-mbps-gigabit', mbps: 1000, label: '1,000 Mbps Gigabit' },
   { slug: 'starlink-satellite', mbps: 115, label: 'Starlink (~115 Mbps)' },
   { slug: '5g-home-internet', mbps: 180, label: '5G Home (~180 Mbps)' },
-];
-
-const DISTRICT_SPECS = [
-  { slug: 'vice-beach', district: 'Vice Beach', query: 'Vice Beach' },
-  { slug: 'port-gellhorn', district: 'Port Gellhorn', query: 'Port Gellhorn' },
-  { slug: 'leonida-keys', district: 'Leonida Keys', query: 'Leonida Keys' },
-  { slug: 'grassrivers', district: 'Grassrivers', query: 'Grassrivers' },
-  { slug: 'ambrosia', district: 'Ambrosia', query: 'Ambrosia' },
-  { slug: 'mount-kalaga', district: 'Mount Kalaga', query: 'Mount Kalaga' },
-];
-
-const HEIST_SPLIT_SPECS = [
-  {
-    slug: '2-player-duo',
-    path: '/gta-6/heist-split/2-player-duo',
-    title: 'GTA 6 2-Player Duo Heist Split Calculator — Unpause',
-    description:
-      'Split GTA 6 heist payouts cleanly for 2 players after NPC support fees, lock Host percentages to 100% exact sum, and share your Crew Payout Slip to Discord.',
-    h1: 'GTA VI 2-Player Duo Heist Cut Splitter',
-    preset: { subTab: 'heist', gross: 2450000, fee: 12, cuts: [55, 45] },
-    answer:
-      'On a $2,450,000 take with a 12% NPC support cut ($294,000), the $2,156,000 net pool splits 55/45 into $1,185,800 for Host and $970,200 for Co-Lead with zero rounding drift.',
-  },
-  {
-    slug: '3-player-trio',
-    path: '/gta-6/heist-split/3-player-trio',
-    title: 'GTA 6 3-Player Trio Heist Split Calculator — Unpause',
-    description:
-      'Balance 3-player heist cuts automatically to 100%, deduct NPC support fees, test 40/30/30 splits, and export a PNG payout slip for party chat in seconds.',
-    h1: 'GTA VI 3-Player Trio Heist Cut Splitter',
-    preset: { subTab: 'heist', gross: 2450000, fee: 12, cuts: [40, 30, 30] },
-    answer:
-      'A 40/30/30 trio split across a $2,156,000 net heist pool pays $862,400 to the Host and $646,800 each to Crew #2 and #3 after deducting 12% NPC support fees.',
-  },
-  {
-    slug: '4-player-squad',
-    path: '/gta-6/heist-split/4-player-squad',
-    title: 'GTA 6 4-Player Squad Heist Split Calculator — Unpause',
-    description:
-      'Calculate exact 4-player heist percentages (40/20/20/20 or locked crew shares), auto-deduct NPC cuts, and download a crisp Crew Payout Slip PNG instantly.',
-    h1: 'GTA VI 4-Player Squad Heist Cut Splitter',
-    preset: { subTab: 'heist', gross: 2450000, fee: 12, cuts: [40, 20, 20, 20] },
-    answer:
-      'With a $2,450,000 vault take and 12% NPC fee, a classic 40/20/20/20 4-player split allocates $862,400 to the Host and $431,200 to each crew member with exact 100% reconciliation.',
-  },
-  {
-    slug: 'equal-25-percent',
-    path: '/gta-6/heist-split/equal-25-percent',
-    title: 'GTA 6 Equal 25% 4-Way Heist Split Math — Unpause',
-    description:
-      'Run a fair 25/25/25/25 equal 4-way heist payout split after NPC fees, compare greed ratings, and copy your clean squad summary to Discord in one tap.',
-    h1: 'Equal 25/25/25/25 Four-Player Heist Payout Calculator',
-    preset: { subTab: 'heist', gross: 2450000, fee: 12, cuts: [25, 25, 25, 25] },
-    answer:
-      'Splitting a $2,156,000 net heist pool evenly at 25% per player pays $539,000 to every squad member—earning an instant Fair Split rating on your exportable Crew Payout Slip.',
-  },
-  {
-    slug: 'stock-market-planner',
-    path: '/gta-6/stock-market-planner',
-    title: 'GTA 6 Two-Character Stock Market Planner — Unpause',
-    description:
-      'Project multi-flip story stock compounding across two protagonists using seed heist capital, peak rebound timings, and zero-ad mobile second-screen presets.',
-    h1: 'GTA VI Two-Character Story Stock Compounder (UI Preview)',
-    preset: { subTab: 'market', gross: 2450000, fee: 12, cuts: [40, 20, 20, 20] },
-    answer:
-      'Compounding $1,600,000 seed heist capital across three multi-protagonist contract flips (+68%/+45%, +82%/+52%, +95%/+60%) demonstrates exponential post-heist bankroll scaling once verified contracts release.',
-  },
-];
-
-const NIGHT_RUN_SPECS = [
-  {
-    path: '/gta-6/night-run/45-minute-route',
-    title: 'GTA 6 45-Minute Express Weeknight Route — Unpause',
-    description:
-      'Play a focused 45-minute weeknight GTA 6 loop with display setup, early Port Gellhorn safe pickup, safehouse coupe save, and zero story spoilers.',
-    h1: '45-Minute Express Weeknight Session Route (Free)',
-    preset: { mins: 45 },
-    answer:
-      'The free 45-minute Express route sequences four time-boxed stops (8m display/audio setup, 12m pawn safe + suppressor pickup, 15m strip coupe bank, 10m clean save) for busy weeknight players.',
-  },
-  {
-    path: '/gta-6/night-run/90-minute-route',
-    title: 'GTA 6 90-Minute Standard Night Run Route — Unpause',
-    description:
-      'Chain five Leonida waypoints across Port Gellhorn, Vice Beach, Grassrivers, and Leonida Keys inside a clean 90-minute evening session with cloud sync.',
-    h1: '90-Minute Standard Weeknight Circuit & Sector Map',
-    preset: { mins: 90 },
-    answer:
-      'The 90-minute circuit links 5 sector stops across Port Gellhorn (28m), Vice Beach (22m), Grassrivers (25m), and Leonida Keys (15m) with zero backtracking and clear save-slot checkpoints.',
-  },
-  {
-    path: '/gta-6/missables-shield',
-    title: 'GTA 6 Spoiler-Free Missables Lockout Shield — Unpause',
-    description:
-      'Protect unique cars, safehouse garages, and dual-protagonist contract flips before crossing Act I–III mission gates without spoiling story plot twists.',
-    h1: 'Spoiler-Free Missables Shield (Act I–III Checkpoints)',
-    preset: { mins: 45 },
-    answer:
-      'The Missables Shield alerts you right before point-of-no-return gates across Port Gellhorn, Vice Beach burner contracts, and Keys marina staging—protecting 9 at-risk pickups with zero plot spoilers.',
-  },
 ];
 
 const EA_TAX_BREAKPOINTS = [
@@ -396,11 +299,12 @@ function buildProgrammaticRoutes() {
   // 1. GTA VI Consoles (8) + Unlock Guides (2) = 10
   for (const spec of CONSOLE_SEO_SPECS) {
     const consoleObj = gta6Pack.consoles.find((c) => c.id === spec.consoleId) || gta6Pack.consoles[0];
+    const pGb = consoleObj.patchGb ?? 1.6;
     pages.push({
       path: `/gta-6/storage/${spec.slug}`,
       gameId: 'gta-6',
       tab: 'storage',
-      cluster: 'GTA VI Preload & Storage',
+      cluster: 'GTA VI Launch Storage',
       shortLabel: spec.shortLabel,
       priority: '0.88',
       changefreq: 'daily',
@@ -423,8 +327,11 @@ function buildProgrammaticRoutes() {
       },
       metaRows: [
         { label: 'Usable Internal Capacity', val: `${consoleObj.usableGb} GB` },
-        { label: 'Estimated GTA VI Install', val: `${consoleObj.installGb} GB${spec.includePatch ? ' (+35 GB patch)' : ''}` },
-        { label: 'New Zealand Rollout Rule', val: consoleObj.nzStatusShort },
+        {
+          label: 'Launch Size + Patch 1.002.001',
+          val: `${consoleObj.installGb} GB base${spec.includePatch ? ` (+${pGb} GB = ${(consoleObj.installGb + pGb).toFixed(1)} GB)` : ''}`,
+        },
+        { label: 'Console Profile', val: consoleObj.nzStatusShort },
       ],
       faqs: spec.faqs || getGameFaqs('gta-6'),
     });
@@ -436,8 +343,8 @@ function buildProgrammaticRoutes() {
       path: spec.path,
       gameId: 'gta-6',
       tab: 'storage',
-      cluster: 'GTA VI Preload & Storage',
-      shortLabel: spec.consoleId.startsWith('xs') ? 'NZ Trick Xbox vs PS5' : 'PS5 Region Lock',
+      cluster: 'GTA VI Launch Storage',
+      shortLabel: spec.consoleId.startsWith('xs') ? 'Xbox vs PS5 Specs' : 'PS5 FW 26.07-14.23.00',
       priority: '0.88',
       changefreq: 'daily',
       title: clampTitle(spec.title),
@@ -445,7 +352,7 @@ function buildProgrammaticRoutes() {
       h1: spec.h1,
       answerSummary: spec.answer,
       ogImage: '/og/gta-6-storage.png',
-      ogAlt: 'Unpause GTA VI New Zealand midnight unlock checker for Xbox and PS5',
+      ogAlt: 'Unpause GTA VI launch edition storage checker for Xbox and PS5',
       breadcrumbs: [
         { name: 'Unpause', path: '/' },
         { name: 'GTA VI Storage', path: '/gta-6/storage' },
@@ -453,8 +360,8 @@ function buildProgrammaticRoutes() {
       ],
       preset: { consoleId: spec.consoleId, freeGb: 180, includePatch: false, mbps: 120 },
       metaRows: [
-        { label: 'Earliest Rolling Unlock (NZ)', val: 'Nov 18, 2026 @ 11:00 UTC' },
-        { label: 'Selected Console Rule', val: `${consoleObj.name}: ${consoleObj.nzStatusShort}` },
+        { label: 'Release & Patch 1.002.001', val: 'OUT NOW (Nov 19) · +0.6 GB PS5 / +1.6 GB Xbox' },
+        { label: 'Selected Console Spec', val: `${consoleObj.name}: ${consoleObj.nzStatusShort}` },
       ],
       faqs: getGameFaqs('gta-6'),
     });
@@ -463,7 +370,7 @@ function buildProgrammaticRoutes() {
   // 2. GTA VI Download Times (10)
   for (const spd of DOWNLOAD_SPEED_SPECS) {
     const baseMins = (212 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
-    const patchMins = (247 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
+    const patchMins = (213.6 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
     const baseEta = formatEta(baseMins);
     const patchEta = formatEta(patchMins);
     const cleanSpeed = spd.mbps === 1000 ? '1000 Mbps Gigabit' : `${spd.mbps} Mbps`;
@@ -477,10 +384,10 @@ function buildProgrammaticRoutes() {
       changefreq: 'weekly',
       title: clampTitle(`GTA 6 Download Time on ${cleanSpeed} (${baseEta}) — Unpause`),
       description: clampDesc(
-        `How long is a 212 GB GTA 6 preload on ${spd.label}? ${baseEta} base (${patchEta} with +35 GB patch) on PS5 and Xbox Series X|S with 10% protocol overhead.`
+        `How long is 212 GB GTA 6 on ${spd.label}? ${baseEta} base (${patchEta} with +1.6 GB Xbox Patch 1.002.001) with 10% protocol overhead.`
       ),
-      h1: `GTA VI Download Time on ${spd.label}: ${baseEta} (212 GB Preload)`,
-      answerSummary: `At ${spd.mbps} Mbps (accounting for realistic 90% sustained CDN throughput), downloading Rockstar’s official up-to-212 GB PS5 & Xbox Series X|S preload takes ${baseEta} (${patchEta} with an optional +35 GB Day-1 patch).`,
+      h1: `GTA VI Download Time on ${spd.label}: ${baseEta} (212 GB Base)`,
+      answerSummary: `At ${spd.mbps} Mbps (90% realistic CDN throughput), downloading GTA VI Base (212 GB) takes ${baseEta} (${patchEta} including Xbox Patch 1.002.001 +1.6 GB; PS5 Patch adds +0.6 GB).`,
       ogImage: '/og/gta-6-storage.png',
       ogAlt: `GTA VI download duration at ${spd.mbps} Mbps on Unpause`,
       breadcrumbs: [
@@ -490,106 +397,8 @@ function buildProgrammaticRoutes() {
       ],
       preset: { consoleId: 'ps5-base', freeGb: 250, includePatch: false, mbps: spd.mbps },
       metaRows: [
-        { label: `PS5 (212 GB) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
-        { label: `Xbox Series (212 GB) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
-        { label: 'With +35 GB Day-1 Patch', val: patchEta },
-      ],
-      faqs: getGameFaqs('gta-6'),
-    });
-  }
-
-  // 3. GTA VI Districts, Heists & Night Routes (14)
-  for (const dist of DISTRICT_SPECS) {
-    const safeSample = gta6Pack.safes.find((s) => s.district === dist.district);
-    pages.push({
-      path: `/gta-6/safe-codes/${dist.slug}`,
-      gameId: 'gta-6',
-      tab: 'safes',
-      cluster: 'GTA VI Safe Vault & Heists',
-      shortLabel: `${dist.district} Safes`,
-      priority: '0.84',
-      changefreq: 'daily',
-      title: clampTitle(`GTA 6 ${dist.district} Safe Codes & Clues — Unpause`),
-      description: clampDesc(
-        `Track ${dist.district} GTA 6 keypad safes cleanly free online. Verified combinations populate live starting Nov 19 at 11:00 UTC NZ unlock.`
-      ),
-      h1: `GTA VI ${dist.district} Safe & Keypad Vault`,
-      answerSummary: safeSample
-        ? `${dist.district} keypad tracker awaits launch confirmation (${safeSample.title}). Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock with zero fake placeholders.`
-        : `Instant ${dist.district} safe and door keypad filter with live WebAudio keypad tones.`,
-      ogImage: '/og/gta-6-safes.png',
-      ogAlt: `Unpause GTA VI ${dist.district} safe code vault`,
-      breadcrumbs: [
-        { name: 'Unpause', path: '/' },
-        { name: 'Safe Keypads', path: '/gta-6/safe-codes' },
-        { name: dist.district, path: `/gta-6/safe-codes/${dist.slug}` },
-      ],
-      preset: { district: dist.district, query: '', safeId: safeSample?.id || '' },
-      metaRows: safeSample
-        ? [
-            { label: 'District Tracker', val: `${safeSample.title} (${safeSample.district})` },
-            { label: 'Launch Format', val: 'Single-Player Release · Nov 19, 2026' },
-            { label: 'Launch Sync Status', val: safeSample.verifiedStatus },
-          ]
-        : [],
-      faqs: getGameFaqs('gta-6'),
-    });
-  }
-
-  for (const hs of HEIST_SPLIT_SPECS) {
-    pages.push({
-      path: hs.path,
-      gameId: 'gta-6',
-      tab: 'squad',
-      cluster: 'GTA VI Safe Vault & Heists',
-      shortLabel: hs.h1.replace('GTA VI ', '').replace(' (UI Preview)', ''),
-      priority: '0.82',
-      changefreq: 'weekly',
-      title: clampTitle(hs.title),
-      description: clampDesc(hs.description),
-      h1: hs.h1,
-      answerSummary: hs.answer,
-      ogImage: '/og/gta-6-heist.png',
-      ogAlt: hs.h1,
-      breadcrumbs: [
-        { name: 'Unpause', path: '/' },
-        { name: 'Squad & Heist Split', path: '/gta-6/heist-split' },
-        { name: hs.h1, path: hs.path },
-      ],
-      preset: hs.preset,
-      metaRows: [
-        { label: 'Default Vault Take', val: `$${hs.preset.gross.toLocaleString('en-US')}` },
-        { label: 'NPC Support Deduction', val: `${hs.preset.fee}%` },
-        { label: 'Squad Share Split', val: hs.preset.cuts.map((c) => `${c}%`).join(' / ') },
-      ],
-      faqs: getGameFaqs('gta-6'),
-    });
-  }
-
-  for (const nr of NIGHT_RUN_SPECS) {
-    pages.push({
-      path: nr.path,
-      gameId: 'gta-6',
-      tab: 'nightrun',
-      cluster: 'GTA VI Safe Vault & Heists',
-      shortLabel: nr.h1.split('(')[0].trim(),
-      priority: '0.82',
-      changefreq: 'weekly',
-      title: clampTitle(nr.title),
-      description: clampDesc(nr.description),
-      h1: nr.h1,
-      answerSummary: nr.answer,
-      ogImage: '/og/gta-6-nightrun.png',
-      ogAlt: nr.h1,
-      breadcrumbs: [
-        { name: 'Unpause', path: '/' },
-        { name: 'Weeknight Routes', path: '/gta-6/night-run' },
-        { name: nr.h1, path: nr.path },
-      ],
-      preset: nr.preset,
-      metaRows: [
-        { label: 'Free Express Track', val: '45 Minutes · 4 Zero-Spoiler Stops' },
-        { label: 'Acts Protected', val: 'Act I Port Gellhorn · Act II Contracts · Act III Finale' },
+        { label: `PS5 (212.6 GB w/ 1.002.001) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
+        { label: `Xbox (213.6 GB w/ 1.002.001) @ ${spd.mbps} Mbps`, val: `${patchEta} (with 10% overhead)` },
       ],
       faqs: getGameFaqs('gta-6'),
     });
@@ -952,12 +761,6 @@ function buildProgrammaticRoutes() {
       groupSplitPct: 100,
       isNetEarned: true,
     });
-    const grossAfterCut = calcRobloxDevEx({
-      grossRobux: rm.robux,
-      rateId: 'std-2025',
-      groupSplitPct: 100,
-      isNetEarned: false,
-    });
     const usdStr = netOut.usdPayout.toFixed(2);
     const directStr = (rm.robux * 0.0054).toFixed(2);
     pages.push({
@@ -969,10 +772,10 @@ function buildProgrammaticRoutes() {
       changefreq: 'weekly',
       title: clampTitle(`${rm.label} to USD DevEx Payout ($${usdStr}) — Unpause`),
       description: clampDesc(
-        `Convert ${rm.label} earned DevEx Robux to USD: $${usdStr} at $0.0038/R$ standard or $${directStr} US 18+ Direct Store, plus optional 30% Marketplace cut mode.`
+        `Convert ${rm.label} net earned DevEx Robux to USD: $${usdStr} at $0.0038/R$ standard or $${directStr} US 18+ Direct Store, with 30% fee switcher.`
       ),
       h1: `How Much Is ${rm.label} in USD? ($${usdStr} DevEx Breakdown)`,
-      answerSummary: `${rm.robux.toLocaleString('en-US')} net earned DevEx Robux pays $${usdStr} USD at the standard $0.0038/R$ rate ($${(rm.robux * 0.0035).toFixed(2)} legacy, or $${directStr} US 18+ Direct Store). If calculating pre-tax Gamepass gross sales, Roblox's 30% Marketplace fee leaves ${grossAfterCut.afterMarketFee.toLocaleString('en-US')} R$ ($${grossAfterCut.usdPayout.toFixed(2)} USD).`,
+      answerSummary: `${rm.robux.toLocaleString('en-US')} net earned DevEx Robux pays $${usdStr} USD at the standard $0.0038/R$ rate ($${(rm.robux * 0.0035).toFixed(2)} legacy, or $${directStr} US 18+ Direct Store). Starting from pre-tax Gamepass sales? Switch to Gross Store Sales (-30% Cut) mode below.`,
       ogImage: '/og/roblox.png',
       ogAlt: `Roblox ${rm.label} to USD DevEx calculator on Unpause`,
       breadcrumbs: [
@@ -984,7 +787,7 @@ function buildProgrammaticRoutes() {
       metaRows: [
         { label: 'Net Earned Balance ($0.0038/R$)', val: `$${usdStr} USD` },
         { label: 'US 18+ Direct Store ($0.0054/R$)', val: `$${directStr} USD` },
-        { label: 'If Pre-Tax Gross Sales (-30% Cut)', val: `$${grossAfterCut.usdPayout.toFixed(2)} USD (${grossAfterCut.afterMarketFee.toLocaleString('en-US')} R$)` },
+        { label: 'Legacy Queue Rate ($0.0035/R$)', val: `$${(rm.robux * 0.0035).toFixed(2)} USD` },
       ],
       faqs: getGameFaqs('roblox'),
     });
@@ -996,7 +799,7 @@ function buildProgrammaticRoutes() {
       shortLabel: '30% Marketplace Cut',
       title: 'Roblox 30% Marketplace Tax Calculator — Unpause',
       h1: 'Roblox 30% Marketplace Fee & Group Payout Splitter',
-      preset: { robux: 100000, devexRate: 'std-2025', groupSplit: 100 },
+      preset: { robux: 100000, devexRate: 'std-2025', groupSplit: 100, rbxMode: 'gross' },
       description:
         'See exact Robux kept after Roblox’s 30% Marketplace fee, split revenue by group percentage, and calculate Gamepass listing prices needed for your USD goal.',
       answer:
@@ -1007,7 +810,7 @@ function buildProgrammaticRoutes() {
       shortLabel: 'Gamepass Reverse Price',
       title: 'Roblox Gamepass Price After 30% Tax — Unpause',
       h1: 'Reverse Roblox Gamepass Price Calculator (Net → List Price)',
-      preset: { robux: 42858, devexRate: 'std-2025', desiredNet: 30000 },
+      preset: { robux: 42858, devexRate: 'std-2025', desiredNet: 30000, rbxMode: 'gross' },
       description:
         'Enter the exact net Robux you want to keep (e.g. 30,000 R$ DevEx minimum) and calculate the required Gamepass price including Roblox’s 30% cut automatically.',
       answer:
@@ -1488,13 +1291,13 @@ export const CORE_ROUTES = [
     shortLabel: 'Home (GTA VI + All 10)',
     priority: '1.0',
     changefreq: 'daily',
-    title: clampTitle('Unpause — Instant Console Storage & Game Math Tools'),
+    title: clampTitle('Unpause — GTA VI Launch Companion & Game Math Tools'),
     description: clampDesc(
-      'Check GTA VI 212 GB SSD fit on PS5 or Xbox in seconds, compare Warzone 300 HP TTK, link Minecraft Nether portals, and solve EA FC 27 tax cleanly free.'
+      'Check GTA VI 212 GB SSD + Patch 1.002.001 fit, 61 haptic cheats, story money/robberies, 30fps DF tuner & Platinum tracking plus 9 live game tools free.'
     ),
-    h1: 'Will GTA VI fit on your console?',
+    h1: 'GTA VI Launch Companion & Console Fit Check',
     answerSummary:
-      'Check exact PS5 & Xbox SSD headroom against Rockstar’s official up-to-212 GB preload live since Nov 10, download ETA, live Nov 19 keypad vault, and 9 instant top-game math decks — 100% free, zero popups.',
+      'GTA VI is OUT NOW. Verify 212 GB + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) storage fit, dial 61 haptic D-pad cheats, plan chapter-gated money & randomized safes, tune 30fps settings, and track Platinum collectibles — 100% free.',
     ogImage: '/og-cover.png',
     ogAlt: 'Unpause — Clean second-screen calculators across 10 games',
     breadcrumbs: [],
@@ -1506,17 +1309,17 @@ export const CORE_ROUTES = [
     path: '/gta-6/storage',
     gameId: 'gta-6',
     tab: 'storage',
-    cluster: 'GTA VI Launch Suite',
-    shortLabel: 'Preload & SSD Surgery',
+    cluster: 'GTA VI Launch Storage',
+    shortLabel: 'SSD & Patch 1.002.001',
     priority: '0.95',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Storage Fit Check (212 GB Preload) — Unpause'),
+    title: clampTitle('GTA 6 Storage Fit Check (212 GB + Patch 1.002.001) — Unpause'),
     description: clampDesc(
-      'Test if GTA 6 (official 212 GB preload live since Nov 10) fits on Series S, Series X, or PS5 SSDs, clear games, check NZ timing, and export a Spec PNG.'
+      'Test if GTA 6 (212 GB Base + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox) fits on Series S, Series X, or PS5 SSDs, clear games & export a Spec PNG.'
     ),
-    h1: 'GTA VI Preload & Console Storage Surgery (PS5 & Xbox)',
+    h1: 'GTA VI Console Storage Surgery (212 GB + Patch 1.002.001)',
     answerSummary:
-      'Compare your exact console usable NVMe (364 GB Series S up to 1,890 GB PS5 Pro) against Rockstar’s official up-to-212 GB PS5 & Xbox Series X|S preload live since Nov 10, toggle +35 GB patch headroom, and calculate Mbps download ETA.',
+      'Compare usable NVMe space (364 GB Series S up to 1,890 GB PS5 Pro) against GTA VI Launch Base (212 GB) + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) and calculate Mbps download ETA free.',
     ogImage: '/og/gta-6-storage.png',
     ogAlt: 'Unpause GTA VI Console Storage Fit & Download ETA Calculator',
     breadcrumbs: [
@@ -1525,93 +1328,178 @@ export const CORE_ROUTES = [
     ],
     preset: { consoleId: 'xss-512', freeGb: 140, mbps: 120 },
     metaRows: [
-      { label: 'Official Preload (PS5 & Xbox)', val: 'Up to 212 GB live since Nov 10 (+35 GB opt. patch)' },
-      { label: 'Launch Edition & Format', val: 'Nov 19 Single-Player ($79.99 Std / $99.99 Ult)' },
-      { label: 'Earliest Rolling Unlock (NZ)', val: 'Nov 18, 2026 @ 11:00 UTC (Xbox Settings)' },
+      { label: 'Launch Install Size', val: '212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)' },
+      { label: 'Launch Status', val: 'OUT NOW Worldwide (Nov 19, 2026) · $79.99 Std / $99.99 Ult' },
+      { label: 'PS5 System Requirement', val: 'Mandatory PS5 Firmware 26.07-14.23.00' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
   {
-    path: '/gta-6/safe-codes',
+    path: '/gta-6/cheats',
     gameId: 'gta-6',
-    tab: 'safes',
-    cluster: 'GTA VI Launch Suite',
-    shortLabel: 'Safe Keypad Vault',
+    tab: 'cheats',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: 'Cheats (61 Haptic D-Pad)',
     priority: '0.95',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Safe & Door Combinations Keypad — Unpause'),
+    title: clampTitle('GTA 6 Cheats (61 Codes & Haptic D-Pad Simulator) — Unpause'),
     description: clampDesc(
-      'Track Leonida district GTA 6 safe keypads with interactive 10-key WebAudio tones. Verified keypad codes populate live starting Nov 19 at 11:00 UTC.'
+      'Dial PS5 & Xbox GTA VI cheats using Phone Up + L1/LB + R1/RB. Animate 12 confirmed codes ($250K, Unlimited Focus, Boomazoom) & track 61 challenges.'
     ),
-    h1: 'GTA VI Safe & Door Combinations Keypad Vault',
+    h1: 'GTA VI Haptic D-Pad Cheat Deck (61 Cheats · PS5 & Xbox)',
     answerSummary:
-      'Verified keypad codes populate live starting Nov 19 at 11:00 UTC NZ unlock with zero fake placeholders. Test 10-key WebAudio tones and track cleared Leonida locations locally 100% free.',
-    ogImage: '/og/gta-6-safes.png',
-    ogAlt: 'Unpause GTA VI Safe & Door Keypad Combination Vault',
+      'Dial cheats using Phone (Up) + L1/R1 (PS5) or LB/RB (Xbox). Watch the Post-Story + Unlock Challenge requirement and Trophy/Save disable warning before entering $250K, Unlimited Focus, Exploding Balls, or Boomazoom.',
+    ogImage: '/og/gta-6-cheats.png',
+    ogAlt: 'Unpause GTA VI Haptic D-Pad Cheat Deck',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'Safe Keypads', path: '/gta-6/safe-codes' },
+      { name: 'Haptic Cheat Deck', path: '/gta-6/cheats' },
     ],
-    preset: { district: 'All Districts', query: '' },
+    preset: { cheatPlatform: 'ps5' },
     metaRows: [
-      { label: 'Covered Leonida Regions', val: 'Port Gellhorn, Vice Beach, Keys, Grassrivers, Ambrosia, Mt. Kalaga' },
-      { label: 'Live Launch Update', val: 'Verified keypad codes populate live starting Nov 19 (11:00 UTC)' },
+      { label: 'Total In-Game Cheats', val: '61 Codes (Post-Story + Unlock Challenges Required)' },
+      { label: 'Activation Trigger', val: 'Phone Up + L1 + R1 (PS5) / Phone Up + LB + RB (Xbox)' },
+      { label: 'Achievement Rule', val: 'Disables Trophies & Manual/Auto Saving while active' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
   {
-    path: '/gta-6/heist-split',
+    path: '/gta-6/money',
     gameId: 'gta-6',
-    tab: 'squad',
-    cluster: 'GTA VI Launch Suite',
-    shortLabel: 'Crew Payout Estimator',
-    priority: '0.90',
-    changefreq: 'weekly',
-    title: clampTitle('GTA Online / Crew Payout Estimator & Split — Unpause'),
-    description: clampDesc(
-      'Split GTA Online & future multiplayer crew percentages to 100%, deduct NPC fees, export Payout PNGs, and plan 2-lead story stock flips free online.'
-    ),
-    h1: 'GTA Online / Future Crew Payout Estimator & Stock Flip',
-    answerSummary:
-      'Grand Theft Auto VI launches Nov 19, 2026 as single-player ($79.99 Standard / $99.99 Ultimate). Use our integer-exact 100% crew splitter as a GTA Online / Future Crew Payout Estimator plus two-protagonist stock flip planner.',
-    ogImage: '/og/gta-6-heist.png',
-    ogAlt: 'Unpause GTA Online & Future Crew Payout Estimator',
-    breadcrumbs: [
-      { name: 'Unpause', path: '/' },
-      { name: 'Crew Estimator', path: '/gta-6/heist-split' },
-    ],
-    preset: { subTab: 'heist', gross: 2450000, fee: 12, cuts: [40, 20, 20, 20] },
-    metaRows: [
-      { label: 'GTA VI Launch Mode', val: 'Single-Player Story Release on Nov 19 ($79.99 / $99.99)' },
-      { label: '2–4 Player Estimator', val: 'GTA Online / Future Multiplayer Crew Payouts' },
-    ],
-    faqs: getGameFaqs('gta-6'),
-  },
-  {
-    path: '/gta-6/night-run',
-    gameId: 'gta-6',
-    tab: 'nightrun',
-    cluster: 'GTA VI Launch Suite',
-    shortLabel: 'Weeknight Route & Shield',
-    priority: '0.90',
+    tab: 'money',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: 'Story Money & Cash Wipe',
+    priority: '0.94',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Weeknight Routes & Missables Shield — Unpause'),
+    title: clampTitle('GTA 6 Money Guide (Ch. 1 Cash Wipe Alert & ROI) — Unpause'),
     description: clampDesc(
-      'Follow time-boxed 45m, 90m, and 120m GTA 6 weeknight loops on an interactive Leonida waypoint grid and avoid permanent mission lockouts free online.'
+      'STOP: Jason & Lucia cash wipes after Chapter 1! Plan Ch. 2 Moses ($1K+/2m), Ch. 3 Jewelry + Randy Wish List ($30K+) & Ch. 4 Bank Vaults ($65K-$205K).'
     ),
-    h1: 'Weeknight Session Routes & Spoiler-Free Missables Shield',
+    h1: 'GTA VI Jason & Lucia Money ROI (Ch. 1 Wipe Alert)',
     answerSummary:
-      'Pick 100% free 45m, 90m, or 120m weeknight routes across Port Gellhorn, Grassrivers, Vice Beach, and Leonida Keys, paired with spoiler-free Act I–III pause alerts.',
-    ogImage: '/og/gta-6-nightrun.png',
-    ogAlt: 'Unpause GTA VI Weeknight Route Map & Missables Shield',
+      'Spend unbanked cash before finishing Chapter 1 because story transition wipes your wallet. Compare Ch. 2 Moses loops ($1K+/2m), Ch. 3 Jewelry + Snap Gun + Randy’s Wish List ($30K+), and Ch. 4 Bank Vaults ($65K-$205K) behind the Spoiler Shield.',
+    ogImage: '/og/gta-6-money.png',
+    ogAlt: 'Unpause GTA VI Story Money ROI & Chapter 1 Cash Wipe Alert',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'Weeknight Routes', path: '/gta-6/night-run' },
+      { name: 'Money & Robberies', path: '/gta-6/money' },
     ],
-    preset: { mins: 45 },
+    preset: { subTab: 'money', sessionMinutes: 45 },
     metaRows: [
-      { label: 'Free Express Track', val: '45 Minutes · 4 High-Impact Stops' },
-      { label: 'Spoiler Protection', val: 'Act gates flagged with zero plot spoilers' },
+      { label: 'Chapter 1 Warning', val: 'Wallet Cash Wipes at End of Ch. 1 (Spend Mods First)' },
+      { label: 'Ch. 2 -> Ch. 4 Loop Scale', val: 'Moses $1K+/2m -> Jewelry $10K-$25K -> Vaults $65K-$205K' },
+    ],
+    faqs: getGameFaqs('gta-6'),
+  },
+  {
+    path: '/gta-6/robberies',
+    gameId: 'gta-6',
+    tab: 'money',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: '4-Tier Robbery Protocol',
+    priority: '0.93',
+    changefreq: 'daily',
+    title: clampTitle('GTA 6 Robberies Guide (Randomized Safes & CCTV) — Unpause'),
+    description: clampDesc(
+      'Master GTA VI 4-Tier Robberies: why safe combinations randomize every playthrough, how to shoot Cloud-icon CCTV cameras, and Ch. 3 Dye Pack Jammer rules.'
+    ),
+    h1: 'GTA VI 4-Tier Robbery Protocol, Randomized Safes & CCTV',
+    answerSummary:
+      'Safe combinations randomize per playthrough—scan in-room sticky notes & invoices instead of fake static lists. Shoot Cloud-icon CCTV cameras immediately and equip the Ch. 3 Dye Pack Jammer before Ch. 4 Large Bank Vaults ($65K-$205K).',
+    ogImage: '/og/gta-6-money.png',
+    ogAlt: 'Unpause GTA VI 4-Tier Robbery Protocol & Randomized Safe Guide',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: '4-Tier Robberies', path: '/gta-6/robberies' },
+    ],
+    preset: { subTab: 'robberies', sessionMinutes: 45 },
+    metaRows: [
+      { label: 'Safe Keypads Rule', val: 'Randomized per playthrough (Locate local room clues)' },
+      { label: 'Stealth Counter', val: 'Shoot Cloud-Icon CCTV + Equip Ch. 3 Dye Pack Jammer' },
+    ],
+    faqs: getGameFaqs('gta-6'),
+  },
+  {
+    path: '/gta-6/settings',
+    gameId: 'gta-6',
+    tab: 'settings',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: '30fps Tuner & PNG Card',
+    priority: '0.92',
+    changefreq: 'daily',
+    title: clampTitle('GTA 6 Best 30fps Settings, DF Specs & PS5 Firmware — Unpause'),
+    description: clampDesc(
+      'Compare Digital Foundry 4-console 30fps specs (PS5 Pro 1440p PSSR, Series X 120Hz VRR, Series S FSR 4), check PS5 FW 26.07-14.23.00 & export PNG card.'
+    ),
+    h1: 'GTA VI 30fps DF Console Tuner, FW 26.07-14.23.00 & PNG Card',
+    answerSummary:
+      'Verify mandatory PS5 Firmware 26.07-14.23.00 + Patch 1.002.001, compare PS5 Pro 1440p PSSR + RT Shadows, Series X 120Hz VRR & Series S 720p FSR 4, drop Motion Blur 3->0, toggle Hidden Fuel Gauge On, and export your Launch Card PNG.',
+    ogImage: '/og/gta-6-settings.png',
+    ogAlt: 'Unpause GTA VI 30fps Console Specs & Shareable Launch Card PNG',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: '30fps Console Tuner', path: '/gta-6/settings' },
+    ],
+    preset: {},
+    metaRows: [
+      { label: 'PS5 Pro / Xbox Specs', val: '1440p PSSR + RT Shadows / Series X 120Hz VRR / Series S FSR 4' },
+      { label: 'Mandatory PS5 Firmware', val: '26.07-14.23.00 + Motion Blur 3->0 + Hidden Fuel Gauge On' },
+    ],
+    faqs: getGameFaqs('gta-6'),
+  },
+  {
+    path: '/gta-6/platinum',
+    gameId: 'gta-6',
+    tab: 'platinum',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: 'Platinum & 15 Save Slots',
+    priority: '0.92',
+    changefreq: 'daily',
+    title: clampTitle('GTA 6 Platinum Tracker (Missable, 15 Saves & WAiNK) — Unpause'),
+    description: clampDesc(
+      'Avoid the Ch. 1 Balcony Meditation ("Positive Mental Attitude") missable, manage 15 manual save slots & tap counters for 200 WAiNK Scans & 100 Animals.'
+    ),
+    h1: 'GTA VI Platinum Tracker: Missables, 15 Save Slots & WAiNK 200',
+    answerSummary:
+      'Complete Chapter 1 Balcony Meditation ("Positive Mental Attitude") before leaving Ch. 1, organize all 15 manual save slots locally, and track 200 WAiNK Scans + 100 Animals with haptic thumb counters.',
+    ogImage: '/og/gta-6-platinum.png',
+    ogAlt: 'Unpause GTA VI Platinum & 15-Save-Slot Collectible Tracker',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: 'Platinum Tracker', path: '/gta-6/platinum' },
+    ],
+    preset: { subTab: 'platinum' },
+    metaRows: [
+      { label: 'Critical Ch. 1 Missable', val: 'Balcony Meditation — "Positive Mental Attitude"' },
+      { label: 'Collectible Totals', val: '200 WAiNK Scans · 100 Animals · 15 Save Slot Log' },
+    ],
+    faqs: getGameFaqs('gta-6'),
+  },
+  {
+    path: '/gta-6/ultimate',
+    gameId: 'gta-6',
+    tab: 'platinum',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: '$99.99 Ultimate Edition',
+    priority: '0.88',
+    changefreq: 'weekly',
+    title: clampTitle('GTA 6 $99.99 Ultimate Edition Unlock Checklist — Unpause'),
+    description: clampDesc(
+      'Track when GTA VI $99.99 Ultimate Edition rewards unlock: why the Shizu Typhoon Squalo boat requires Chapter 4 and when to claim bonus cash post-Ch. 1.'
+    ),
+    h1: 'GTA VI $99.99 Ultimate Edition Chapter-Gated Checklist',
+    answerSummary:
+      'Track every $99.99 Ultimate Edition entitlement behind the Spoiler Shield—highlighting why bonus cash should wait for Ch. 2 and why the Shizu Typhoon Squalo speedboat only unlocks at your dock in Chapter 4.',
+    ogImage: '/og/gta-6-platinum.png',
+    ogAlt: 'Unpause GTA VI Ultimate Edition Chapter Unlock Checklist',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: 'Ultimate Edition', path: '/gta-6/ultimate' },
+    ],
+    preset: { subTab: 'ultimate' },
+    metaRows: [
+      { label: 'Chapter 4 Dock Unlock', val: 'Shizu Typhoon Squalo (Offshore Boat)' },
+      { label: 'Cash Claim Rule', val: 'Redeem cash bundle after Ch. 1 wallet wipe' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
@@ -1731,7 +1619,7 @@ export const CORE_ROUTES = [
       { name: 'Unpause', path: '/' },
       { name: 'Roblox DevEx', path: '/roblox' },
     ],
-    preset: { robux: 50000, devexRate: 'std-2025', groupSplit: 100 },
+    preset: { robux: 50000, devexRate: 'std-2025', groupSplit: 100, rbxMode: 'net' },
     metaRows: getGameMetaRows('roblox'),
     faqs: getGameFaqs('roblox'),
   },
@@ -1878,9 +1766,12 @@ const CANONICAL_ROUTE_MAP = new Map(ALL_CANONICAL_ROUTES.map((r) => [r.path, r])
 
 export const EMBED_ELIGIBLE_PATHS = [
   '/gta-6/storage',
-  '/gta-6/safe-codes',
-  '/gta-6/heist-split',
-  '/gta-6/night-run',
+  '/gta-6/cheats',
+  '/gta-6/money',
+  '/gta-6/robberies',
+  '/gta-6/settings',
+  '/gta-6/platinum',
+  '/gta-6/ultimate',
   '/cod-warzone',
   '/fortnite',
   '/minecraft',
@@ -1935,6 +1826,14 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
     };
   }
 
+  const LEGACY_TAB_MAP = {
+    safes: '/gta-6/robberies',
+    squad: '/gta-online',
+    heist: '/gta-online',
+    nightrun: '/gta-6/platinum',
+    route: '/gta-6/platinum',
+  };
+
   // 2. Legacy query routing redirect: ?legal=, ?game=, ?tab=
   if (pathname === '/' || pathname === '/index.html') {
     if (pathname === '/index.html') {
@@ -1960,8 +1859,8 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
       const resolvedId = resolveGameIdFromSlug(rawGame);
       params.delete('game');
       let targetPath = GAME_TO_CANONICAL_PATH[resolvedId] || '/';
-      if (resolvedId === 'gta-6' && rawTab && TAB_TO_CANONICAL_PATH[rawTab]) {
-        targetPath = TAB_TO_CANONICAL_PATH[rawTab];
+      if (resolvedId === 'gta-6' && rawTab) {
+        targetPath = LEGACY_TAB_MAP[rawTab] || TAB_TO_CANONICAL_PATH[rawTab] || targetPath;
       }
       params.delete('tab');
       const qs = params.toString();
@@ -1971,19 +1870,20 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
       };
     }
 
-    if (rawTab && TAB_TO_CANONICAL_PATH[rawTab]) {
+    if (rawTab && (LEGACY_TAB_MAP[rawTab] || TAB_TO_CANONICAL_PATH[rawTab])) {
+      const destTabPath = LEGACY_TAB_MAP[rawTab] || TAB_TO_CANONICAL_PATH[rawTab];
       params.delete('tab');
       const qs = params.toString();
       return {
         status: 301,
-        redirectTo: `${CANONICAL_ORIGIN}${TAB_TO_CANONICAL_PATH[rawTab]}${qs ? `?${qs}` : ''}`,
+        redirectTo: `${CANONICAL_ORIGIN}${destTabPath}${qs ? `?${qs}` : ''}`,
       };
     }
   }
 
-  // 3. Direct embed & YouTube Shorts convenience 301 redirects
+  // 3. Direct embed, retired pre-launch slugs & YouTube Shorts 301 redirects
   const lowerPath = pathname.toLowerCase();
-  if (pathname === '/embed') {
+  if (lowerPath === '/embed') {
     return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/embed/gta-6/storage` };
   }
   if (lowerPath === '/eafc-tax') {
@@ -1993,6 +1893,22 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
   if (lowerPath === '/warzone-ttk') {
     const qs = params.toString();
     return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/cod-warzone${qs ? `?${qs}` : ''}` };
+  }
+  if (lowerPath === '/gta-6/safe-codes' || lowerPath.startsWith('/gta-6/safe-codes/')) {
+    return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/gta-6/robberies` };
+  }
+  if (lowerPath === '/gta-6/heist-split' || lowerPath.startsWith('/gta-6/heist-split/')) {
+    return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/gta-online` };
+  }
+  if (lowerPath === '/gta-6/stock-market-planner') {
+    return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/gta-6/money` };
+  }
+  if (
+    lowerPath === '/gta-6/night-run' ||
+    lowerPath.startsWith('/gta-6/night-run/') ||
+    lowerPath === '/gta-6/missables-shield'
+  ) {
+    return { status: 301, redirectTo: `${CANONICAL_ORIGIN}/gta-6/platinum` };
   }
 
   // 4. Match embed route or canonical indexable route
@@ -2033,7 +1949,7 @@ function safeNum(raw, fallback, min, max, decimals = 2) {
   return out === 0 ? 0 : out;
 }
 
-const VALID_SAFE_IDS = new Set([...(gta6Pack.safes || []), ...(gta6Pack.safeCodes || [])].map((s) => s.id));
+const VALID_SAFE_IDS = new Set();
 const VALID_STUDIO_TABS = new Set(['duel', 'camo', 'portals', 'stronghold', 'buy', 'rr', 'tax', 'sbc', 'pity', 'ranked']);
 
 function parseBoolParam(params, key) {
@@ -2103,15 +2019,20 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
     const d = String(params.get('dist') || '').trim();
     if ((gta6Pack.districts || []).includes(d)) clean.district = d;
   }
-  if (params.has('safe')) {
-    const sid = String(params.get('safe') || '').trim();
-    if (VALID_SAFE_IDS.has(sid)) clean.safeId = sid;
-  }
 
   if (params.has('sub')) {
     const sub = String(params.get('sub') || '').trim().toLowerCase();
-    if (sub === 'heist') clean.subTab = 'heist';
-    else if (sub === 'market' || sub === 'stocks') clean.subTab = 'market';
+    if (
+      sub === 'heist' ||
+      sub === 'money' ||
+      sub === 'robberies' ||
+      sub === 'platinum' ||
+      sub === 'ultimate'
+    ) {
+      clean.subTab = sub;
+    } else if (sub === 'market' || sub === 'stocks') {
+      clean.subTab = 'market';
+    }
   }
   if (params.has('gross')) clean.gross = safeInt(params.get('gross'), clean.gross ?? 2450000, 10000, 25000000);
   if (params.has('fee')) clean.fee = safeInt(params.get('fee'), clean.fee ?? 12, 0, 35);
@@ -2285,9 +2206,9 @@ export function getRelatedRoutesFor(route, maxCount = 8) {
 
 export function getGroupedDirectoryLinks() {
   const order = [
-    'GTA VI Preload & Storage',
+    'GTA VI Launch Storage',
     'GTA VI Download Speeds',
-    'GTA VI Safe Vault & Heists',
+    'GTA VI Launch Tools',
     'Call of Duty & Warzone',
     'EA Sports FC 27',
     'Minecraft & Sandbox',
@@ -2301,7 +2222,7 @@ export function getGroupedDirectoryLinks() {
   const groups = new Map(order.map((k) => [k, []]));
   for (const r of [...CORE_ROUTES, ...PSEO_ROUTES]) {
     if (r.path === '/') continue;
-    const key = r.cluster === 'GTA VI Launch Suite' ? 'GTA VI Preload & Storage' : r.cluster === 'Core Game Hubs' ? null : r.cluster;
+    const key = r.cluster === 'GTA VI Launch Suite' ? 'GTA VI Launch Tools' : r.cluster === 'Core Game Hubs' ? null : r.cluster;
     if (key && groups.has(key)) {
       groups.get(key).push({ path: r.path, label: r.shortLabel, gameId: r.gameId });
     } else if (r.cluster === 'Core Game Hubs') {

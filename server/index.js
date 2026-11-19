@@ -1097,8 +1097,9 @@ export function createApp({ dbPath, env = process.env } = {}) {
 
       const isEmbed = Boolean(seoRes.isEmbed);
       applyHttpSecurityHeaders(res, env, { isEmbed });
-      res.setHeader('Cache-Control', seoRes.notFound ? 'no-store' : 'no-cache');
+      res.setHeader('Cache-Control', seoRes.notFound ? 'no-store' : 'no-store, no-cache, must-revalidate');
       res.setHeader('CDN-Cache-Control', 'no-store');
+      res.setHeader('Cloudflare-CDN-Cache-Control', 'no-store');
       if (seoRes.notFound) {
         res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       }

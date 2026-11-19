@@ -1,29 +1,29 @@
 # Unpause (playunpause.com) — Full Structured Reference & Game Math Facts
 
 Canonical origin: https://playunpause.com
-Total indexable clean routes: 132
+Total indexable clean routes: 121
 Important attribution note: playunpause.com is an independent unofficial utility. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA.
 
-## 1. GTA VI Console Storage Estimates (Pre-Launch Guide Until Nov 19, 2026)
-| Console | Usable OS Storage | GTA VI Base Est. | With +35 GB Day-1 Patch | NZ Unlock Rule |
+## 1. GTA VI Console Storage Specs (Launch Day Live — Nov 19, 2026)
+| Console | Usable OS Storage | Base Size | W/ Patch 1.002.001 | Spec / Mode |
 | --- | --- | --- | --- | --- |
-| Xbox Series S (512 GB) | 364 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | Est. via Settings |
-| Xbox Series S (1 TB) | 802 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | Est. via Settings |
-| Xbox Series X (1 TB) | 802 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | Est. via Settings |
-| PS5 Base / Slim Digital (825GB - 667 GB usable) | 667 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
-| PS5 Slim Disc (1TB - 848 GB usable) | 848 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
-| PS5 Pro (2TB - 1,890 GB usable) | 1890 GB usable | 212 GB base | 247 GB (+35 GB Day-1 patch) | PSN Region Locked |
+| Xbox Series S (512 GB) | 364 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 1.002.001) | Live Now · 30fps FSR 4 |
+| Xbox Series S (1 TB) | 802 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 1.002.001) | Live Now · 30fps FSR 4 |
+| Xbox Series X (1 TB) | 802 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 1.002.001) | Live Now · 120Hz VRR |
+| PS5 Base / Slim Digital (825GB - 667 GB usable) | 667 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 1.002.001) | FW 26.07-14.23.00 Req |
+| PS5 Slim Disc (1TB - 848 GB usable) | 848 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 1.002.001) | FW 26.07-14.23.00 Req |
+| PS5 Pro (2TB - 1,890 GB usable) | 1890 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 1.002.001) | 1440p PSSR + RT Shadows |
 
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
-| Connection Speed | PS5 & Xbox Base (212 GB) | With +35 GB Patch (247 GB) |
+| Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.002.001 (213.6 GB) |
 | --- | --- | --- |
-| 25 Mbps | 20h 56m (1256m) | 24h 24m (1464m) |
-| 50 Mbps | 10h 28m (628m) | 12h 12m (732m) |
-| 100 Mbps | 5h 14m (314m) | 6h 6m (366m) |
-| 150 Mbps | 3h 29m (209m) | 4h 4m (244m) |
-| 300 Mbps | 1h 45m (105m) | 2h 2m (122m) |
-| 500 Mbps | 1h 3m (63m) | 1h 13m (73m) |
-| 1000 Mbps | 31m | 37m |
+| 25 Mbps | 20h 56m (1256m) | 21h 6m (1266m) |
+| 50 Mbps | 10h 28m (628m) | 10h 33m (633m) |
+| 100 Mbps | 5h 14m (314m) | 5h 16m (316m) |
+| 150 Mbps | 3h 29m (209m) | 3h 31m (211m) |
+| 300 Mbps | 1h 45m (105m) | 1h 45m (105m) |
+| 500 Mbps | 1h 3m (63m) | 1h 3m (63m) |
+| 1000 Mbps | 31m | 32m |
 
 ## 2. Call of Duty: Warzone / BO7 (300 HP Armor Plate TTK Matrix)
 | Weapon | Fire Rate | Base Body Damage | 300 HP (1 HS) | 300 HP (Body Only) |
@@ -62,10 +62,10 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ## 5. Roblox DevEx & Marketplace 30% Fee Reference
 | Gross Sales Robux | DevEx Payout (After 30% Fee at 0.0038) | Net Breakdown |
 | --- | --- | --- |
-| 30,000 R$ | $114.00 USD (if already net) | 21,000 net R$ -> $79.80 USD (after 30% fee) |
-| 50,000 R$ | $190.00 USD (if already net) | 35,000 net R$ -> $133.00 USD (after 30% fee) |
-| 100,000 R$ | $380.00 USD (if already net) | 70,000 net R$ -> $266.00 USD (after 30% fee) |
-| 500,000 R$ | $1900.00 USD (if already net) | 350,000 net R$ -> $1330.00 USD (after 30% fee) |
+| 30,000 R$ | $114.00 USD ($0.0038/R$ Net) | 21,000 R$ after 30% Gamepass cut |
+| 50,000 R$ | $190.00 USD ($0.0038/R$ Net) | 35,000 R$ after 30% Gamepass cut |
+| 100,000 R$ | $380.00 USD ($0.0038/R$ Net) | 70,000 R$ after 30% Gamepass cut |
+| 500,000 R$ | $1900.00 USD ($0.0038/R$ Net) | 350,000 R$ after 30% Gamepass cut |
 
 ## 6. CS2 Loss Bonus Ladder & Buy Floor Reference
 | Consecutive Losses | Round Loss Bonus |
@@ -88,7 +88,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ## 9. Game Roster Summary
 ### Grand Theft Auto VI
 - Category: Open-World Action
-- Tagline: 212 GB SSD Fit Check, Live Keypad Tracker & GTA Online / Crew Payout Splitter
+- Tagline: 212 GB SSD Fit, 61 Haptic Cheats, Story Money/Robberies, 30fps Tuner & Platinum Tracker
 
 ### Call of Duty: Warzone & Multiplayer
 - Category: First-Person Shooter
@@ -126,12 +126,15 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - Category: Multiplayer Open-World
 - Tagline: Cayo Perico Payout Splitter (15% Crew Floor), Hard Mode & Bag Fill Solver
 
-## 10. Complete Canonical Route Index (132 Pages)
-- https://playunpause.com/ — Unpause — Instant Console Storage & Game Math Tools
-- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB Preload) — Unpause
-- https://playunpause.com/gta-6/safe-codes — GTA 6 Safe & Door Combinations Keypad — Unpause
-- https://playunpause.com/gta-6/heist-split — GTA Online / Crew Payout Estimator & Split — Unpause
-- https://playunpause.com/gta-6/night-run — GTA 6 Weeknight Routes & Missables Shield — Unpause
+## 10. Complete Canonical Route Index (121 Pages)
+- https://playunpause.com/ — Unpause — GTA VI Launch Companion & Game Math Tools
+- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB + Patch 1.002.001) — Unpause
+- https://playunpause.com/gta-6/cheats — GTA 6 Cheats (61 Codes & Haptic D-Pad Simulator) — Unpause
+- https://playunpause.com/gta-6/money — GTA 6 Money Guide (Ch. 1 Cash Wipe Alert & ROI) — Unpause
+- https://playunpause.com/gta-6/robberies — GTA 6 Robberies Guide (Randomized Safes & CCTV) — Unpause
+- https://playunpause.com/gta-6/settings — GTA 6 Best 30fps Settings, DF Specs & PS5 Firmware — Unpause
+- https://playunpause.com/gta-6/platinum — GTA 6 Platinum Tracker (Missable, 15 Saves & — Unpause
+- https://playunpause.com/gta-6/ultimate — GTA 6 $99.99 Ultimate Edition Unlock Checklist — Unpause
 - https://playunpause.com/cod-warzone — CoD Warzone 300 HP TTK & Camo Tracker — Unpause
 - https://playunpause.com/fortnite — Fortnite Battle Pass XP Pace Calculator — Unpause
 - https://playunpause.com/minecraft — Minecraft 8:1 Nether Portal & Stronghold — Unpause
@@ -143,14 +146,14 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - https://playunpause.com/gta-online — GTA Online Cayo Perico Payout Splitter — Unpause
 - https://playunpause.com/gta-6/storage/xbox-series-s-512gb — GTA 6 Xbox Series S 512GB Fit Check (212 GB) — Unpause
 - https://playunpause.com/gta-6/storage/xbox-series-s-1tb — GTA 6 Xbox Series S 1TB Storage Check (212 GB) — Unpause
-- https://playunpause.com/gta-6/storage/xbox-series-x-1tb — GTA 6 Xbox Series X 1TB Storage & NZ Unlock — Unpause
+- https://playunpause.com/gta-6/storage/xbox-series-x-1tb — GTA 6 Xbox Series X 1TB Storage & 120Hz VRR — Unpause
 - https://playunpause.com/gta-6/storage/ps5-base-825gb — GTA 6 PS5 825GB & CFI-2100 Storage Check — Unpause
 - https://playunpause.com/gta-6/storage/ps5-slim-1tb — GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause
-- https://playunpause.com/gta-6/storage/ps5-pro-2tb — GTA 6 PS5 Pro 2TB Storage & Patch Check — Unpause
-- https://playunpause.com/gta-6/storage/212gb-day-one-patch — GTA 6 212 GB + Day-1 Patch Storage Buffer — Unpause
+- https://playunpause.com/gta-6/storage/ps5-pro-2tb — GTA 6 PS5 Pro 2TB Storage & 1440p PSSR — Unpause
+- https://playunpause.com/gta-6/storage/212gb-day-one-patch — GTA 6 Patch 1.002.001 Size (+0.6 GB PS5 / +1.6 GB — Unpause
 - https://playunpause.com/gta-6/storage/external-usb-drive-xbox-ps5 — Can GTA 6 Run From External USB Drive? Rules — Unpause
-- https://playunpause.com/gta-6/unlock-time/new-zealand-trick-xbox-ps5 — GTA 6 New Zealand Unlock Trick (Xbox vs PS5) — Unpause
-- https://playunpause.com/gta-6/unlock-time/ps5-midnight-region-lock — Why Changing PS5 Clock Does Not Unlock Early — Unpause
+- https://playunpause.com/gta-6/unlock-time/new-zealand-trick-xbox-ps5 — GTA 6 Xbox vs PS5 Launch Specs & Patch 1.002.001 — Unpause
+- https://playunpause.com/gta-6/unlock-time/ps5-midnight-region-lock — PS5 Firmware 26.07-14.23.00 & SSD Space Check — Unpause
 - https://playunpause.com/gta-6/download-time/25-mbps — GTA 6 Download Time on 25 Mbps (20h 56m) — Unpause
 - https://playunpause.com/gta-6/download-time/50-mbps — GTA 6 Download Time on 50 Mbps (10h 28m) — Unpause
 - https://playunpause.com/gta-6/download-time/100-mbps — GTA 6 Download Time on 100 Mbps (5h 14m) — Unpause
@@ -161,20 +164,6 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - https://playunpause.com/gta-6/download-time/1000-mbps-gigabit — GTA 6 Download Time on 1000 Mbps Gigabit (31m) — Unpause
 - https://playunpause.com/gta-6/download-time/starlink-satellite — GTA 6 Download Time on 115 Mbps (4h 33m) — Unpause
 - https://playunpause.com/gta-6/download-time/5g-home-internet — GTA 6 Download Time on 180 Mbps (2h 54m) — Unpause
-- https://playunpause.com/gta-6/safe-codes/vice-beach — GTA 6 Vice Beach Safe Codes & Clues — Unpause
-- https://playunpause.com/gta-6/safe-codes/port-gellhorn — GTA 6 Port Gellhorn Safe Codes & Clues — Unpause
-- https://playunpause.com/gta-6/safe-codes/leonida-keys — GTA 6 Leonida Keys Safe Codes & Clues — Unpause
-- https://playunpause.com/gta-6/safe-codes/grassrivers — GTA 6 Grassrivers Safe Codes & Clues — Unpause
-- https://playunpause.com/gta-6/safe-codes/ambrosia — GTA 6 Ambrosia Safe Codes & Clues — Unpause
-- https://playunpause.com/gta-6/safe-codes/mount-kalaga — GTA 6 Mount Kalaga Safe Codes & Clues — Unpause
-- https://playunpause.com/gta-6/heist-split/2-player-duo — GTA 6 2-Player Duo Heist Split Calculator — Unpause
-- https://playunpause.com/gta-6/heist-split/3-player-trio — GTA 6 3-Player Trio Heist Split Calculator — Unpause
-- https://playunpause.com/gta-6/heist-split/4-player-squad — GTA 6 4-Player Squad Heist Split Calculator — Unpause
-- https://playunpause.com/gta-6/heist-split/equal-25-percent — GTA 6 Equal 25% 4-Way Heist Split Math — Unpause
-- https://playunpause.com/gta-6/stock-market-planner — GTA 6 Two-Character Stock Market Planner — Unpause
-- https://playunpause.com/gta-6/night-run/45-minute-route — GTA 6 45-Minute Express Weeknight Route — Unpause
-- https://playunpause.com/gta-6/night-run/90-minute-route — GTA 6 90-Minute Standard Night Run Route — Unpause
-- https://playunpause.com/gta-6/missables-shield — GTA 6 Spoiler-Free Missables Lockout Shield — Unpause
 - https://playunpause.com/cod-warzone/ttk/c9-smg — C9 (SMG) Warzone TTK (544 ms @ 300 HP) — Unpause
 - https://playunpause.com/cod-warzone/ttk/xm4 — XM4 Warzone TTK (624 ms @ 300 HP) — Unpause
 - https://playunpause.com/cod-warzone/ttk/m4 — M4 Warzone TTK (720 ms @ 300 HP) — Unpause

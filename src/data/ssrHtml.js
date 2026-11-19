@@ -151,7 +151,7 @@ function stampHtmlGameAttr(html, gameId = 'gta-6') {
   });
 }
 
-export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 6.99) {
+export function renderSeoHtmlDocument(baseHtml, resolution, passPriceUsd = 0) {
   if (!resolution || resolution.notFound || !resolution.route) {
     const title = 'Page Not Found — Unpause';
     const desc =

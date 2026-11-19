@@ -181,7 +181,7 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 116px;
   scroll-padding-bottom: 84px;
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: var(--bg-canvas);
   color: var(--ink-primary);
 }
@@ -202,7 +202,7 @@ body {
     radial-gradient(circle at 12% 0%, var(--game-accent-soft) 0%, transparent 42%),
     radial-gradient(circle at 88% 10%, rgba(56, 189, 248, 0.06) 0%, transparent 38%);
   background-attachment: fixed;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 220ms var(--ease-spring), color 220ms var(--ease-spring);
@@ -897,6 +897,11 @@ textarea {
    FORM INPUTS, SLIDERS, RADIO CARDS, PILLS & BUTTONS
    ========================================================================= */
 .section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  line-height: 1.35;
+  max-width: 100%;
   font-family: var(--font-display);
   font-size: 0.84rem;
   font-weight: 600;
@@ -2521,6 +2526,12 @@ input[type='range']::-moz-range-thumb {
   display: none;
 }
 
+@media (min-width: 861px) {
+  .mobile-bottom-rail {
+    display: none !important;
+  }
+}
+
 @media (max-width: 1020px) {
   .console-grid,
   .console-radio-grid {
@@ -2621,7 +2632,8 @@ input[type='range']::-moz-range-thumb {
 
   .mobile-live-verdict {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
     padding: 12px 14px;
@@ -2629,6 +2641,7 @@ input[type='range']::-moz-range-thumb {
     background: var(--bg-recessed);
     border: 1px solid var(--border-strong);
     margin-bottom: 14px;
+    overflow: hidden;
   }
 
   .mobile-live-verdict.ok {
@@ -2722,7 +2735,7 @@ input[type='range']::-moz-range-thumb {
     bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 60;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     padding: 5px;
     border-radius: 14px;
@@ -2785,6 +2798,14 @@ input[type='range']::-moz-range-thumb {
 }
 
 @media (max-width: 640px) {
+  .filter-pill {
+    white-space: normal;
+    text-align: center;
+    max-width: 100%;
+    height: auto;
+    line-height: 1.3;
+  }
+
   .nz-hud-pill {
     display: none;
   }
@@ -4130,5 +4151,686 @@ input[type='range']::-moz-range-thumb {
 
   .quick-game-pill.active::after {
     background: Highlight;
+  }
+}
+
+
+/* =========================================================================
+   LAUNCH-DAY GTA VI OVERHAUL: SPOILER SHIELD, HAPTIC D-PAD, MONEY/ROBBERY,
+   30FPS CONSOLE TUNER & PLATINUM / ULTIMATE TRACKERS
+   ========================================================================= */
+.tactile-press {
+  transition: transform 120ms var(--ease-out), border-color 140ms var(--ease-out), background-color 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+}
+
+.tactile-press:active {
+  transform: scale(0.97);
+}
+
+/* Sticky 1-Tap Global Spoiler Shield Bar */
+.spoiler-shield-bar {
+  position: sticky;
+  top: 66px;
+  z-index: 32;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 89, 100, 0.28);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+
+.spoiler-shield-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.spoiler-shield-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.spoiler-shield-hint {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+}
+
+.spoiler-chapter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.spoiler-ch-pill {
+  min-height: 34px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+  color: var(--ink-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.spoiler-ch-pill.active {
+  border-color: var(--coral-border);
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.spoiler-guard-wrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.spoiler-blurred-body {
+  filter: blur(8px);
+  opacity: 0.42;
+  pointer-events: none;
+  user-select: none;
+}
+
+.spoiler-overlay-scrim {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(12, 9, 22, 0.56);
+  backdrop-filter: blur(4px);
+}
+
+.spoiler-overlay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--coral-border);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+}
+
+/* Tool A: Cheat Warning, Trigger, Haptic D-Pad & Cards */
+.cheat-warning-banner,
+.money-stop-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 15px;
+  margin-bottom: 14px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 89, 100, 0.48);
+  background: rgba(255, 89, 100, 0.12);
+}
+
+.cheat-warning-banner.fw-alert {
+  border-color: rgba(245, 158, 11, 0.48);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.cheat-warning-banner strong,
+.money-stop-banner strong {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--ink-primary);
+  margin-bottom: 3px;
+}
+
+.cheat-warning-banner p,
+.money-stop-banner p {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.48;
+  color: var(--ink-secondary);
+}
+
+.cheat-meta-grid,
+.collectible-counters-grid,
+.tuner-console-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cheat-meta-card,
+.collectible-card,
+.graveyard-export-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+}
+
+.cheat-trigger-big {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--ocean-border);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ocean);
+}
+
+.cheat-meta-sub {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+
+.cheat-cat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cheat-cat-badge {
+  font-size: 0.71rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--ink-secondary);
+}
+
+.cheat-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.dpad-stage {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+}
+
+.dpad-stage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dpad-effect-line {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-secondary);
+}
+
+.dpad-stage-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.combo-token-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.combo-step-chip {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-secondary);
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+.combo-step-chip.lit {
+  border-color: var(--coral);
+  background: var(--coral-soft);
+  color: var(--coral);
+  box-shadow: 0 0 14px rgba(255, 89, 100, 0.35);
+}
+
+.combo-step-chip.done {
+  border-color: var(--teal-border);
+  color: var(--teal-dark);
+}
+
+.controller-sim-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.dpad-cross-box {
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  grid-template-areas:
+    '. up .'
+    'left center right'
+    '. down .';
+  justify-content: center;
+  gap: 6px;
+}
+
+.dpad-up { grid-area: up; }
+.dpad-left { grid-area: left; }
+.dpad-right { grid-area: right; }
+.dpad-down { grid-area: down; }
+
+.dpad-btn {
+  width: 58px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dpad-btn.dpad-center {
+  grid-area: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dpad-btn.active-glow,
+.dpad-face-btn.active-glow {
+  border-color: var(--coral);
+  background: var(--coral-soft);
+  color: var(--coral);
+  transform: scale(0.97);
+  box-shadow: 0 0 16px rgba(255, 89, 100, 0.45);
+}
+
+.controller-face-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dpad-face-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  cursor: pointer;
+}
+
+.dpad-face-btn span {
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+}
+
+.dpad-tap-log {
+  margin-top: 12px;
+  font-size: 0.74rem;
+  color: var(--teal-dark);
+}
+
+.cheats-list-grid,
+.money-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.cheat-card,
+.money-method-card,
+.robbery-tier-card {
+  padding: 13px 15px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+}
+
+.cheat-card.selected,
+.robbery-tier-card.cleared {
+  border-color: var(--teal-border);
+  background: var(--bg-surface);
+}
+
+.money-method-card.wipe-card {
+  border-color: rgba(255, 89, 100, 0.5);
+  background: rgba(255, 89, 100, 0.08);
+}
+
+.cheat-card-top,
+.money-method-head,
+.collectible-head,
+.tuner-spec-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cheat-select-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cheat-select-btn strong {
+  font-size: 0.9rem;
+}
+
+.cheat-card-cat,
+.money-ch-pill,
+.setting-tag,
+.tuner-res-pill {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--ink-muted);
+}
+
+.challenge-done {
+  border-color: var(--teal-border);
+  background: var(--teal-soft);
+  color: var(--teal-dark);
+}
+
+.cheat-card-effect,
+.tuner-note {
+  margin: 8px 0 0;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+
+.cheat-combo-inline,
+.money-payout-range {
+  margin-top: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ocean);
+}
+
+.cheat-challenge-note,
+.money-gear-note {
+  margin-top: 6px;
+  font-size: 0.73rem;
+  color: var(--ink-muted);
+}
+
+.money-est-val,
+.collectible-count-big {
+  font-size: 1rem;
+  color: var(--teal-dark);
+}
+
+.robbery-alert-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--ocean-border);
+  background: var(--bg-recessed);
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
+}
+
+.robbery-tier-title {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+  color: var(--ink-primary);
+}
+
+/* Tool C: 30fps Console Cards & Day-1 Settings Checklist */
+.tuner-spec-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+  color: var(--ink-primary);
+  cursor: pointer;
+}
+
+.tuner-spec-card.selected {
+  border-color: var(--ocean);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--ocean);
+}
+
+.tuner-spec-line {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.tuner-fps-line {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: var(--teal-dark);
+}
+
+.settings-checklist-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.setting-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+  color: var(--ink-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.setting-check-row.checked {
+  border-color: var(--teal-border);
+  background: var(--bg-surface);
+}
+
+.setting-box {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--teal-dark);
+}
+
+.setting-box.done {
+  border-color: var(--teal-border);
+  background: var(--teal-soft);
+}
+
+.setting-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.setting-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.setting-copy p {
+  margin: 4px 0 0;
+  font-size: 0.77rem;
+  color: var(--ink-secondary);
+}
+
+/* Tool D: Thumb Counters & 15-Save-Slot Tracker */
+.thumb-counter-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.thumb-counter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  min-width: 68px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.thumb-counter-btn.primary {
+  border-color: var(--teal-border);
+  background: var(--teal-soft);
+  color: var(--teal-dark);
+}
+
+.save-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.save-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-recessed);
+}
+
+.save-slot-row.logged {
+  border-color: var(--teal-border);
+}
+
+.save-slot-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 38px;
+  min-width: 58px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save-slot-check.done {
+  border-color: var(--teal-border);
+  background: var(--teal-soft);
+  color: var(--teal-dark);
+}
+
+.save-slot-input {
+  min-height: 38px;
+  padding: 6px 9px;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 820px) {
+  .cheat-meta-grid,
+  .collectible-counters-grid,
+  .tuner-console-grid,
+  .cheats-list-grid,
+  .money-methods-grid,
+  .save-slot-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .controller-sim-grid {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
+  .controller-face-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .spoiler-shield-bar {
+    position: sticky;
+    top: 52px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 }
