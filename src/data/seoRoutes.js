@@ -30,6 +30,7 @@ export const GAME_TO_CANONICAL_PATH = {
 };
 
 export const TAB_TO_CANONICAL_PATH = {
+  session: '/gta-6',
   storage: '/gta-6/storage',
   cheats: '/gta-6/cheats',
   money: '/gta-6/money',
@@ -1288,23 +1289,52 @@ export const CORE_ROUTES = [
   {
     path: '/',
     gameId: 'gta-6',
-    tab: 'storage',
+    tab: 'session',
     cluster: 'Core Game Hubs',
     shortLabel: 'Home (GTA VI + All 10)',
     priority: '1.0',
     changefreq: 'daily',
-    title: clampTitle('Unpause — GTA VI Launch Companion & Game Math Tools'),
+    title: clampTitle('Unpause — GTA VI Leonida Hub & Game Math Tools'),
     description: clampDesc(
-      'Check GTA VI 212 GB SSD + Patch 1.002.001 fit, 61 haptic cheats, story money/robberies, 30fps DF tuner & Platinum tracking plus 9 live game tools free.'
+      'GTA VI Leonida Command Center: 212 GB SSD + Patch 1.002.001 fit, 6-star Heat Decoder, 23 Radio Stations, 30fps settings, 100% Tracker & 9 more game tools.'
     ),
-    h1: 'GTA VI Launch Companion & Console Fit Check',
+    h1: 'GTA VI Leonida Hub & Console Fit Command Center',
     answerSummary:
-      'GTA VI is OUT NOW. Verify 212 GB + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) storage fit, dial 61 haptic D-pad cheats, plan chapter-gated money & randomized safes, tune 30fps settings, and track Platinum collectibles — 100% free.',
+      'GTA VI is OUT NOW. Track 100% completion, 15 manual save slots, 212 GB SSD + Patch 1.002.001 fit, 30fps clarity settings, 6-Star Heat Decoder, Criminal Profile guard, and all 23 verified radio stations — 100% free with #s= share links.',
     ogImage: '/og-cover.png',
     ogAlt: 'Unpause — Clean second-screen calculators across 10 games',
     breadcrumbs: [],
     preset: { consoleId: 'xss-512', freeGb: 140, mbps: 120 },
     metaRows: [],
+    faqs: getGameFaqs('gta-6'),
+  },
+  {
+    path: '/gta-6',
+    gameId: 'gta-6',
+    tab: 'session',
+    cluster: 'GTA VI Launch Tools',
+    shortLabel: 'Leonida Command Center',
+    priority: '0.98',
+    changefreq: 'daily',
+    title: clampTitle('GTA VI Leonida Command Center (100%, SSD, Heat) — Unpause'),
+    description: clampDesc(
+      'Run the all-in-one GTA VI Leonida Hub: True 100% Tracker, 15 Save Slots, 212 GB SSD fit, 6-Star Heat Decoder, 23 Radio Stations & 9:16 Passport PNG export.'
+    ),
+    h1: 'PLAYUNPAUSE / GTA VI LEONIDA HUB',
+    answerSummary:
+      'All-in-one single-player GTA VI Session Hub featuring the True 100% Tracker, Ch. 1–4 Spoiler Shield, 15-Slot Save Guard, 212 GB + Patch 1.002.001 SSD surgery, 30fps settings, 6-Star Heat Decoder, and all 23 verified radio stations.',
+    ogImage: '/og-cover.png',
+    ogAlt: 'Unpause GTA VI Leonida Command Center & 9:16 Passport Exporter',
+    breadcrumbs: [
+      { name: 'Unpause', path: '/' },
+      { name: 'GTA VI Leonida Hub', path: '/gta-6' },
+    ],
+    preset: { consoleId: 'xss-512', mbps: 100 },
+    metaRows: [
+      { label: 'Launch Install Size', val: '212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)' },
+      { label: 'True 100% Tracker', val: '200 WAiNK · 100 Wildlife · 100 Flamingos · 300 Stunts · 15 Cards' },
+      { label: 'Verified Radio Dial', val: '22 Launch Stations + Secret #23 The Vault Radio' },
+    ],
     faqs: getGameFaqs('gta-6'),
   },
   {
@@ -1487,11 +1517,11 @@ export const CORE_ROUTES = [
     changefreq: 'weekly',
     title: clampTitle('GTA 6 $99.99 Ultimate Edition Unlock Checklist — Unpause'),
     description: clampDesc(
-      'Track when GTA VI $99.99 Ultimate Edition rewards unlock: why the Shizu Typhoon Squalo boat requires Chapter 4 and when to claim bonus cash post-Ch. 1.'
+      'Track when GTA VI $99.99 Ultimate Edition rewards unlock: why the Shitzu Squalo boat requires Chapter 4 and when to claim bonus cash post-Ch. 1.'
     ),
     h1: 'GTA VI $99.99 Ultimate Edition Chapter-Gated Checklist',
     answerSummary:
-      'Track every $99.99 Ultimate Edition entitlement behind the Spoiler Shield—highlighting why bonus cash should wait for Ch. 2 and why the Shizu Typhoon Squalo speedboat only unlocks at your dock in Chapter 4.',
+      'Track every $99.99 Ultimate Edition entitlement behind the Spoiler Shield—highlighting why bonus cash should wait for Ch. 2 and why the Shitzu Squalo speedboat only unlocks at your Washington Beach Canal dock in Chapter 4.',
     ogImage: '/og/gta-6-platinum.png',
     ogAlt: 'Unpause GTA VI Ultimate Edition Chapter Unlock Checklist',
     breadcrumbs: [
@@ -1500,7 +1530,7 @@ export const CORE_ROUTES = [
     ],
     preset: { subTab: 'ultimate' },
     metaRows: [
-      { label: 'Chapter 4 Dock Unlock', val: 'Shizu Typhoon Squalo (Offshore Boat)' },
+      { label: 'Chapter 4 Dock Unlock', val: 'Shitzu Squalo (Washington Beach Canal Dock)' },
       { label: 'Cash Claim Rule', val: 'Redeem cash bundle after Ch. 1 wallet wipe' },
     ],
     faqs: getGameFaqs('gta-6'),
@@ -1552,32 +1582,32 @@ export const CORE_ROUTES = [
     gameId: 'gta-6',
     tab: 'radio',
     cluster: 'GTA VI Launch Tools',
-    shortLabel: '6 Radio Stations & DMCA',
+    shortLabel: '23 Radio Stations & Vault',
     priority: '0.91',
     changefreq: 'weekly',
-    title: clampTitle('GTA 6 Radio Stations (6 Official Preview, DMCA & Headphones) — Unpause'),
+    title: clampTitle('GTA 6 Radio Stations (All 23 + Secret Vault) — Unpause'),
     description: clampDesc(
-      'Explore 6 verified GTA 6 launch radio stations (Cocoteo FM, Back Country, AfroBank, The Chamber 106.6, Flash FM, Dirty South), DMCA mute & headphones.'
+      'Browse all 23 verified GTA 6 radio stations (Flash FM, Cocoteo FM, The Chamber 106.6, Emotion 98.3 + Secret #23 The Vault Radio) & headphones rules.'
     ),
-    h1: 'GTA VI Official Radio Stations Preview, DMCA Safe Audio & Headphones Guide',
+    h1: 'GTA VI All 23 Radio Stations, Secret The Vault Radio & Headphones Guide',
     answerSummary:
-      'Filter 6 official launch-featured GTA VI radio stations (out of 22 total in-game stations) with verified hosts and preview tracks, plus the Twitch/YouTube DMCA mute checklist and $100+ On-Foot Headphones Electronics Store tip.',
+      'Filter all 22 verified GTA VI launch dial stations plus Secret #23 The Vault Radio (unlocked via the pink gas-mask poster inside The Vault Nightclub), Streamer Mode audio mute rules, and $100+ On-Foot Headphones Electronics Store tips.',
     ogImage: '/og/gta-6-radio.png',
-    ogAlt: 'Unpause GTA VI Verified Radio Stations & Streamer DMCA Guide',
+    ogAlt: 'Unpause GTA VI All 23 Verified Radio Stations & Streamer DMCA Guide',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'Radio & DMCA', path: '/gta-6/radio' },
+      { name: '23 Radio Stations', path: '/gta-6/radio' },
     ],
     preset: {},
     metaRows: [
-      { label: 'Verified Stations Shown', val: '6 Official Launch-Featured · 22 Total In-Game' },
+      { label: 'Verified Dial', val: '22 Launch Stations + Secret #23 The Vault Radio' },
       { label: 'Streamer DMCA Rule', val: 'Enable Settings -> Audio -> Mute Licensed Radio' },
       { label: 'On-Foot Headphones', val: '$100+ Electronics Store · Separate for Jason/Lucia' },
     ],
     faqs: [
       {
-        q: 'How many GTA 6 radio stations are confirmed in this launch preview?',
-        a: 'This guide lists 6 official launch-featured stations (Cocoteo FM, Back Country Radio, AfroBank FM, The Chamber 106.6, Flash FM, Dirty South Classics) out of 22 total in-game stations without unverified guesswork.',
+        q: 'How many GTA 6 radio stations are confirmed in this compendium?',
+        a: 'All 22 base radio stations (including Flash FM, Cocoteo FM, Back Country Radio, AfroBank FM, The Chamber 106.6, Dirty South Classics, Emotion 98.3, Vice City FM, V-Rock, WKTT, and The Wipe) plus Secret #23 The Vault Radio unlocked inside The Vault Nightclub.',
       },
       {
         q: 'How do on-foot radio headphones work for Jason and Lucia?',
@@ -1900,16 +1930,7 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
       ? new URLSearchParams(searchParamsInput.toString())
       : new URLSearchParams(searchParamsInput || '');
 
-  // 0. Bare /gta-6 and /gta-6/ -> single-hop 301 to /gta-6/storage
-  const lowerRaw = pathname.toLowerCase();
-  if (lowerRaw === '/gta-6' || lowerRaw === '/gta-6/') {
-    const qs = params.toString();
-    return {
-      status: 301,
-      redirectTo: `${CANONICAL_ORIGIN}/gta-6/storage${qs ? `?${qs}` : ''}`,
-    };
-  }
-
+  // 0. /gta-6 serves HTTP 200 Leonida Command Center; /gta-6/ trims via step 1 to /gta-6
   // 1. Trailing slash cleanup (except root '/')
   if (pathname.length > 1 && pathname.endsWith('/')) {
     const trimmed = pathname.slice(0, -1);

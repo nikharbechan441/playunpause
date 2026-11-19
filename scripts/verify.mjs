@@ -78,15 +78,17 @@ function createDistAssetsMock() {
             ? 'application/manifest+json; charset=utf-8'
             : ext === '.png'
               ? 'image/png'
-              : ext === '.xml'
-                ? 'application/xml; charset=utf-8'
-                : ext === '.txt'
-                  ? 'text/plain; charset=utf-8'
-                  : ext === '.js' || ext === '.mjs'
-                    ? 'application/javascript; charset=utf-8'
-                    : ext === '.css'
-                      ? 'text/css; charset=utf-8'
-                      : 'application/octet-stream';
+              : ext === '.jpg' || ext === '.jpeg'
+                ? 'image/jpeg'
+                : ext === '.xml'
+                  ? 'application/xml; charset=utf-8'
+                  : ext === '.txt'
+                    ? 'text/plain; charset=utf-8'
+                    : ext === '.js' || ext === '.mjs'
+                      ? 'application/javascript; charset=utf-8'
+                      : ext === '.css'
+                        ? 'text/css; charset=utf-8'
+                        : 'application/octet-stream';
         return new Response(buf, { status: 200, headers: { 'Content-Type': ct } });
       }
       return new Response('Not found', { status: 404 });
@@ -117,6 +119,7 @@ async function main() {
     { label: '"Nov 19 (1d)" countdown', regex: /Nov 19 \(1d\)/i },
     { label: '"225 GB" / "212-225 GB"', regex: /225\s*GB|212[–-]225\s*GB/i },
     { label: '"+35 GB" / "35 GB" patch copy', regex: /\+35\s*GB|35\s*GB Day-1|35\s*GB patch/i },
+    { label: 'banned "Typhoon" boat typo', regex: /\bTyphoon\b/i },
   ];
   scanBannedPatterns(
     [...srcFiles, ...publicTxtFiles, ...workerServerToolsFiles, ...distBundles],
@@ -140,6 +143,11 @@ async function main() {
 
   scanBannedPatterns(srcFiles.filter((f) => f.endsWith('.js') || f.endsWith('.jsx')), [
     { label: 'innerHTML / dangerouslySetInnerHTML', regex: /\.innerHTML\b|dangerouslySetInnerHTML/ },
+    { label: 'native alert()/confirm()/prompt()', regex: /\b(?:alert|confirm|prompt)\s*\(/ },
+  ]);
+
+  scanBannedPatterns(srcFiles.filter((f) => f.endsWith('.css')), [
+    { label: 'banned transition: all', regex: /transition\s*:\s*all\b/i },
   ]);
 
   // Security ship check: no secret values bundled into dist JS
@@ -188,10 +196,59 @@ async function main() {
     assert.match(src, /As an Amazon Associate I earn from qualifying purchases\./, `${affiliateFile} missing FTC disclosure`);
   }
 
-  // Direct test of Storage + Roblox Math + Wave 2 Withholding/PayPal + #s= hash share
+  // Direct test of Storage + Roblox Math + V2.2 Leonida Engine (#s=, chips, 23 radio stations, Shitzu Squalo)
   const { calcRobloxDevEx } = await import('../src/utils/gameMath.js');
+  const { LEONIDA_INSTALLED_GAMES, LEONIDA_RADIO_STATIONS } = await import('../src/data/games/leonidaV2Data.js');
+  const {
+    computeLeonidaStorage,
+    createDefaultLeonidaState,
+    decodeLeonidaShareHash,
+    encodeLeonidaShareHash,
+  } = await import('../src/utils/leonidaState.js');
   const { encodePlatinumShareHash, decodePlatinumShareHash } = await import('../src/utils/platinumHashShare.js');
   const { resolveSeoRequest, getSitemapRoutes } = await import('../src/data/seoRoutes.js');
+
+  assert.equal(LEONIDA_RADIO_STATIONS.length, 23, 'Expected all 23 Leonida radio stations (22 base + Secret #23)');
+  const secretVault = LEONIDA_RADIO_STATIONS.find((s) => s.num === 23);
+  assert.ok(secretVault && secretVault.name === 'The Vault Radio' && secretVault.secret === true);
+
+  const joinedJsBundle = distJs.map((rel) => readRel(rel)).join('\n');
+  assert.ok(joinedJsBundle.includes('Shitzu Squalo'), 'Built bundle must include Shitzu Squalo');
+  assert.ok(joinedJsBundle.includes('The Vault Radio'), 'Built bundle must include Secret #23 The Vault Radio');
+  for (const st of LEONIDA_RADIO_STATIONS) {
+    assert.ok(joinedJsBundle.includes(st.name), `Built bundle missing radio station: ${st.name}`);
+  }
+
+  // Toggling ANY of the 5 game chips recalculates verdict + segmented bar
+  const emptyStorage = computeLeonidaStorage({ consoleId: 'xss', includePatch: true, installedGames: [], otherUsedGb: 77, mbps: 100 });
+  for (const chip of LEONIDA_INSTALLED_GAMES) {
+    const toggled = computeLeonidaStorage({ consoleId: 'xss', includePatch: true, installedGames: [chip.id], otherUsedGb: 77, mbps: 100 });
+    assert.notEqual(toggled.diff, emptyStorage.diff, `Toggling chip ${chip.id} must recalculate verdict diff`);
+    assert.notEqual(toggled.gamesPct, emptyStorage.gamesPct, `Toggling chip ${chip.id} must recalculate bar segment width`);
+  }
+
+  // V2 #s=... hash round-trip + malformed guard
+  const v2Sample = createDefaultLeonidaState();
+  v2Sample.chapter = 3;
+  v2Sample.consoleId = 'ps5_slim';
+  v2Sample.installedGames = ['cod', 'fn'];
+  v2Sample.counts = { waink: 72, wildlife: 31, flamingos: 18, stunts: 99, cards: 6 };
+  v2Sample.balconyDone = true;
+  v2Sample.saves[1].saved = true;
+  const v2Hash = encodeLeonidaShareHash(v2Sample);
+  assert.match(v2Hash, /^#s=[A-Za-z0-9_-]+$/);
+  const v2Decoded = decodeLeonidaShareHash(v2Hash);
+  assert.ok(v2Decoded && v2Decoded.chapter === 3 && v2Decoded.consoleId === 'ps5_slim' && v2Decoded.balconyDone === true);
+  assert.deepEqual(v2Decoded.counts, v2Sample.counts);
+  assert.equal(v2Decoded.saves[1].saved, true);
+  for (const badV2 of [
+    '',
+    '#s=not_valid',
+    '#s=' + Buffer.from('{"v":2,"c":"invalid"}').toString('base64url'),
+    '#s=' + Buffer.from('{"__proto__":{"polluted":1},"v":2,"c":1,"con":"xss","k":[1,2,3,4,5],"sv":"000000000000000"}').toString('base64url'),
+  ]) {
+    assert.equal(decodeLeonidaShareHash(badV2), null, `Malformed V2 hash must return null cleanly: ${badV2}`);
+  }
   const net100k = calcRobloxDevEx({ grossRobux: 100000, isNetEarned: true });
   assert.equal(net100k.usdPayout, 380, 'calcRobloxDevEx 100k Net Earned must equal $380.00');
   assert.equal(net100k.withholdingPct, 0);
@@ -247,8 +304,15 @@ async function main() {
   }
 
   const sitemapXml = readRel('public/sitemap.xml');
+  assert.ok(sitemapXml.includes('https://playunpause.com/gta-6</loc>'), 'sitemap.xml missing /gta-6');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/fixes'), 'sitemap.xml missing /gta-6/fixes');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/radio'), 'sitemap.xml missing /gta-6/radio');
+
+  const bannerPath = path.join(ROOT, 'public/images/leonida-banner.jpg');
+  assert.ok(fs.existsSync(bannerPath), 'Missing public/images/leonida-banner.jpg');
+  const bannerBytes = fs.readFileSync(bannerPath);
+  assert.equal(bannerBytes[0], 0xff, 'leonida-banner.jpg must start with JPEG 0xFF');
+  assert.equal(bannerBytes[1], 0xd8, 'leonida-banner.jpg must start with JPEG 0xD8');
 
   console.log('[verify] 4/5 Auditing Worker SSR, cache headers & 301 redirects...');
   const workerMod = await import('../worker/index.js');
@@ -257,6 +321,7 @@ async function main() {
 
   const required200Routes = [
     '/',
+    '/gta-6',
     '/gta-6/storage',
     '/gta-6/cheats',
     '/gta-6/money',
@@ -324,7 +389,13 @@ async function main() {
   const manifestJson = JSON.parse(await manifestRes.text());
   assert.equal(manifestJson.name, 'PlayUnpause');
   assert.equal(manifestJson.display, 'standalone');
+  assert.equal(manifestJson.theme_color, '#0D0E12');
   assert.ok(Array.isArray(manifestJson.icons) && manifestJson.icons.length >= 2);
+
+  // Banner JPEG gate on Worker
+  const bannerRes = await worker.fetch(new Request('https://playunpause.com/images/leonida-banner.jpg'), workerEnv);
+  assert.equal(bannerRes.status, 200, 'Worker /images/leonida-banner.jpg must return 200');
+  assert.equal(bannerRes.headers.get('cross-origin-resource-policy'), 'cross-origin');
 
   // www -> apex 301 check on Worker
   const wwwWorkerRes = await worker.fetch(new Request('https://www.playunpause.com/gta-6/fixes?v=2'), workerEnv);
@@ -332,8 +403,7 @@ async function main() {
   assert.equal(wwwWorkerRes.headers.get('location'), 'https://playunpause.com/gta-6/fixes?v=2');
 
   const requiredRedirects = [
-    ['/gta-6', 'https://playunpause.com/gta-6/storage'],
-    ['/gta-6/', 'https://playunpause.com/gta-6/storage'],
+    ['/gta-6/', 'https://playunpause.com/gta-6'],
     ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/port-gellhorn', 'https://playunpause.com/gta-6/robberies'],

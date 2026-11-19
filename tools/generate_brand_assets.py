@@ -91,7 +91,7 @@ OG_CARDS = [
         "accent": (167, 139, 250),
         "category": "GTA VI PLATINUM & ULTIMATE TRACKER",
         "headline": "Ch. 1 Balcony Missable, 15 Slots & WAiNK 200",
-        "sub": "Track Positive Mental Attitude, 200 WAiNK Scans, 100 Animals & Ch. 4 Shizu Typhoon Squalo Unlock.",
+        "sub": "Track Positive Mental Attitude, 200 WAiNK Scans, 100 Animals & Ch. 4 Shitzu Squalo Unlock.",
         "pills": ["15 SAVE SLOTS", "200 WAINK / 100", "CH.4 SQUALO"],
     },
     {
@@ -177,10 +177,10 @@ OG_CARDS = [
     {
         "filename": "gta-6-radio.png",
         "accent": (44, 229, 181),
-        "category": "GTA VI RADIO PREVIEW",
-        "headline": "6 Official Launch Radio Stations",
-        "sub": "Verified Hosts & Preview Tracks (Out of 22 In-Game) Plus Streamer DMCA Mute & Headphones Tips.",
-        "pills": ["6 OF 22 STATIONS", "DMCA CHECKLIST", "$100+ HEADPHONES"],
+        "category": "GTA VI RADIO COMPENDIUM",
+        "headline": "All 23 Verified Radio Stations",
+        "sub": "22 Base + Secret #23 The Vault Radio, Streamer DMCA Mute & $100+ On-Foot Headphones.",
+        "pills": ["23 STATIONS", "THE VAULT #23", "DMCA CHECKLIST"],
     },
 ]
 

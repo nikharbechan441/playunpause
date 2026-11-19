@@ -59,6 +59,7 @@ import { useModalFocusTrap } from './utils/useModalFocusTrap.js';
 import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHero.jsx';
 import StorageUnlockDeck from './components/StorageUnlockDeck.jsx';
 import MultiGameToolDeck from './components/MultiGameToolDeck.jsx';
+import LeonidaCommandCenter from './components/gta6/LeonidaCommandCenter.jsx';
 import Gta6SpoilerShieldBar from './components/gta6/Gta6SpoilerShieldBar.jsx';
 import { isChunkLoadError, tryAutoReloadForStaleChunk } from './utils/chunkRecovery.js';
 
@@ -382,7 +383,7 @@ function readRouteFromLocation() {
       obsMode: false,
       notFound: false,
       gameId: 'gta-6',
-      tab: 'storage',
+      tab: 'session',
       legal: null,
       preset: {},
       presetKey: '/',
@@ -858,16 +859,18 @@ export default function App() {
     deckState.crewPresets,
   ]);
 
-  // Keyboard shortcuts: Ctrl/Cmd + K opens Game/Tool Switcher cleanly from anywhere, Escape closes active modal
+  // Keyboard shortcuts: Ctrl/Cmd + K opens Game/Tool Switcher (non-GTA6; Leonida handles Ctrl+K search), Escape closes active modal
   useEffect(() => {
     const onKeyDown = (e) => {
       if (isEmbed) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setShowProModal(false);
-        setShowSponsorModal(false);
-        setShowEmbedModal(false);
-        setShowGameModal((open) => !open);
+        if (!activeGamePack.isGta6Suite || legalSection || isNotFound) {
+          e.preventDefault();
+          setShowProModal(false);
+          setShowSponsorModal(false);
+          setShowEmbedModal(false);
+          setShowGameModal((open) => !open);
+        }
       } else if (e.key === 'Escape') {
         setShowGameModal(false);
         setShowProModal(false);
@@ -878,7 +881,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEmbed, legalSection]);
+  }, [isEmbed, legalSection, activeGamePack.isGta6Suite, isNotFound]);
 
   // Browser back/forward URL navigation support
   useEffect(() => {
@@ -1173,10 +1176,15 @@ export default function App() {
     skipNextPersistRef.current = true;
     try {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem('playunpause_gta6_leonida_v2');
       for (const oldKey of LEGACY_KEYS) {
         window.localStorage.removeItem(oldKey);
       }
-      if (window.location.hash && window.location.hash.toLowerCase().startsWith('#sync=')) {
+      if (
+        window.location.hash &&
+        (window.location.hash.toLowerCase().startsWith('#sync=') ||
+          window.location.hash.toLowerCase().startsWith('#s='))
+      ) {
         window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
       }
     } catch {
@@ -1540,8 +1548,7 @@ export default function App() {
     );
   }
 
-  const showMobileBottomRail =
-    !isNotFound && !isEmbed && !legalSection && activeGamePack.isGta6Suite;
+  const showMobileBottomRail = false;
 
   return (
     <div data-game={activeGamePack.id} className="game-theme-shell">
@@ -1861,6 +1868,7 @@ export default function App() {
           </section>
         ) : (
         <>
+        {!activeGamePack.isGta6Suite && (
         <section
           className="consumer-masthead gw-world-masthead"
           data-world-hero={activeGamePack.id}
@@ -1965,116 +1973,23 @@ export default function App() {
             </div>
           )}
         </section>
+        )}
 
         <ChunkErrorBoundary
           resetKey={`${activeGamePack.id}:${activeTab}`}
           onRecover={() => navigateToPath(activeHubPath)}
-          recoverLabel={activeGamePack.isGta6Suite ? 'Back to SSD & Patch Calculator' : `Reload ${activeGamePack.shortTitle} Studio`}
+          recoverLabel={activeGamePack.isGta6Suite ? 'Back to Leonida Command Center' : `Reload ${activeGamePack.shortTitle} Studio`}
         >
           <Suspense fallback={<div className="deck-panel gs-studio-skeleton" aria-busy="true" />}>
         {activeGamePack.isGta6Suite ? (
-          <div>
-            <Gta6SpoilerShieldBar
-              spoilerChapter={spoilerChapter}
-              onSelectChapter={setSpoilerChapter}
-              soundEnabled={deckState.soundEnabled}
-            />
-
-            <div className="gta-workspace-nav" role="tablist" aria-label="GTA VI Launch Tools">
-              {GTA_MODES.map((m, idx) => {
-                const IconM = m.icon;
-                const active = activeTab === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    id={`gta-tab-${m.id}`}
-                    type="button"
-                    role="tab"
-                    tabIndex={active ? 0 : -1}
-                    aria-selected={active}
-                    aria-controls="gta-tabpanel"
-                    className={`mode-tab ${active ? 'active' : ''}`}
-                    onClick={() => handleSelectTab(m.id)}
-                    onKeyDown={(e) => handleGtaTabKeyDown(e, idx)}
-                  >
-                    <IconM size={15} className="mode-tab-icon" aria-hidden="true" />
-                    <span>{m.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div
-              id="gta-tabpanel"
-              role="tabpanel"
-              aria-labelledby={`gta-tab-${activeTab}`}
-              className="deck-stage-transition"
-              key={`gta-${activeTab}`}
-            >
-              {activeTab === 'storage' && (
-                <StorageUnlockDeck
-                  gamePack={activeGamePack}
-                  runtimeConfig={runtimeConfig}
-                  soundEnabled={deckState.soundEnabled}
-                  nowMs={nowMs}
-                  isPro={deckState.isPro}
-                  storageProfiles={deckState.storageProfiles}
-                  onSaveStorageProfile={handleSaveStorageProfile}
-                  onDeleteStorageProfile={handleDeleteStorageProfile}
-                  onOpenProModal={() => setShowProModal(true)}
-                  initialPreset={routeState.preset}
-                  presetKey={routeState.presetKey}
-                />
-              )}
-
-              {activeTab === 'cheats' && (
-                <Gta6CheatDeck
-                  soundEnabled={deckState.soundEnabled}
-                  spoilerChapter={spoilerChapter}
-                  initialPreset={routeState.preset}
-                  presetKey={routeState.presetKey}
-                />
-              )}
-
-              {activeTab === 'money' && (
-                <Gta6MoneyRobberyDeck
-                  soundEnabled={deckState.soundEnabled}
-                  spoilerChapter={spoilerChapter}
-                  initialPreset={routeState.preset}
-                  presetKey={routeState.presetKey}
-                />
-              )}
-
-              {activeTab === 'settings' && (
-                <Gta6SettingsTunerDeck
-                  soundEnabled={deckState.soundEnabled}
-                  runtimeConfig={runtimeConfig}
-                />
-              )}
-
-              {activeTab === 'platinum' && (
-                <Gta6PlatinumUltimateDeck
-                  soundEnabled={deckState.soundEnabled}
-                  spoilerChapter={spoilerChapter}
-                  initialPreset={routeState.preset}
-                  presetKey={routeState.presetKey}
-                />
-              )}
-
-              {activeTab === 'fixes' && (
-                <Gta6FixesDeck
-                  soundEnabled={deckState.soundEnabled}
-                  initialPreset={routeState.preset}
-                  presetKey={routeState.presetKey}
-                  onSelectTab={handleSelectTab}
-                />
-              )}
-
-              {activeTab === 'radio' && (
-                <Gta6RadioDeck soundEnabled={deckState.soundEnabled} />
-              )}
-            </div>
-          </div>
+          <LeonidaCommandCenter
+            activeRoute={activeRoute}
+            preset={routeState.preset}
+            presetKey={routeState.presetKey}
+            runtimeConfig={runtimeConfig}
+            soundEnabled={deckState.soundEnabled}
+            onNavigatePath={navigateToPath}
+          />
         ) : (
           <div className="deck-stage-transition" key={`mg-${activeGamePack.id}`}>
             <MultiGameToolDeck

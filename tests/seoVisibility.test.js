@@ -216,8 +216,7 @@ test('Worker enforces www redirect, zero redirect chains, scoped /embed headers,
   assert.equal(wwwRes.headers.get('location'), 'https://playunpause.com/cod-warzone?hp=300');
 
   for (const [legacy, dest] of [
-    ['https://playunpause.com/gta-6', 'https://playunpause.com/gta-6/storage'],
-    ['https://playunpause.com/gta-6/', 'https://playunpause.com/gta-6/storage'],
+    ['https://playunpause.com/gta-6/', 'https://playunpause.com/gta-6'],
     ['https://playunpause.com/?game=cod-warzone', 'https://playunpause.com/cod-warzone'],
     ['https://playunpause.com/?tab=safes', 'https://playunpause.com/gta-6/robberies'],
     ['https://playunpause.com/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],

@@ -32,29 +32,29 @@
 :root[data-game='gta-6'],
 .game-theme-shell[data-game='gta-6'],
 .gs-workspace[data-game='gta-6'] {
-  --bg-canvas: #0c0916;
-  --bg-surface: #151026;
-  --bg-recessed: #1e1736;
-  --bg-elevated: #271e45;
-  --border-subtle: rgba(214, 203, 235, 0.14);
-  --border-strong: rgba(255, 92, 138, 0.34);
-  --ink-primary: #faf7ff;
-  --ink-secondary: #d6cbeb;
-  --ink-muted: #aca0c8;
-  --game-accent: #ff5c8a;
-  --game-accent-soft: rgba(255, 92, 138, 0.14);
-  --game-accent-ring: rgba(255, 92, 138, 0.42);
-  --select-accent: #22d3ee;
-  --select-soft: rgba(34, 211, 238, 0.14);
-  --select-ring: rgba(34, 211, 238, 0.4);
-  --cta-bg: #ff5c8a;
-  --cta-ink: #080b10;
-  --game-radius-panel: 18px;
-  --game-radius-card: 14px;
-  --game-radius-control: 12px;
-  --studio-grid-color: rgba(34, 211, 238, 0.055);
-  --studio-glow-a: rgba(255, 92, 138, 0.15);
-  --studio-glow-b: rgba(34, 211, 238, 0.12);
+  --bg-canvas: #0D0E12;
+  --bg-surface: #15171E;
+  --bg-recessed: #1B1E27;
+  --bg-elevated: #262A34;
+  --border-subtle: #262A34;
+  --border-strong: rgba(255, 90, 95, 0.42);
+  --ink-primary: #F5F2EB;
+  --ink-secondary: #D1D5DB;
+  --ink-muted: #9CA3AF;
+  --game-accent: #FF5A5F;
+  --game-accent-soft: rgba(255, 90, 95, 0.14);
+  --game-accent-ring: rgba(255, 90, 95, 0.42);
+  --select-accent: #14B8A6;
+  --select-soft: rgba(20, 184, 166, 0.14);
+  --select-ring: rgba(20, 184, 166, 0.4);
+  --cta-bg: #FF5A5F;
+  --cta-ink: #0D0E12;
+  --game-radius-panel: 12px;
+  --game-radius-card: 12px;
+  --game-radius-control: 8px;
+  --studio-grid-color: rgba(38, 42, 52, 0.25);
+  --studio-glow-a: rgba(255, 90, 95, 0.08);
+  --studio-glow-b: rgba(245, 166, 35, 0.06);
 }
 
 :root[data-theme='paper'][data-game='gta-6'],

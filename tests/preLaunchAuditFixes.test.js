@@ -30,6 +30,18 @@ import {
 } from '../src/utils/syncState.js';
 import { generateQrMatrix } from '../src/utils/qrCode.js';
 import {
+  LEONIDA_INSTALLED_GAMES,
+  LEONIDA_LAUNCH_FIXES,
+  LEONIDA_RADIO_STATIONS,
+} from '../src/data/games/leonidaV2Data.js';
+import {
+  computeFinishDate,
+  computeLeonidaStorage,
+  createDefaultLeonidaState,
+  decodeLeonidaShareHash,
+  encodeLeonidaShareHash,
+} from '../src/utils/leonidaState.js';
+import {
   LEGAL_META,
   resolveSeoRequest,
 } from '../src/data/seoRoutes.js';
@@ -199,9 +211,13 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   assert.equal(GTA6_SAVE_SLOT_TEMPLATES.filter((s) => s.group === 'chapter').length, 10);
   assert.equal(GTA6_SAVE_SLOT_TEMPLATES.filter((s) => s.group === 'freeroam').length, 5);
   assert.match(GTA6_PLATINUM_MISSABLES.warning, /0 missables for the in-game 100% Completion menu/i);
-  assert.equal(GTA6_LAUNCH_FIXES.length, 4);
-  assert.equal(GTA6_RADIO_STATIONS.length, 6);
-  assert.ok(GTA6_ULTIMATE_CLAIMS.some((u) => /Shizu Typhoon Squalo/i.test(u.title)));
+  assert.equal(GTA6_LAUNCH_FIXES.length, 5);
+  assert.equal(GTA6_RADIO_STATIONS.length, 23);
+  assert.ok(GTA6_ULTIMATE_CLAIMS.some((u) => /Shitzu Squalo/i.test(u.title)));
+  assert.equal(
+    GTA6_ULTIMATE_CLAIMS.some((u) => /Typhoon/i.test(u.title)),
+    false
+  );
 
   const gta6Meta = TOP_GAMES.find((g) => g.id === 'gta-6');
   assert.ok(gta6Meta);
@@ -210,6 +226,13 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   assert.match(serializedTop, /1\.002\.001/);
 
   for (const rel of [
+    'src/components/gta6/LeonidaCommandCenter.jsx',
+    'src/components/gta6/leonida/LeonidaSessionTab.jsx',
+    'src/components/gta6/leonida/LeonidaStorageTab.jsx',
+    'src/components/gta6/leonida/LeonidaSettingsTab.jsx',
+    'src/components/gta6/leonida/LeonidaHeatMoneyCheatsTab.jsx',
+    'src/components/gta6/leonida/LeonidaFixesRadioTab.jsx',
+    'src/components/gta6/leonida/LeonidaSessionRail.jsx',
     'src/components/gta6/Gta6SpoilerShieldBar.jsx',
     'src/components/gta6/Gta6CheatDeck.jsx',
     'src/components/gta6/Gta6MoneyRobberyDeck.jsx',
@@ -219,12 +242,14 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
     'src/components/gta6/Gta6RadioDeck.jsx',
     'src/components/gta6/WakeLockToggle.jsx',
   ]) {
-    assert.ok(fs.existsSync(path.join(ROOT, rel)), `Expected new GTA VI component ${rel}`);
+    assert.ok(fs.existsSync(path.join(ROOT, rel)), `Expected GTA VI component ${rel}`);
   }
 
+  const resolvedGta6Home = resolveSeoRequest('/gta-6');
+  assert.equal(resolvedGta6Home.status, 200, 'Expected /gta-6 to return 200 OK');
+
   for (const [oldPath, destUrl] of [
-    ['/gta-6', 'https://playunpause.com/gta-6/storage'],
-    ['/gta-6/', 'https://playunpause.com/gta-6/storage'],
+    ['/gta-6/', 'https://playunpause.com/gta-6'],
     ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/heist-split', 'https://playunpause.com/gta-online'],
@@ -241,7 +266,91 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
     assert.doesNotMatch(content, /225\s*GB|212[–-]225\s*GB/i, `Found stale 225 GB copy in ${rel}`);
     assert.doesNotMatch(content, /\+35\s*GB|35\s*GB\s*Day-1/i, `Found stale +35 GB patch copy in ${rel}`);
     assert.doesNotMatch(content, /0\s*\/\s*5\s*Free|0\s*\/\s*2\s*Free/i, `Found stale pin limit copy in ${rel}`);
+    assert.doesNotMatch(content, /Typhoon/i, `Found banned Typhoon string in ${rel}`);
   }
+
+  for (const rel of collectFiles('src', ['.css'])) {
+    const cssText = readRepoFile(rel);
+    assert.doesNotMatch(cssText, /transition\s*:\s*all\b/i, `Found banned transition: all in ${rel}`);
+  }
+  for (const rel of collectFiles('src', ['.js', '.jsx'])) {
+    const jsText = readRepoFile(rel);
+    assert.doesNotMatch(jsText, /\b(?:alert|confirm|prompt)\s*\(/, `Found banned native dialog in ${rel}`);
+  }
+});
+
+test('1B. Leonida V2.2: 23 radio stations + Vault #23, 5 game chips recalc, #s= roundtrip & malformed guard', () => {
+  assert.equal(LEONIDA_LAUNCH_FIXES.length, 5);
+  assert.equal(LEONIDA_RADIO_STATIONS.length, 23);
+  const vault = LEONIDA_RADIO_STATIONS.find((s) => s.num === 23);
+  assert.ok(vault && vault.name === 'The Vault Radio' && vault.secret === true);
+
+  // Toggling any of the 5 game chips changes installedGamesGb, diff, and bar proportions
+  const baseline = computeLeonidaStorage({
+    consoleId: 'xss',
+    includePatch: true,
+    installedGames: [],
+    otherUsedGb: 77,
+    mbps: 100,
+  });
+  assert.equal(baseline.isShort, false);
+  for (const chip of LEONIDA_INSTALLED_GAMES) {
+    const withChip = computeLeonidaStorage({
+      consoleId: 'xss',
+      includePatch: true,
+      installedGames: [chip.id],
+      otherUsedGb: 77,
+      mbps: 100,
+    });
+    assert.equal(withChip.installedGamesGb, chip.gb);
+    assert.notEqual(withChip.diff, baseline.diff);
+    assert.notEqual(withChip.gamesPct, baseline.gamesPct);
+  }
+
+  // #s= V2 hash round-trip + malformed guard
+  const sample = createDefaultLeonidaState();
+  sample.chapter = 4;
+  sample.consoleId = 'ps5_pro';
+  sample.includePatch = false;
+  sample.installedGames = ['cod', 'gta5'];
+  sample.otherUsedGb = 120;
+  sample.mbps = 250;
+  sample.balconyDone = true;
+  sample.counts = { waink: 88, wildlife: 42, flamingos: 19, stunts: 150, cards: 7 };
+  sample.saves[0].saved = true;
+  sample.saves[14].saved = true;
+
+  const hash = encodeLeonidaShareHash(sample);
+  assert.match(hash, /^#s=[A-Za-z0-9_-]+$/);
+  const decoded = decodeLeonidaShareHash(hash);
+  assert.ok(decoded);
+  assert.equal(decoded.chapter, 4);
+  assert.equal(decoded.consoleId, 'ps5_pro');
+  assert.equal(decoded.includePatch, false);
+  assert.deepEqual(decoded.installedGames, ['cod', 'gta5']);
+  assert.equal(decoded.otherUsedGb, 120);
+  assert.equal(decoded.mbps, 250);
+  assert.equal(decoded.balconyDone, true);
+  assert.deepEqual(decoded.counts, sample.counts);
+  assert.equal(decoded.saves[0].saved, true);
+  assert.equal(decoded.saves[14].saved, true);
+
+  for (const badHash of [
+    '',
+    '#s=!!!bad!!!',
+    '#s=e30',
+    '#s=' + Buffer.from('{"v":2,"c":"xss"}').toString('base64url'),
+    '#s=' + Buffer.from('{"v":1,"waink":10}').toString('base64url'),
+    '#s=' + Buffer.from('{"__proto__":{"p":1},"v":2,"c":1,"con":"xss","k":[0,0,0,0,0],"sv":"000000000000000"}').toString('base64url'),
+  ]) {
+    assert.equal(decodeLeonidaShareHash(badHash), null, `Malformed V2 hash must return null: ${badHash}`);
+  }
+
+  // Chapter Pacer finish date sanity
+  const finish = computeFinishDate({ pace: 'normal', chapter: 1, hoursPerDay: 2.5, nowDate: new Date('2026-11-19T12:00:00Z') });
+  assert.equal(finish.remHrs, 70);
+  assert.equal(finish.daysNeeded, 28);
+  assert.equal(finish.formattedDate, 'Dec 17');
 });
 
 test('2. Roblox DevEx net-earned mode yields $380.00 for 100k Robux without double 30% deduction', () => {
@@ -414,16 +523,18 @@ test('5. Ctrl+K switcher, fixed viewport modal centering, header aria-hidden lab
 test('6. Worker single-hop 301s, YouTube slug 301s, UTF-8 robots.txt & complete llms.txt', async () => {
   const env = makeWorkerEnv();
 
+  const gta6Res = await worker.fetch(new Request('https://playunpause.com/gta-6?src=short'), env);
+  assert.equal(gta6Res.status, 200, 'Expected 200 for https://playunpause.com/gta-6');
+
   for (const url of [
     'http://playunpause.com/gta-6?src=short',
     'http://www.playunpause.com/gta-6?src=short',
     'https://www.playunpause.com/gta-6?src=short',
-    'https://playunpause.com/gta-6?src=short',
     'https://playunpause.com/gta-6/?src=short',
   ]) {
     const res = await worker.fetch(new Request(url), env);
     assert.equal(res.status, 301, `Expected 301 for ${url}`);
-    assert.equal(res.headers.get('location'), 'https://playunpause.com/gta-6/storage?src=short');
+    assert.equal(res.headers.get('location'), 'https://playunpause.com/gta-6?src=short');
   }
 
   const wwwRes = await worker.fetch(new Request('https://www.playunpause.com/cod-warzone?x=1'), env);

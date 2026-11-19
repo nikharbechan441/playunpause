@@ -19,6 +19,7 @@ export function isStaticAssetPath(pathname) {
   return (
     p.startsWith('/assets/') ||
     p.startsWith('/fonts/') ||
+    p.startsWith('/images/') ||
     p.startsWith('/og/') ||
     (/\.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|eot|css|js|mjs|map|txt|xml|webmanifest|json)$/i.test(
       p
@@ -33,6 +34,7 @@ export function getStaticAssetCacheControl(pathname) {
     return 'public, max-age=31536000, immutable';
   }
   if (
+    p.startsWith('/images/') ||
     p.startsWith('/og/') ||
     p === '/og-cover.png' ||
     p === '/og-image.png' ||
@@ -95,7 +97,7 @@ export function buildCspHeader({ isEmbed = false } = {}) {
 }
 
 export function isPublicCrossOriginAssetPath(pathname) {
-  return /^\/(?:og\/[a-z0-9-]+\.png|og-cover\.png|og-image\.png|icon-[^/]+\.png|apple-touch-icon\.png|favicon\.[^/]+)$/i.test(
+  return /^\/(?:images\/[a-z0-9-]+\.(?:jpe?g|png|webp)|og\/[a-z0-9-]+\.png|og-cover\.png|og-image\.png|icon-[^/]+\.png|apple-touch-icon\.png|favicon\.[^/]+)$/i.test(
     String(pathname || '')
   );
 }

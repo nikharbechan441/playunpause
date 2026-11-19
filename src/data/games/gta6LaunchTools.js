@@ -327,7 +327,7 @@ export const GTA6_SAVE_SLOT_TEMPLATES = [
   { slot: 4, group: 'chapter', defaultLabel: 'Ch. 2 End · Pre-Chapter 3 Transition' },
   { slot: 5, group: 'chapter', defaultLabel: "Ch. 3 Start · Snap Gun, Jewelry & Randy's List" },
   { slot: 6, group: 'chapter', defaultLabel: 'Ch. 3 End · Dye Pack Jammer Unlocked' },
-  { slot: 7, group: 'chapter', defaultLabel: 'Ch. 4 Start · Shizu Typhoon Squalo Boat Dock' },
+  { slot: 7, group: 'chapter', defaultLabel: 'Ch. 4 Start · Shitzu Squalo Boat Dock' },
   { slot: 8, group: 'chapter', defaultLabel: 'Ch. 4 End · Large Bank Vault Seed ($65K-$205K)' },
   { slot: 9, group: 'chapter', defaultLabel: 'Ch. 5 Start · Late Story Entry' },
   { slot: 10, group: 'chapter', defaultLabel: 'Ch. 5 End · Finale Pre-Point-of-No-Return' },
@@ -400,65 +400,51 @@ export const GTA6_LAUNCH_FIXES = [
       'Wait strictly for official Rockstar Newswire announcements regarding any future PC release.',
     ],
   },
+  {
+    id: 'fast-travel-cars',
+    title: 'Fast Travel & Saving Cars',
+    badge: 'RYDEME & SCOOTER BROS',
+    isScamWarning: false,
+    summary:
+      'No map-warp fast travel in Leonida: book RydeMe ($100 skip via L2 + Triangle), ride buses/trains, or switch between Jason and Lucia.',
+    steps: [
+      'Open your Phone to book RydeMe ($100) and hold L2 + Triangle to skip directly to your destination.',
+      'Register prized cars at Pay \'n\' Spray so they become tracked Personal Vehicles.',
+      'Summon or recover registered Personal Vehicles anytime via the Scooter Bros app.',
+    ],
+  },
 ];
 
 export const GTA6_RADIO_META = {
-  featuredCount: 6,
-  totalInGameStations: 22,
-  badgeLabel: '6 Official Launch-Featured Stations · 22 Total In-Game',
+  featuredCount: 23,
+  totalInGameStations: 23,
+  badgeLabel: '22 Verified Launch Stations + Secret #23 The Vault Radio',
 };
 
 export const GTA6_RADIO_STATIONS = [
-  {
-    id: 'cocoteo-fm',
-    name: 'Cocoteo FM',
-    genre: 'Modern Latin',
-    hosts: ['Bad Bunny (El Martillo)', 'RaiNao (La Gata)'],
-    tracks: [],
-  },
-  {
-    id: 'back-country-radio',
-    name: 'Back Country Radio',
-    genre: 'Country',
-    hosts: ['Morgan Wallen (MW)', 'Lana Del Rey (Delta Dawne)', 'Jeremy Dufrene (Mud Dog Mike)'],
-    tracks: [],
-  },
-  {
-    id: 'afrobank-fm',
-    name: 'AfroBank FM',
-    genre: 'African Music',
-    hosts: ['Burna Boy (Burna)', 'Palms Trax (Palmsy)'],
-    tracks: [],
-  },
-  {
-    id: 'the-chamber-106-6',
-    name: 'The Chamber 106.6',
-    genre: 'Metal',
-    hosts: ['Kerry King (DJ Kerry)', 'Tom Araya (DJ Tom)'],
-    tracks: ['Black Sabbath — "I"', 'Pantera — "I\'m Broken"', 'Slayer — "Raining Blood"'],
-  },
-  {
-    id: 'flash-fm',
-    name: 'Flash FM',
-    genre: 'Pop',
-    hosts: ['Robyn', 'Alex Consani'],
-    tracks: [
-      'Charli xcx — "Good Ones"',
-      'MGMT — "Electric Feel"',
-      'Zara Larsson & PinkPantheress — "Midnight Sun (Girls Trip)"',
-    ],
-  },
-  {
-    id: 'dirty-south-classics',
-    name: 'Dirty South Classics',
-    genre: 'Southern Hip-Hop',
-    hosts: ['Trick Daddy', 'Trina'],
-    tracks: [
-      'David Banner ft. Lil\' Flip — "Like A Pimp"',
-      'JT Money ft. Sole — "Who Dat"',
-      'DJ Khaled ft. Trick Daddy, Rick Ross & Pitbull — "Born N Raised"',
-    ],
-  },
+  { id: 'flash-fm', num: 1, name: 'Flash FM', genre: 'Pop', hosts: ['Robyn', 'Alex Consani'], tracks: ['Charli xcx — "Good Ones"', 'MGMT — "Electric Feel"', 'Zara Larsson & PinkPantheress — "Midnight Sun"'], secret: false },
+  { id: 'cocoteo-fm', num: 2, name: 'Cocoteo FM', genre: 'Modern Latin', hosts: ['Bad Bunny (El Martillo)', 'RaiNao (La Gata)'], tracks: ['Bad Bunny — "El Martillo"', 'RaiNao — "La Gata"'], secret: false },
+  { id: 'back-country-radio', num: 3, name: 'Back Country Radio', genre: 'Country', hosts: ['Morgan Wallen', 'Lana Del Rey (Delta Dawne)', 'Jeremy Dufrene'], tracks: [], secret: false },
+  { id: 'afrobank-fm', num: 4, name: 'AfroBank FM', genre: 'African Music', hosts: ['Burna Boy', 'Palms Trax'], tracks: [], secret: false },
+  { id: 'the-chamber-106-6', num: 5, name: 'The Chamber 106.6', genre: 'Metal', hosts: ['Kerry King', 'Tom Araya'], tracks: ['Black Sabbath — "I"', 'Pantera — "I\'m Broken"', 'Slayer — "Raining Blood"'], secret: false },
+  { id: 'dirty-south-classics', num: 6, name: 'Dirty South Classics', genre: 'Southern Hip-Hop', hosts: ['Trick Daddy', 'Trina'], tracks: ['David Banner — "Like A Pimp"', 'JT Money — "Who Dat"', 'DJ Khaled — "Born N Raised"'], secret: false },
+  { id: 'emotion-98-3', num: 7, name: 'Emotion 98.3', genre: 'Classic Ballads / Soft Rock', hosts: [], tracks: [], secret: false },
+  { id: 'vice-city-fm', num: 8, name: 'Vice City FM', genre: '80s Pop / Classics', hosts: [], tracks: [], secret: false },
+  { id: 'v-rock', num: 9, name: 'V-Rock', genre: 'Hard Rock', hosts: [], tracks: [], secret: false },
+  { id: 'stockyard-fm', num: 10, name: 'Stockyard FM', genre: 'Hip-Hop / Trap', hosts: [], tracks: [], secret: false },
+  { id: 'vcrr', num: 11, name: 'VCRR', genre: 'Classic Rap / Electro', hosts: [], tracks: [], secret: false },
+  { id: 'honey-fm', num: 12, name: 'Honey FM', genre: 'R&B / Soul', hosts: [], tracks: [], secret: false },
+  { id: 'radio-la-ola', num: 13, name: 'Radio La Ola', genre: 'Latin / Tropical', hosts: [], tracks: [], secret: false },
+  { id: 'radio-on-u', num: 14, name: 'Radio On-U', genre: 'Dub / Reggae', hosts: [], tracks: [], secret: false },
+  { id: 'gloriana-blues', num: 15, name: 'Gloriana Blues Radio', genre: 'Blues', hosts: [], tracks: [], secret: false },
+  { id: 'leonida-jazz', num: 16, name: 'Leonida Jazz Radio', genre: 'Jazz', hosts: [], tracks: [], secret: false },
+  { id: 'symphony-fm', num: 17, name: 'Symphony FM', genre: 'Classical', hosts: [], tracks: [], secret: false },
+  { id: 'worldwide-fm', num: 18, name: 'Worldwide FM', genre: 'Global / Eclectic', hosts: [], tracks: [], secret: false },
+  { id: 'circoloco', num: 19, name: 'CircoLoco Records Radio', genre: 'House / Techno', hosts: [], tracks: [], secret: false },
+  { id: 'kaleidoscope-fm', num: 20, name: 'Kaleidoscope FM', genre: 'Indie / Alt', hosts: [], tracks: [], secret: false },
+  { id: 'wktt', num: 21, name: 'WKTT', genre: 'Talk Radio — We Know The Truth', hosts: [], tracks: [], secret: false },
+  { id: 'the-wipe', num: 22, name: 'The Wipe', genre: 'Talk / Comedy', hosts: [], tracks: [], secret: false },
+  { id: 'the-vault-radio', num: 23, name: 'The Vault Radio', genre: 'Secret #23', hosts: [], tracks: ['Unlock: scan pink gas-mask poster inside The Vault Nightclub in Vice City'], secret: true },
 ];
 
 export const GTA6_RADIO_GUIDES = {
@@ -485,9 +471,9 @@ export const GTA6_ULTIMATE_CLAIMS = [
     id: 'ult-squalo',
     minChapter: 4,
     exclusiveBadge: 'CHAPTER 4 ONLY',
-    title: 'Shizu Typhoon Squalo (Offshore Speedboat)',
+    title: 'Shitzu Squalo (Offshore Speedboat)',
     detail:
-      'Does NOT unlock in Chapters 1–3. Opens automatically at your Leonida Keys Marina dock only once Chapter 4 begins.',
+      'Does NOT unlock in Chapters 1–3. Opens automatically at your Washington Beach Canal dock only once Chapter 4 begins.',
   },
   {
     id: 'ult-starter-kit',

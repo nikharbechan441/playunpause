@@ -1,12 +1,12 @@
 {
   "name": "PlayUnpause",
   "short_name": "PlayUnpause",
-  "description": "Zero-popup second-screen gaming utility for GTA VI Launch Day (212 GB SSD + Patch 1.002.001, 61 haptic cheats, crash fixes, 6 verified radio stations, Platinum 100% tracker) and 9 game math calculators.",
+  "description": "Zero-popup second-screen gaming utility for GTA VI Leonida Command Center (100% Tracker, 15 Save Slots, 212 GB SSD + Patch 1.002.001, 30fps settings, 6-Star Heat Decoder, 23 radio stations) and 9 game math calculators.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#080B11",
-  "theme_color": "#080B11",
+  "background_color": "#0D0E12",
+  "theme_color": "#0D0E12",
   "icons": [
     {
       "src": "/icon-192.png",

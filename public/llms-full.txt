@@ -1,7 +1,7 @@
 # Unpause (playunpause.com) — Full Structured Reference & Game Math Facts
 
 Canonical origin: https://playunpause.com
-Total indexable clean routes: 123
+Total indexable clean routes: 124
 Important attribution note: playunpause.com is an independent unofficial utility. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA.
 
 ## 1. GTA VI Console Storage Specs (Launch Day Live — Nov 19, 2026)
@@ -126,8 +126,9 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - Category: Multiplayer Open-World
 - Tagline: Cayo Perico Payout Splitter (15% Crew Floor), Hard Mode & Bag Fill Solver
 
-## 10. Complete Canonical Route Index (123 Pages)
-- https://playunpause.com/ — Unpause — GTA VI Launch Companion & Game Math Tools
+## 10. Complete Canonical Route Index (124 Pages)
+- https://playunpause.com/ — Unpause — GTA VI Leonida Hub & Game Math Tools
+- https://playunpause.com/gta-6 — GTA VI Leonida Command Center (100%, SSD, Heat) — Unpause
 - https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB + Patch 1.002.001) — Unpause
 - https://playunpause.com/gta-6/cheats — GTA 6 Cheats (61 Codes & Haptic D-Pad Simulator) — Unpause
 - https://playunpause.com/gta-6/money — GTA 6 Money Guide (Ch. 1 Cash Wipe Alert & ROI) — Unpause
@@ -136,7 +137,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - https://playunpause.com/gta-6/platinum — GTA 6 100% Tracker (Missable, 15 Saves & — Unpause
 - https://playunpause.com/gta-6/ultimate — GTA 6 $99.99 Ultimate Edition Unlock Checklist — Unpause
 - https://playunpause.com/gta-6/fixes — GTA 6 Launch Fixes (PS5 FW 26.07-14.23.00 & PSN — Unpause
-- https://playunpause.com/gta-6/radio — GTA 6 Radio Stations (6 Official Preview, DMCA & — Unpause
+- https://playunpause.com/gta-6/radio — GTA 6 Radio Stations (All 23 + Secret Vault) — Unpause
 - https://playunpause.com/cod-warzone — CoD Warzone 300 HP TTK & Camo Tracker — Unpause
 - https://playunpause.com/fortnite — Fortnite Battle Pass XP Pace Calculator — Unpause
 - https://playunpause.com/minecraft — Minecraft 8:1 Nether Portal & Stronghold — Unpause

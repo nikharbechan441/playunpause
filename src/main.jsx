@@ -6,6 +6,7 @@ import './styles/deck.css';
 import './styles/gameStudios.css';
 import './styles/gameWorldGraphics.css';
 import './styles/gameTypography.css';
+import './styles/leonidaHud.css';
 
 if (typeof window !== 'undefined') {
   window.addEventListener('vite:preloadError', (event) => {

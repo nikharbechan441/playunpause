@@ -600,7 +600,7 @@ export default function Gta6PlatinumUltimateDeck({
             <SpotlightPanel className="robbery-alert-strip" style={{ marginBottom: '12px' }}>
               <Anchor size={16} color="#FF5964" aria-hidden="true" />
               <span>
-                <strong>$99.99 Ultimate Edition Rule:</strong> The flagship <strong>Shizu Typhoon Squalo</strong> speedboat unlocks strictly in <strong>Chapter 4</strong> at the Keys dock, and bonus cash should be claimed in <strong>Chapter 2+</strong> after the Ch. 1 wallet reset.
+                <strong>$99.99 Ultimate Edition Rule:</strong> The flagship <strong>Shitzu Squalo</strong> speedboat unlocks strictly in <strong>Chapter 4</strong> at the Keys dock, and bonus cash should be claimed in <strong>Chapter 2+</strong> after the Ch. 1 wallet reset.
               </span>
             </SpotlightPanel>
 
