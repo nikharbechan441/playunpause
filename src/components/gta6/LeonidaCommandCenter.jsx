@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   Download,
@@ -74,22 +74,34 @@ export default function LeonidaCommandCenter({
     const hadLocal = hasSavedLeonidaState();
     const rawHash = typeof window !== 'undefined' ? window.location.hash : '';
     const decoded = decodeLeonidaShareHash(rawHash);
+    const mapped = mapRoutePresetToLeonida(activeRoute, preset);
+    const routePath = activeRoute?.path || '/';
+    const isSpecificStorageScenario =
+      routePath.startsWith('/gta-6/storage/') || routePath.startsWith('/gta-6/download/');
+
+    const baseWithRoute = {
+      ...localState,
+      tab: mapped.tab,
+      ...(mapped.activeFix ? { activeFix: mapped.activeFix } : {}),
+      ...(isSpecificStorageScenario && mapped.consoleId ? { consoleId: mapped.consoleId } : {}),
+      ...(isSpecificStorageScenario && mapped.mbps ? { mbps: mapped.mbps } : {}),
+    };
 
     if (decoded) {
       if (hadLocal) {
         return {
-          state: sanitizeLeonidaState({ ...localState, ...decoded }),
+          state: sanitizeLeonidaState({ ...baseWithRoute, ...decoded }),
           sharedConflict: decoded,
         };
       }
       return {
-        state: sanitizeLeonidaState({ ...localState, ...decoded }),
+        state: sanitizeLeonidaState({ ...baseWithRoute, ...decoded }),
         sharedConflict: null,
       };
     }
 
     return {
-      state: localState,
+      state: sanitizeLeonidaState(baseWithRoute),
       sharedConflict: null,
     };
   });
@@ -101,6 +113,10 @@ export default function LeonidaCommandCenter({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [radioSearchSync, setRadioSearchSync] = useState(() => ({
+    query: initialSetup.state.radioQuery || '',
+    nonce: 0,
+  }));
 
   const [wakeEnabled, setWakeEnabled] = useState(false);
   const wakeEnabledRef = useRef(false);
@@ -128,45 +144,86 @@ export default function LeonidaCommandCenter({
     []
   );
 
-  // Sync URL route (/gta-6, /gta-6/storage, /gta-6/settings, /gta-6/money, /gta-6/cheats, /gta-6/fixes, /gta-6/radio, /gta-6/platinum)
+  const latestStateRef = useRef(state);
+  const sharedConflictRef = useRef(sharedConflict);
+  const saveTimerRef = useRef(null);
+  const firstSaveRunRef = useRef(true);
+
+  // Sync URL route (/gta-6, /gta-6/storage, /gta-6/settings, /gta-6/money, /gta-6/robberies, /gta-6/cheats, /gta-6/ultimate, /gta-6/fixes, /gta-6/radio, /gta-6/platinum)
   useEffect(() => {
     const mapped = mapRoutePresetToLeonida(activeRoute, preset);
     const routePath = activeRoute?.path || '/';
     const isSpecificStorageScenario =
       routePath.startsWith('/gta-6/storage/') || routePath.startsWith('/gta-6/download/');
 
-    setState((prev) => {
-      const nextConsole =
-        isSpecificStorageScenario && mapped.consoleId ? mapped.consoleId : prev.consoleId;
-      const nextMbps =
-        isSpecificStorageScenario && mapped.mbps ? mapped.mbps : prev.mbps;
-      if (
-        prev.tab === mapped.tab &&
-        prev.consoleId === nextConsole &&
-        prev.mbps === nextMbps
-      ) {
-        return prev;
-      }
-      return {
-        ...prev,
-        tab: mapped.tab,
-        consoleId: nextConsole,
-        mbps: nextMbps,
-      };
+    startTransition(() => {
+      setState((prev) => {
+        const nextConsole =
+          isSpecificStorageScenario && mapped.consoleId ? mapped.consoleId : prev.consoleId;
+        const nextMbps =
+          isSpecificStorageScenario && mapped.mbps ? mapped.mbps : prev.mbps;
+        const nextActiveFix = mapped.activeFix || prev.activeFix;
+        if (
+          prev.tab === mapped.tab &&
+          prev.consoleId === nextConsole &&
+          prev.mbps === nextMbps &&
+          prev.activeFix === nextActiveFix
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          tab: mapped.tab,
+          consoleId: nextConsole,
+          mbps: nextMbps,
+          activeFix: nextActiveFix,
+        };
+      });
     });
-
-    if (mapped.focusAnchor && typeof document !== 'undefined') {
-      window.setTimeout(() => {
-        document.getElementById(mapped.focusAnchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 60);
-    }
   }, [activeRoute, preset, presetKey]);
 
-  // Persist to localStorage (ONLY when NOT previewing a shared conflict over existing local data)
+  // Debounced persist to localStorage (ONLY when NOT previewing a shared conflict over existing local data)
   useEffect(() => {
-    if (sharedConflict) return;
-    saveLeonidaState(state);
+    latestStateRef.current = state;
+    sharedConflictRef.current = sharedConflict;
+    if (sharedConflict) return undefined;
+    if (firstSaveRunRef.current) {
+      firstSaveRunRef.current = false;
+      return undefined;
+    }
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null;
+      saveLeonidaState(latestStateRef.current);
+    }, 250);
+    return () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
   }, [state, sharedConflict]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
+    const flushPendingSave = () => {
+      if (saveTimerRef.current && !sharedConflictRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        saveLeonidaState(latestStateRef.current);
+      }
+    };
+    const onVisibilityFlush = () => {
+      if (document.visibilityState === 'hidden') flushPendingSave();
+    };
+    window.addEventListener('pagehide', flushPendingSave);
+    document.addEventListener('visibilitychange', onVisibilityFlush);
+    return () => {
+      window.removeEventListener('pagehide', flushPendingSave);
+      document.removeEventListener('visibilitychange', onVisibilityFlush);
+      flushPendingSave();
+    };
+  }, []);
 
   // Handle #s=... hash changes while open
   useEffect(() => {
@@ -364,7 +421,9 @@ export default function LeonidaCommandCenter({
 
   const switchTab = (tabId) => {
     playSwitchTick(soundEnabled, 660);
-    setState((prev) => ({ ...prev, tab: tabId }));
+    startTransition(() => {
+      setState((prev) => ({ ...prev, tab: tabId }));
+    });
     const targetTab = LEONIDA_TABS.find((t) => t.id === tabId);
     if (targetTab && typeof onNavigatePath === 'function') {
       onNavigatePath(targetTab.path, { scrollToTop: false });
@@ -373,32 +432,42 @@ export default function LeonidaCommandCenter({
 
   const handleSelectSearchHit = (hit) => {
     playSwitchTick(soundEnabled, 740);
-    setState((prev) => ({
-      ...prev,
-      tab: hit.tab,
-      activeFix: hit.activeFix || prev.activeFix,
-      radioQuery: hit.radioFilter !== undefined ? hit.radioFilter : hit.category === 'Radio' ? hit.title : '',
-    }));
+    const nextRadioFilter =
+      hit.radioFilter !== undefined
+        ? hit.radioFilter
+        : hit.category === 'Radio'
+          ? hit.title
+          : undefined;
+    if (nextRadioFilter !== undefined) {
+      setRadioSearchSync((prev) => ({
+        query: String(nextRadioFilter).slice(0, 60),
+        nonce: prev.nonce + 1,
+      }));
+    }
+    startTransition(() => {
+      setState((prev) => ({
+        ...prev,
+        tab: hit.tab,
+        activeFix: hit.activeFix || prev.activeFix,
+      }));
+    });
     const targetTab = LEONIDA_TABS.find((t) => t.id === hit.tab);
     if (targetTab && typeof onNavigatePath === 'function') {
       onNavigatePath(targetTab.path, { scrollToTop: false });
     }
     setSearchOpen(false);
     setSearchQuery('');
-    if (hit.radioFilter) {
-      window.setTimeout(() => {
-        document.getElementById('leonida-radio-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 60);
-    }
   };
 
   const handleJumpToPill = (pill) => {
     playSwitchTick(soundEnabled, 700);
-    setState((prev) => ({
-      ...prev,
-      tab: pill.tab,
-      activeFix: pill.activeFix || prev.activeFix,
-    }));
+    startTransition(() => {
+      setState((prev) => ({
+        ...prev,
+        tab: pill.tab,
+        activeFix: pill.activeFix || prev.activeFix,
+      }));
+    });
     const targetTab = LEONIDA_TABS.find((t) => t.id === pill.tab);
     if (targetTab && typeof onNavigatePath === 'function') {
       onNavigatePath(targetTab.path, { scrollToTop: false });
@@ -449,6 +518,20 @@ export default function LeonidaCommandCenter({
         ? prev.installedGames.filter((id) => id !== gameId)
         : [...prev.installedGames, gameId];
       return { ...prev, installedGames: nextGames };
+    });
+  };
+
+  const handleToggleCheckedCheat = (cheatId) => {
+    playSwitchTick(soundEnabled, 760);
+    setState((prev) => {
+      const current = Array.isArray(prev.checkedCheats) ? prev.checkedCheats : [];
+      const exists = current.includes(cheatId);
+      return {
+        ...prev,
+        checkedCheats: exists
+          ? current.filter((id) => id !== cheatId)
+          : [...current, cheatId],
+      };
     });
   };
 
@@ -508,9 +591,18 @@ export default function LeonidaCommandCenter({
 
           <div className="lh-top-hud-row">
             <div>
-              <h1 className="lh-brand-h1">
-                PLAYUNPAUSE <span className="lh-h1-slash">/</span> GTA VI LEONIDA HUB
-              </h1>
+              {activeRoute?.h1 && activeRoute?.path && activeRoute.path !== '/' && activeRoute.path !== '/gta-6' ? (
+                <>
+                  <span className="lh-brand-kicker">
+                    PLAYUNPAUSE <span className="lh-h1-slash">/</span> LEONIDA HUB
+                  </span>
+                  <h1 className="lh-brand-h1">{activeRoute.h1}</h1>
+                </>
+              ) : (
+                <h1 className="lh-brand-h1">
+                  PLAYUNPAUSE <span className="lh-h1-slash">/</span> GTA VI LEONIDA HUB
+                </h1>
+              )}
             </div>
 
             {/* Global Instant Search */}
@@ -647,9 +739,13 @@ export default function LeonidaCommandCenter({
                 playSwitchTick(soundEnabled, 690);
                 setState((prev) => ({ ...prev, pace: paceId }));
               }}
-              onChangeHoursPerDay={(raw) =>
-                setState((prev) => sanitizeLeonidaState({ ...prev, hoursPerDay: raw }))
-              }
+              onChangeHoursPerDay={(raw) => {
+                const n = Number(raw);
+                const nextHours = Number.isFinite(n)
+                  ? Math.round(Math.max(0.5, Math.min(16, n)) * 2) / 2
+                  : 2.5;
+                setState((prev) => ({ ...prev, hoursPerDay: nextHours }));
+              }}
               onOpenSlotModal={handleOpenSlotModal}
             />
           )}
@@ -657,6 +753,7 @@ export default function LeonidaCommandCenter({
           {state.tab === 'storage' && (
             <LeonidaStorageTab
               state={state}
+              runtimeConfig={runtimeConfig}
               onTogglePatch={() => {
                 playSwitchTick(soundEnabled, 720);
                 setState((prev) => ({ ...prev, includePatch: !prev.includePatch }));
@@ -666,12 +763,16 @@ export default function LeonidaCommandCenter({
                 setState((prev) => ({ ...prev, consoleId }));
               }}
               onToggleInstalledGame={handleToggleInstalledGame}
-              onChangeOtherUsedGb={(gb) =>
-                setState((prev) => sanitizeLeonidaState({ ...prev, otherUsedGb: gb }))
-              }
-              onChangeMbps={(mbps) =>
-                setState((prev) => sanitizeLeonidaState({ ...prev, mbps }))
-              }
+              onChangeOtherUsedGb={(gb) => {
+                const n = Number(gb);
+                const nextGb = Number.isFinite(n) ? Math.max(0, Math.min(600, Math.round(n))) : 0;
+                setState((prev) => ({ ...prev, otherUsedGb: nextGb }));
+              }}
+              onChangeMbps={(mbps) => {
+                const n = Number(mbps);
+                const nextMbps = Number.isFinite(n) ? Math.max(5, Math.min(2500, Math.round(n))) : 100;
+                setState((prev) => ({ ...prev, mbps: nextMbps }));
+              }}
             />
           )}
 
@@ -708,6 +809,7 @@ export default function LeonidaCommandCenter({
           {state.tab === 'money' && (
             <LeonidaHeatMoneyCheatsTab
               state={state}
+              activeRoutePath={activeRoute?.path || '/gta-6'}
               onSelectStarState={(starState) => {
                 playSwitchTick(soundEnabled, 700);
                 setState((prev) => ({ ...prev, starState }));
@@ -728,19 +830,21 @@ export default function LeonidaCommandCenter({
                 playSwitchTick(soundEnabled, profileTier === 'psycho' || profileTier === 'irred' ? 560 : 720);
                 setState((prev) => ({ ...prev, profileTier }));
               }}
+              onToggleCheckedCheat={handleToggleCheckedCheat}
+              onShowToast={showToast}
             />
           )}
 
           {state.tab === 'fixes' && (
             <LeonidaFixesRadioTab
               state={state}
+              activeRoutePath={activeRoute?.path || '/gta-6'}
+              externalRadioQuery={radioSearchSync.query}
+              externalRadioNonce={radioSearchSync.nonce}
               onSelectFix={(activeFix) => {
                 playSwitchTick(soundEnabled, 700);
                 setState((prev) => ({ ...prev, activeFix }));
               }}
-              onChangeRadioQuery={(radioQuery) =>
-                setState((prev) => ({ ...prev, radioQuery: String(radioQuery || '').slice(0, 60) }))
-              }
             />
           )}
         </div>

@@ -5,17 +5,17 @@ Total indexable clean routes: 124
 Important attribution note: playunpause.com is an independent unofficial utility. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA.
 
 ## 1. GTA VI Console Storage Specs (Launch Day Live — Nov 19, 2026)
-| Console | Usable OS Storage | Base Size | W/ Patch 1.002.001 | Spec / Mode |
+| Console | Usable OS Storage | Base Size | W/ Patch 01.002.002 | Spec / Mode |
 | --- | --- | --- | --- | --- |
-| Xbox Series S (512 GB) | 364 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 1.002.001) | Live Now · 30fps FSR 4 |
-| Xbox Series S (1 TB) | 802 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 1.002.001) | Live Now · 30fps FSR 4 |
-| Xbox Series X (1 TB) | 802 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 1.002.001) | Live Now · 120Hz VRR |
-| PS5 Base / Slim Digital (825GB - 667 GB usable) | 667 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 1.002.001) | FW 26.07-14.23.00 Req |
-| PS5 Slim Disc (1TB - 848 GB usable) | 848 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 1.002.001) | FW 26.07-14.23.00 Req |
-| PS5 Pro (2TB - 1,890 GB usable) | 1890 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 1.002.001) | 1440p PSSR + RT Shadows |
+| Xbox Series S (512 GB) | 364 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 01.002.002) | Live Now · 30fps FSR 4 |
+| Xbox Series S (1 TB) | 802 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 01.002.002) | Live Now · 30fps FSR 4 |
+| Xbox Series X (1 TB) | 802 GB usable | 212 GB base | 213.6 GB (+1.6 GB Patch 01.002.002) | Live Now · 120Hz VRR |
+| PS5 Base / Slim Digital (825GB - 667 GB usable) | 667 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 01.002.002) | FW 26.07-14.23.00 Req |
+| PS5 Slim Disc (1TB - 848 GB usable) | 848 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 01.002.002) | FW 26.07-14.23.00 Req |
+| PS5 Pro (2TB - 1,890 GB usable) | 1890 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 01.002.002) | 1440p PSSR + RT Shadows |
 
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
-| Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.002.001 (213.6 GB) |
+| Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.0.2.2 (213.6 GB) |
 | --- | --- | --- |
 | 25 Mbps | 20h 56m (1256m) | 21h 6m (1266m) |
 | 50 Mbps | 10h 28m (628m) | 10h 33m (633m) |
@@ -129,14 +129,14 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ## 10. Complete Canonical Route Index (124 Pages)
 - https://playunpause.com/ — Unpause — GTA VI Leonida Hub & Game Math Tools
 - https://playunpause.com/gta-6 — GTA VI Leonida Command Center (100%, SSD, Heat) — Unpause
-- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB + Patch 1.002.001) — Unpause
-- https://playunpause.com/gta-6/cheats — GTA 6 Cheats (61 Codes & Haptic D-Pad Simulator) — Unpause
-- https://playunpause.com/gta-6/money — GTA 6 Money Guide (Ch. 1 Cash Wipe Alert & ROI) — Unpause
-- https://playunpause.com/gta-6/robberies — GTA 6 Robberies Guide (Randomized Safes & CCTV) — Unpause
+- https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB + 01.002.002) — Unpause
+- https://playunpause.com/gta-6/cheats — GTA 6 Cheats (Verified D-Pad Codes & Tracker) — Unpause
+- https://playunpause.com/gta-6/money — GTA 6 Money Guide (Apollo Loop & Ch. 1 Cash Wipe) — Unpause
+- https://playunpause.com/gta-6/robberies — GTA 6 Safe Codes & Keypads (7700, 0420 & CCTV) — Unpause
 - https://playunpause.com/gta-6/settings — GTA 6 Best 30fps Settings, DF Specs & PS5 Firmware — Unpause
 - https://playunpause.com/gta-6/platinum — GTA 6 100% Tracker (Missable, 15 Saves & — Unpause
 - https://playunpause.com/gta-6/ultimate — GTA 6 $99.99 Ultimate Edition Unlock Checklist — Unpause
-- https://playunpause.com/gta-6/fixes — GTA 6 Launch Fixes (PS5 FW 26.07-14.23.00 & PSN — Unpause
+- https://playunpause.com/gta-6/fixes — GTA 6 Patch 01.002.002 Notes, PSN & Phone Fixes — Unpause
 - https://playunpause.com/gta-6/radio — GTA 6 Radio Stations (All 23 + Secret Vault) — Unpause
 - https://playunpause.com/cod-warzone — CoD Warzone 300 HP TTK & Camo Tracker — Unpause
 - https://playunpause.com/fortnite — Fortnite Battle Pass XP Pace Calculator — Unpause
@@ -153,9 +153,9 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - https://playunpause.com/gta-6/storage/ps5-base-825gb — GTA 6 PS5 825GB & CFI-2100 Storage Check — Unpause
 - https://playunpause.com/gta-6/storage/ps5-slim-1tb — GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause
 - https://playunpause.com/gta-6/storage/ps5-pro-2tb — GTA 6 PS5 Pro 2TB Storage & 1440p PSSR — Unpause
-- https://playunpause.com/gta-6/storage/212gb-day-one-patch — GTA 6 Patch 1.002.001 Size (+0.6 GB PS5 / +1.6 GB — Unpause
+- https://playunpause.com/gta-6/storage/212gb-day-one-patch — GTA 6 Patch 01.002.002 / 1.0.2.2 Size Breakdown — Unpause
 - https://playunpause.com/gta-6/storage/external-usb-drive-xbox-ps5 — Can GTA 6 Run From External USB Drive? Rules — Unpause
-- https://playunpause.com/gta-6/unlock-time/new-zealand-trick-xbox-ps5 — GTA 6 Xbox vs PS5 Launch Specs & Patch 1.002.001 — Unpause
+- https://playunpause.com/gta-6/unlock-time/new-zealand-trick-xbox-ps5 — GTA 6 Xbox vs PS5 Launch Specs & Patch 01.002.002 — Unpause
 - https://playunpause.com/gta-6/unlock-time/ps5-midnight-region-lock — PS5 Firmware 26.07-14.23.00 & SSD Space Check — Unpause
 - https://playunpause.com/gta-6/download-time/25-mbps — GTA 6 Download Time on 25 Mbps (20h 56m) — Unpause
 - https://playunpause.com/gta-6/download-time/50-mbps — GTA 6 Download Time on 50 Mbps (10h 28m) — Unpause

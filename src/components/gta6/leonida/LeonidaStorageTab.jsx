@@ -1,4 +1,5 @@
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 import {
   LEONIDA_CONSOLES,
   LEONIDA_INSTALLED_GAMES,
@@ -8,6 +9,7 @@ import { computeLeonidaStorage } from '../../../utils/leonidaState.js';
 
 export default function LeonidaStorageTab({
   state,
+  runtimeConfig,
   onTogglePatch,
   onSelectConsole,
   onToggleInstalledGame,
@@ -15,16 +17,23 @@ export default function LeonidaStorageTab({
   onChangeMbps,
 }) {
   const calc = computeLeonidaStorage(state);
+  const isPs5 = calc.console.platform === 'ps5';
+  const hardwareUrl = isPs5
+    ? runtimeConfig?.affiliates?.ps5SsdUrl || 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20'
+    : runtimeConfig?.affiliates?.xboxCardUrl || 'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20';
+  const hardwareCta = isPs5
+    ? 'Check WD_BLACK SN850P (PS5 M.2 SSD) on Amazon'
+    : 'Check WD_BLACK C50 1TB Expansion Card on Amazon';
 
   return (
     <section className="lh-card" aria-labelledby="lh-storage-heading">
       <div className="lh-card-header">
         <div>
           <h2 id="lh-storage-heading" className="lh-card-title">
-            Console Storage Surgery (212 GB + Patch 1.002.001)
+            Console Storage Surgery (212 GB + Patch 01.002.002 / 1.0.2.2)
           </h2>
           <p className="lh-card-sub">
-            Test usable internal NVMe space against GTA VI base install + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox).
+            Test usable internal NVMe space against GTA VI base install + Patch 01.002.002 (+0.6 GB PS5 / +1.6 GB Xbox 1.0.2.2).
           </p>
         </div>
 
@@ -34,7 +43,7 @@ export default function LeonidaStorageTab({
           className={`lh-btn lh-pressable ${state.includePatch ? 'active-teal' : ''}`}
           onClick={onTogglePatch}
         >
-          Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox): {state.includePatch ? 'ON' : 'OFF'}
+          Patch 01.002.002 (+0.6 GB PS5 / +1.6 GB Xbox): {state.includePatch ? 'ON' : 'OFF'}
         </button>
       </div>
 
@@ -114,6 +123,27 @@ export default function LeonidaStorageTab({
         <span>GTA VI Fit: {calc.gtaFitPct}%</span>
         {calc.isShort && <span style={{ color: 'var(--lh-coral)' }}>Over Capacity: {calc.shortByGb} GB ({calc.overPct}%)</span>}
       </div>
+
+      {/* Inline Mobile/Workbench Amazon Shortage CTA so mobile users don't miss it below the fold */}
+      {calc.isShort && (
+        <div className="lh-inset-strip coral-border" style={{ marginTop: '10px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <span className="lh-badge coral">Shortage Fix · Expand NVMe</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--lh-slate)' }}>
+              As an Amazon Associate I earn from qualifying purchases.
+            </span>
+          </div>
+          <a
+            href={hardwareUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="lh-amazon-link lh-pressable"
+          >
+            <span>{hardwareCta}</span>
+            <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        </div>
+      )}
 
       {/* Interactive Installed Game Chips */}
       <div style={{ marginTop: '14px' }}>

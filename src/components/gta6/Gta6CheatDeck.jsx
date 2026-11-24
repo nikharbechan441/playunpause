@@ -28,22 +28,10 @@ const PITCH_BY_TOKEN = {
   '↓': 620,
   '←': 680,
   '→': 720,
-  '✕': 840,
-  A: 840,
-  '○': 880,
-  B: 880,
-  '□': 800,
-  X: 800,
-  '△': 920,
-  Y: 920,
   L1: 660,
   LB: 660,
   R1: 700,
   RB: 700,
-  L2: 600,
-  LT: 600,
-  R2: 740,
-  RT: 740,
 };
 
 function loadCheckedChallenges() {
@@ -162,24 +150,12 @@ export default function Gta6CheatDeck({
   const faceButtons =
     platform === 'xbox'
       ? [
-          { token: 'Y', hint: 'Top' },
-          { token: 'B', hint: 'Right' },
-          { token: 'A', hint: 'Bottom' },
-          { token: 'X', hint: 'Left' },
-          { token: 'LB', hint: 'Shoulder L' },
-          { token: 'RB', hint: 'Shoulder R' },
-          { token: 'LT', hint: 'Trigger L' },
-          { token: 'RT', hint: 'Trigger R' },
+          { token: 'LB', hint: 'Hold Bumper L' },
+          { token: 'RB', hint: 'Hold Bumper R' },
         ]
       : [
-          { token: '△', hint: 'Triangle' },
-          { token: '○', hint: 'Circle' },
-          { token: '✕', hint: 'Cross' },
-          { token: '□', hint: 'Square' },
-          { token: 'L1', hint: 'Shoulder L' },
-          { token: 'R1', hint: 'Shoulder R' },
-          { token: 'L2', hint: 'Trigger L' },
-          { token: 'R2', hint: 'Trigger R' },
+          { token: 'L1', hint: 'Hold Bumper L' },
+          { token: 'R1', hint: 'Hold Bumper R' },
         ];
 
   const categories = ['All', ...GTA6_CHEAT_META.categories.map((c) => c.name)];
@@ -218,7 +194,7 @@ export default function Gta6CheatDeck({
               61 TOTAL CHEATS · UNLOCK CATCH ({checkedChallenges.length} / {GTA6_CONFIRMED_CHEATS.length} CONFIRMED CLEARED)
             </span>
             <p className="cheat-meta-sub" style={{ marginTop: '4px' }}>
-              <strong>{GTA6_CHEAT_META.unlockCatch}</strong> All {GTA6_CHEAT_META.totalCount} cheats span 4 categories below.
+              <strong>{GTA6_CHEAT_META.unlockCatch}</strong> All {GTA6_CHEAT_META.totalCount} cheats span 5 categories using pure D-Pad arrows only.
             </p>
             <div className="cheat-cat-pills">
               {GTA6_CHEAT_META.categories.map((cat) => (

@@ -67,9 +67,9 @@ export const TOP_GAMES = [
       styleLabel: 'Vice Editorial Synthwave',
     },
     patchMeta: {
-      patchVersion: 'Patch 1.002.001 (Launch Day)',
-      patchUpdatedIso: '2026-11-19',
-      seasonLabel: 'Launch Day — Live',
+      patchVersion: 'Patch 01.002.002 (PS5) / 1.0.2.2 (Xbox)',
+      patchUpdatedIso: '2026-11-24',
+      seasonLabel: 'Launch Week — Patch 01.002.002',
       seasonEndIsoUtc: null,
     },
     gearOffer: {
@@ -84,12 +84,12 @@ export const TOP_GAMES = [
     },
     icon: 'Car',
     tagline: '212 GB SSD Fit, 61 Haptic Cheats, Story Money/Robberies, 30fps Tuner & Platinum Tracker',
-    sourceNote: 'Launch Day Live (Nov 19, 2026) · 212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)',
+    sourceNote: 'Launch Week Live (Nov 24, 2026) · 212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox)',
     isGta6Suite: true,
     faqs: [
       {
-        q: 'What is the exact GTA VI install size with Patch 1.002.001?',
-        a: 'Base launch size is 212 GB across PS5 and Xbox Series X|S, plus Patch 1.002.001 (+0.6 GB on PS5 = 212.6 GB total; +1.6 GB on Xbox Series X|S = 213.6 GB total). External USB 3.0 drives cannot boot current-gen builds.',
+        q: 'What is the exact GTA VI install size with Patch 01.002.002?',
+        a: 'Base launch size is 212 GB across PS5 and Xbox Series X|S, plus Nov 23 Patch 01.002.002 (~603.8 MB / +0.6 GB on PS5 = 212.6 GB total) or Xbox Patch 1.0.2.2 (+1.6 GB = 213.6 GB total). External USB 3.0 drives cannot boot current-gen builds.',
       },
       {
         q: 'Why does PS5 require firmware 26.07-14.23.00 and are GTA VI safe codes static?',

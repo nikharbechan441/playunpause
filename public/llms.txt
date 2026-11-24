@@ -1,6 +1,6 @@
 # Unpause (playunpause.com)
 
-> Fast, dark-mode, zero-popup browser utility for GTA VI Launch Day (console storage + Patch 1.002.001, 61 haptic cheats, chapter-gated money & 4-tier robberies, 30fps DF tuner, platinum/15-save tracker) and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
+> Fast, dark-mode, zero-popup browser utility for GTA VI Launch Week (console storage + Patch 01.002.002 / 1.0.2.2, pure D-Pad cheats, Apollo Aggregates & story robberies, 30fps DF tuner, platinum/15-save tracker) and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
 
 - Canonical Site: https://playunpause.com/
 - Extended Reference & Formula Tables: https://playunpause.com/llms-full.txt
@@ -8,16 +8,16 @@
 - Embeddable Calculators: Every core deck supports chromeless iframe embedding at `https://playunpause.com/embed/<slug>`
 
 ## Core Game Calculators
-- [Home (GTA VI + All 10)](https://playunpause.com/): GTA VI Leonida Command Center: 212 GB SSD + Patch 1.002.001 fit, 6-star Heat Decoder, 23 Radio Stations, 30fps settings, 100% Tracker & 9 more game tools.
+- [Home (GTA VI + All 10)](https://playunpause.com/): GTA VI Leonida Hub: 212 GB + Patch 01.002.002 fit, D-Pad cheats, Apollo money, 23 Radio Stations, 30fps settings, 100% Tracker & 9 game tools.
 - [Leonida Command Center](https://playunpause.com/gta-6): Run the all-in-one GTA VI Leonida Hub: True 100% Tracker, 15 Save Slots, 212 GB SSD fit, 6-Star Heat Decoder, 23 Radio Stations & 9:16 Passport PNG export.
-- [SSD & Patch 1.002.001](https://playunpause.com/gta-6/storage): Test if GTA 6 (212 GB Base + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox) fits on Series S, Series X, or PS5 SSDs, clear games & export a Spec PNG.
-- [Cheats (61 Haptic D-Pad)](https://playunpause.com/gta-6/cheats): Dial PS5 & Xbox GTA VI cheats using Phone Up + L1/LB + R1/RB. Animate 12 confirmed codes ($250K, Unlimited Focus, Boomazoom) & track 61 challenges.
-- [Story Money & Cash Wipe](https://playunpause.com/gta-6/money): STOP: Jason & Lucia cash wipes after Chapter 1! Plan Ch. 2 Moses ($1K+/2m), Ch. 3 Jewelry + Randy Wish List ($30K+) & Ch. 4 Bank Vaults ($65K-$205K).
-- [4-Tier Robbery Protocol](https://playunpause.com/gta-6/robberies): Master GTA VI 4-Tier Robberies: why safe combinations randomize every playthrough, how to shoot Cloud-icon CCTV cameras, and Ch. 3 Dye Pack Jammer rules.
+- [SSD & Patch 01.002.002](https://playunpause.com/gta-6/storage): Test if GTA 6 (212 GB + Patch 01.002.002 / 1.0.2.2) fits on Series S, Series X, or PS5 SSDs, clear old games, check ETA & export a Spec PNG.
+- [Cheats (Verified D-Pad + 61)](https://playunpause.com/gta-6/cheats): Dial verified pure D-Pad GTA VI cheats (Phone Up + L1/LB + R1/RB): 12 working combos ($250K, Focus, Boomazoom, Weather) + 7 challenge trackers.
+- [Apollo Loop & Ch. 1 Cash Wipe](https://playunpause.com/gta-6/money): Farm the unpatched Apollo Aggregates Red Barn loop in Patch 01.002.002, avoid the Ch. 1 cash wipe, and plan Ch. 2-4 loot & best ending choices.
+- [Keypads (7700/0420) & Safes](https://playunpause.com/gta-6/robberies): Unlock GTA VI static keypads (7700 Brian’s Lockup, 0420 Moonstone Boutique), handle randomized safes via room notes, and counter Cloud CCTV + Dye Packs.
 - [30fps Tuner & PNG Card](https://playunpause.com/gta-6/settings): Compare Digital Foundry 4-console 30fps specs (PS5 Pro 1440p PSSR, Series X 120Hz VRR, Series S FSR 4), check PS5 FW 26.07-14.23.00 & export PNG card.
 - [Platinum & 15 Save Slots](https://playunpause.com/gta-6/platinum): Track 0 in-game 100% missables + Ch. 1 Positive Mental Attitude trophy, 15 manual save slots, WAiNK 200, Wildlife 100, Flamingos 100, Stunts 300 & Cards 15.
 - [$99.99 Ultimate Edition](https://playunpause.com/gta-6/ultimate): Track when GTA VI $99.99 Ultimate Edition rewards unlock: why the Shitzu Squalo boat requires Chapter 4 and when to claim bonus cash post-Ch. 1.
-- [Crash, PSN & Offline Fixes](https://playunpause.com/gta-6/fixes): Fix GTA 6 not launching on PS5 (Firmware 26.07-14.23.00), bypass PSN Error WS-116449-5 with Offline Play, prevent autosave loss & spot PC scams.
+- [Patch 01.002.002 & PSN Fixes](https://playunpause.com/gta-6/fixes): Read all 7 official Nov 23 Patch 01.002.002 / 1.0.2.2 fixes, bypass PSN Error WS-116449-5 offline, verify Skunk Ape 461-555-0139 & no phone dial pad.
 - [23 Radio Stations & Vault](https://playunpause.com/gta-6/radio): Browse all 23 verified GTA 6 radio stations (Flash FM, Cocoteo FM, The Chamber 106.6, Emotion 98.3 + Secret #23 The Vault Radio) & headphones rules.
 - [CoD / Warzone TTK](https://playunpause.com/cod-warzone): Compare live Warzone guns head-to-head at 300/250/200/100 HP with headshot multipliers, open-bolt trigger delays, and 33-weapon Mastery Camo progress.
 - [Fortnite XP Pace](https://playunpause.com/fortnite): Calculate daily XP and matches to reach Level 100, Level 140 V-Bucks break-even, or Level 200 Super Styles with Daily Quests, Creative & LEGO.
@@ -31,7 +31,7 @@
 
 ## Compliance, Privacy & Attribution
 - All free interactive calculators execute 100% locally in the browser with zero ad-tech scripts and self-hosted fonts.
-- GTA VI launch data reflects November 19, 2026 release specs (Base 212 GB + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox).
+- GTA VI launch data reflects November 19, 2026 release & Nov 23 Patch 01.002.002 / 1.0.2.2 specs (Base 212 GB + ~603.8 MB PS5 / +1.6 GB Xbox).
 - NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 - All 10 game calculators, GTA VI launch companions, saved console SSD setups, and CSV/JSON exports are 100% free with zero consumer checkout.
 

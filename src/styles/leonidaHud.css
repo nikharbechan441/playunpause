@@ -182,6 +182,17 @@
   margin: 0 4px;
 }
 
+.lh-brand-kicker {
+  display: block;
+  margin-bottom: 2px;
+  font-family: 'Barlow Condensed', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lh-slate);
+}
+
 .lh-search-wrap {
   position: relative;
   width: 100%;
@@ -505,7 +516,9 @@
   font-size: 0.74rem;
   font-weight: 700;
   color: var(--lh-slate);
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .lh-badge.coral {
@@ -1002,7 +1015,7 @@
 }
 
 .lh-spoiler-blur {
-  filter: blur(7px);
+  opacity: 0.08;
   user-select: none;
   pointer-events: none;
 }
@@ -1017,7 +1030,7 @@
   gap: 8px;
   padding: 12px;
   text-align: center;
-  background-color: rgba(13, 14, 18, 0.72);
+  background-color: rgba(13, 14, 18, 0.88);
 }
 
 /* Tab 5: Fixes & 23 Radio Stations */

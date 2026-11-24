@@ -1,16 +1,16 @@
 /**
  * GTA VI Launch-Day Game Pack for Unpause (playunpause.com)
- * 6 balanced console presets (3 Xbox @ 212 GB + 3 PS5 @ 212 GB) + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox).
+ * 6 balanced console presets (3 Xbox @ 212 GB + 3 PS5 @ 212 GB) + Patch 01.002.002 (PS5 +0.6 GB) / 1.0.2.2 (Xbox +1.6 GB).
  */
 export const gta6Pack = {
   id: 'gta-6',
   shortTitle: 'GTA VI',
   fullTitle: 'Grand Theft Auto VI',
-  statusBadge: 'LAUNCH DAY · LIVE (Patch 1.002.001)',
+  statusBadge: 'OUT NOW · PATCH 01.002.002 / 1.0.2.2',
   sourceNote:
-    'Launch Day Live (Nov 19, 2026) · 212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)',
+    'Launch Week Live (Nov 24, 2026) · 212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox)',
   installSizeGb: 212,
-  patchVersion: '1.002.001',
+  patchVersion: '01.002.002',
   dayOnePatchPs5Gb: 0.6,
   dayOnePatchXboxGb: 1.6,
   dayOnePatchGb: 1.6,
@@ -28,7 +28,7 @@ export const gta6Pack = {
       nzTrickWorks: true,
       nzStatusShort: 'Live Now · 30fps FSR 4',
       nzDetail:
-        'Digital Foundry launch spec: ~720p base upscaled with FSR 4 at 30fps. With Patch 1.002.001 (+1.6 GB), total install is 213.6 GB of 364 GB usable NVMe. Standard USB 3.0 drives cannot boot Series X|S builds—use Xbox Expansion Cards.',
+        'Digital Foundry launch spec: ~720p base upscaled with FSR 4 at 30fps. With Xbox Patch 1.0.2.2 (+1.6 GB), total install is 213.6 GB of 364 GB usable NVMe. Standard USB 3.0 drives cannot boot Series X|S builds—use Xbox Expansion Cards.',
       upgradeLabel: 'WD_BLACK C50 1TB Xbox Expansion Card (Plug & Play)',
       upgradeKind: 'xboxCardUrl',
     },
@@ -43,7 +43,7 @@ export const gta6Pack = {
       nzTrickWorks: true,
       nzStatusShort: 'Live Now · 30fps FSR 4',
       nzDetail:
-        '802 GB usable NVMe capacity handles GTA VI (213.6 GB with Patch 1.002.001) comfortably alongside other installed games. Targets ~720p upscaled via FSR 4 at a locked 30fps.',
+        '802 GB usable NVMe capacity handles GTA VI (213.6 GB with Xbox Patch 1.0.2.2) comfortably alongside other installed games. Targets ~720p upscaled via FSR 4 at a locked 30fps.',
       upgradeLabel: 'WD_BLACK C50 1TB Xbox Expansion Card (Plug & Play)',
       upgradeKind: 'xboxCardUrl',
     },
@@ -58,7 +58,7 @@ export const gta6Pack = {
       nzTrickWorks: true,
       nzStatusShort: 'Live Now · 120Hz VRR',
       nzDetail:
-        'Digital Foundry launch spec: Series X supports 120Hz VRR frame-pacing options on 30fps output. Total footprint with Patch 1.002.001 (+1.6 GB) is 213.6 GB out of 802 GB usable storage.',
+        'Digital Foundry launch spec: Series X supports 120Hz VRR frame-pacing options on 30fps output. Total footprint with Xbox Patch 1.0.2.2 (+1.6 GB) is 213.6 GB out of 802 GB usable storage.',
       upgradeLabel: 'WD_BLACK C50 1TB Xbox Expansion Card',
       upgradeKind: 'xboxCardUrl',
     },
@@ -73,7 +73,7 @@ export const gta6Pack = {
       nzTrickWorks: false,
       nzStatusShort: 'FW 26.07-14.23.00 Req',
       nzDetail:
-        'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 PS5 Slim Digital expose ~667 GB usable SSD space (212.6 GB with Patch 1.002.001 +0.6 GB). Mandatory: verify PS5 system firmware 26.07-14.23.00 is installed to prevent launch stutter/crashes.',
+        'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 PS5 Slim Digital expose ~667 GB usable SSD space (212.6 GB with Patch 01.002.002 ~603.8 MB). Mandatory: verify PS5 system firmware 26.07-14.23.00 is installed to prevent launch stutter/crashes.',
       upgradeLabel: 'WD_BLACK SN850P 2TB M.2 NVMe w/ Heatsink (PS5 Officially Licensed)',
       upgradeKind: 'ps5SsdUrl',
     },
@@ -88,7 +88,7 @@ export const gta6Pack = {
       nzTrickWorks: false,
       nzStatusShort: 'FW 26.07-14.23.00 Req',
       nzDetail:
-        'PS5 Slim Disc ships with 848 GB usable SSD storage (212.6 GB with Patch 1.002.001 +0.6 GB). Confirm system software 26.07-14.23.00 is applied before launching Campaign.',
+        'PS5 Slim Disc ships with 848 GB usable SSD storage (212.6 GB with Patch 01.002.002 ~603.8 MB). Confirm system software 26.07-14.23.00 is applied before launching Campaign.',
       upgradeLabel: 'WD_BLACK SN850P 2TB M.2 NVMe w/ Integrated Heatsink',
       upgradeKind: 'ps5SsdUrl',
     },
@@ -103,7 +103,7 @@ export const gta6Pack = {
       nzTrickWorks: false,
       nzStatusShort: '1440p PSSR + RT Shadows',
       nzDetail:
-        'Digital Foundry top console spec: 1440p PSSR reconstruction + Ray-Traced Shadows at 30fps, using 212.6 GB with Patch 1.002.001 (+0.6 GB). Ensure PS5 firmware 26.07-14.23.00 is installed.',
+        'Digital Foundry top console spec: 1440p PSSR reconstruction + Ray-Traced Shadows at 30fps, using 212.6 GB with Patch 01.002.002 (~603.8 MB). Ensure PS5 firmware 26.07-14.23.00 is installed.',
       upgradeLabel: 'WD_BLACK SN850P 2TB/4TB M.2 NVMe Expansion Drive',
       upgradeKind: 'ps5SsdUrl',
     },

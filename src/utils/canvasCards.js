@@ -82,7 +82,7 @@ export function computeStorageDiagnosis(consoleId, deletedGames, fitsDrive) {
   }
   if (consoleId === 'xss-512') return 'STATUS: 364 GB SERIES S LAUNCH FIT';
   if (list.length >= 4) return `STATUS: FULL QUEUE CLEARED (${list.length} ITEMS · +${freedGb} GB)`;
-  return 'STATUS: LAUNCH DAY READY · PATCH 1.002.001';
+  return 'STATUS: OUT NOW · PATCH 01.002.002 / 1.0.2.2';
 }
 
 export function computeHostGreedLabel(crewRows) {
@@ -273,7 +273,7 @@ export function renderStorageReceiptCanvas(rawOpts = {}) {
   y += 32;
   ctx.fillStyle = '#94A3B8';
   ctx.font = '500 15px "JetBrains Mono", monospace';
-  ctx.fillText('OUT NOW · PATCH 1.002.001 · PLAYUNPAUSE.COM', width / 2, y);
+  ctx.fillText('OUT NOW · PATCH 01.002.002 / 1.0.2.2 · PLAYUNPAUSE.COM', width / 2, y);
 
   return canvas;
 }
@@ -282,7 +282,7 @@ export function renderLaunchGraveyardCanvas(rawOpts = {}) {
   if (typeof document === 'undefined') return null;
   const opts = rawOpts && typeof rawOpts === 'object' ? rawOpts : {};
   const consoleTitle = sanitizeCanvasText(opts.consoleTitle, 'PS5 Pro (1440p PSSR + RT Shadows)', 72);
-  const fpsNote = sanitizeCanvasText(opts.fpsNote, '30fps Fidelity Spec · Patch 1.002.001', 72);
+  const fpsNote = sanitizeCanvasText(opts.fpsNote, '30fps Fidelity Spec · Patch 01.002.002', 72);
   const sacrificedNames = Array.isArray(opts.sacrificedGames)
     ? opts.sacrificedGames.slice(0, 6).map((s) => sanitizeCanvasText(s, 'Deleted Game', 48)).filter(Boolean)
     : [];
@@ -354,7 +354,7 @@ export function renderLaunchGraveyardCanvas(rawOpts = {}) {
   y += 18;
   ctx.fillStyle = '#94A3B8';
   ctx.font = '700 14px "JetBrains Mono", monospace';
-  ctx.fillText('SACRIFICED FOR 212 GB + PATCH 1.002.001 (GRAVEYARD):', left, y);
+  ctx.fillText('SACRIFICED FOR 212 GB + PATCH 01.002.002 (GRAVEYARD):', left, y);
   y += 28;
   const graveList = sacrificedNames.length
     ? sacrificedNames

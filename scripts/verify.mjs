@@ -117,6 +117,7 @@ async function main() {
 
   const globalStaleChecks = [
     { label: '"Nov 19 (1d)" countdown', regex: /Nov 19 \(1d\)/i },
+    { label: 'stale "1.002.001" launch patch string', regex: /(?<!0)1\.002\.001/ },
     { label: '"225 GB" / "212-225 GB"', regex: /225\s*GB|212[–-]225\s*GB/i },
     { label: '"+35 GB" / "35 GB" patch copy', regex: /\+35\s*GB|35\s*GB Day-1|35\s*GB patch/i },
     { label: 'banned "Typhoon" boat typo', regex: /\bTyphoon\b/i },
@@ -183,6 +184,8 @@ async function main() {
     'src/components/StorageUnlockDeck.jsx',
     'src/components/games/GameStudioDock.jsx',
     'src/components/gta6/Gta6SettingsTunerDeck.jsx',
+    'src/components/gta6/leonida/LeonidaSessionRail.jsx',
+    'src/components/gta6/leonida/LeonidaStorageTab.jsx',
   ]) {
     const src = readRel(affiliateFile);
     assert.ok(
@@ -196,9 +199,9 @@ async function main() {
     assert.match(src, /As an Amazon Associate I earn from qualifying purchases\./, `${affiliateFile} missing FTC disclosure`);
   }
 
-  // Direct test of Storage + Roblox Math + V2.2 Leonida Engine (#s=, chips, 23 radio stations, Shitzu Squalo)
+  // Direct test of Storage + Roblox Math + V2.3 Leonida Engine (#s=, chips, 23 radio stations, Shitzu Squalo, Patch 01.002.002, Apollo, Keypads, Pure D-Pad)
   const { calcRobloxDevEx } = await import('../src/utils/gameMath.js');
-  const { LEONIDA_INSTALLED_GAMES, LEONIDA_RADIO_STATIONS } = await import('../src/data/games/leonidaV2Data.js');
+  const { LEONIDA_INSTALLED_GAMES, LEONIDA_RADIO_STATIONS, LEONIDA_VERIFIED_CHEATS } = await import('../src/data/games/leonidaV2Data.js');
   const {
     computeLeonidaStorage,
     createDefaultLeonidaState,
@@ -215,6 +218,12 @@ async function main() {
   const joinedJsBundle = distJs.map((rel) => readRel(rel)).join('\n');
   assert.ok(joinedJsBundle.includes('Shitzu Squalo'), 'Built bundle must include Shitzu Squalo');
   assert.ok(joinedJsBundle.includes('The Vault Radio'), 'Built bundle must include Secret #23 The Vault Radio');
+  assert.ok(joinedJsBundle.includes('01.002.002'), 'Built bundle must include Patch 01.002.002');
+  assert.ok(joinedJsBundle.includes('Apollo Aggregates'), 'Built bundle must include Apollo Aggregates');
+  assert.ok(joinedJsBundle.includes('7700'), 'Built bundle must include 7700 static keypad');
+  assert.ok(joinedJsBundle.includes('0420'), 'Built bundle must include 0420 static keypad');
+  const cashCheat = LEONIDA_VERIFIED_CHEATS.find((c) => c.id === 'cash-250k');
+  assert.equal(cashCheat?.dpad?.join(' '), '↑ → ↓ ← ↑ ← ↓ →', 'Verified $250K D-Pad code must match ↑ → ↓ ← ↑ ← ↓ →');
   for (const st of LEONIDA_RADIO_STATIONS) {
     assert.ok(joinedJsBundle.includes(st.name), `Built bundle missing radio station: ${st.name}`);
   }
@@ -304,9 +313,11 @@ async function main() {
   }
 
   const sitemapXml = readRel('public/sitemap.xml');
+  const distSitemapXml = readRel('dist/sitemap.xml');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6</loc>'), 'sitemap.xml missing /gta-6');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/fixes'), 'sitemap.xml missing /gta-6/fixes');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/radio'), 'sitemap.xml missing /gta-6/radio');
+  assert.ok(distSitemapXml.includes('<lastmod>2026-11-24</lastmod>'), 'dist/sitemap.xml missing <lastmod>2026-11-24</lastmod>');
 
   const bannerPath = path.join(ROOT, 'public/images/leonida-banner.jpg');
   assert.ok(fs.existsSync(bannerPath), 'Missing public/images/leonida-banner.jpg');

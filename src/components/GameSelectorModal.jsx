@@ -36,7 +36,7 @@ const TOOL_SHORTCUTS = [
     id: 'tool-gta6-storage',
     gameId: 'gta-6',
     path: '/gta-6/storage',
-    shortTitle: 'GTA VI: SSD & Patch 1.002.001',
+    shortTitle: 'GTA VI: SSD & Patch 01.002.002',
     fullTitle: 'GTA VI Console Storage Fit (+0.6 GB PS5 / +1.6 GB Xbox)',
     genre: 'Quick Tool',
     audienceBadge: '212 GB Base',

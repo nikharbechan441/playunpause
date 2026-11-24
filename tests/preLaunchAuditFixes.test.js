@@ -33,6 +33,7 @@ import {
   LEONIDA_INSTALLED_GAMES,
   LEONIDA_LAUNCH_FIXES,
   LEONIDA_RADIO_STATIONS,
+  LEONIDA_VERIFIED_CHEATS,
 } from '../src/data/games/leonidaV2Data.js';
 import {
   computeFinishDate,
@@ -40,6 +41,7 @@ import {
   createDefaultLeonidaState,
   decodeLeonidaShareHash,
   encodeLeonidaShareHash,
+  sanitizeLeonidaState,
 } from '../src/utils/leonidaState.js';
 import {
   LEGAL_META,
@@ -161,9 +163,9 @@ function makeWorkerEnv(overrides = {}) {
   };
 }
 
-test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB), 4 new tools, retired safes 301s', () => {
-  assert.match(gta6Pack.statusBadge, /LAUNCH DAY/i);
-  assert.match(gta6Pack.statusBadge, /1\.002\.001/);
+test('1. GTA VI ground-truth: 212 GB + Patch 01.002.002 / 1.0.2.2, pure D-Pad cheats, retired safes 301s', () => {
+  assert.match(gta6Pack.statusBadge, /OUT NOW/i);
+  assert.match(gta6Pack.statusBadge, /01\.002\.002/);
   assert.equal(gta6Pack.dayOnePatchPs5Gb, 0.6);
   assert.equal(gta6Pack.dayOnePatchXboxGb, 1.6);
 
@@ -200,6 +202,13 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   assert.equal(SPOILER_CHAPTERS.length, 6);
   assert.equal(GTA6_CHEAT_META.totalCount, 61);
   assert.equal(GTA6_CONFIRMED_CHEATS.length, 12);
+  const bannedCheatTokenRe = /[✕□△○]|R2|L2|RT|LT|\b[ABXY]\b/;
+  for (const ch of GTA6_CONFIRMED_CHEATS) {
+    const ps5Seq = (ch.ps5Combo || []).join(' ');
+    const xboxSeq = (ch.xboxCombo || []).join(' ');
+    assert.doesNotMatch(ps5Seq, bannedCheatTokenRe, `Fake face/trigger button in GTA6_CONFIRMED_CHEATS PS5: ${ch.id}`);
+    assert.doesNotMatch(xboxSeq, bannedCheatTokenRe, `Fake face/trigger button in GTA6_CONFIRMED_CHEATS Xbox: ${ch.id}`);
+  }
   assert.ok(GTA6_MONEY_METHODS.some((m) => /Moses/i.test(m.title)));
   assert.equal(GTA6_ROBBERY_TIERS.length, 4);
   assert.equal(GTA6_CONSOLE_30FPS_SPECS.length, 4);
@@ -211,7 +220,7 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   assert.equal(GTA6_SAVE_SLOT_TEMPLATES.filter((s) => s.group === 'chapter').length, 10);
   assert.equal(GTA6_SAVE_SLOT_TEMPLATES.filter((s) => s.group === 'freeroam').length, 5);
   assert.match(GTA6_PLATINUM_MISSABLES.warning, /0 missables for the in-game 100% Completion menu/i);
-  assert.equal(GTA6_LAUNCH_FIXES.length, 5);
+  assert.equal(GTA6_LAUNCH_FIXES.length, 6);
   assert.equal(GTA6_RADIO_STATIONS.length, 23);
   assert.ok(GTA6_ULTIMATE_CLAIMS.some((u) => /Shitzu Squalo/i.test(u.title)));
   assert.equal(
@@ -223,7 +232,7 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   assert.ok(gta6Meta);
   const serializedTop = JSON.stringify(gta6Meta);
   assert.match(serializedTop, /212 GB/);
-  assert.match(serializedTop, /1\.002\.001/);
+  assert.match(serializedTop, /01\.002\.002/);
 
   for (const rel of [
     'src/components/gta6/LeonidaCommandCenter.jsx',
@@ -279,11 +288,25 @@ test('1. GTA VI Launch-Day ground-truth: 212 GB + Patch 1.002.001 (+0.6/+1.6 GB)
   }
 });
 
-test('1B. Leonida V2.2: 23 radio stations + Vault #23, 5 game chips recalc, #s= roundtrip & malformed guard', () => {
-  assert.equal(LEONIDA_LAUNCH_FIXES.length, 5);
+test('1B. Leonida V2.3: 6 fixes, pure D-Pad cheats (12+7 TBC), 23 radio stations + Vault #23, 5 game chips recalc, #s= roundtrip', () => {
+  assert.equal(LEONIDA_LAUNCH_FIXES.length, 6);
   assert.equal(LEONIDA_RADIO_STATIONS.length, 23);
   const vault = LEONIDA_RADIO_STATIONS.find((s) => s.num === 23);
   assert.ok(vault && vault.name === 'The Vault Radio' && vault.secret === true);
+
+  const verifiedDPadCheats = LEONIDA_VERIFIED_CHEATS.filter((c) => !c.codeTbc);
+  const tbcCheats = LEONIDA_VERIFIED_CHEATS.filter((c) => c.codeTbc);
+  assert.equal(verifiedDPadCheats.length, 12);
+  assert.equal(tbcCheats.length, 7);
+  const bannedCheatTokenRe = /[✕□△○]|R2|L2|RT|LT|\b[ABXY]\b/;
+  for (const c of LEONIDA_VERIFIED_CHEATS) {
+    const seq = (c.dpad || []).join(' ');
+    assert.doesNotMatch(seq, bannedCheatTokenRe, `Fake button in LEONIDA_VERIFIED_CHEATS: ${c.id}`);
+  }
+  const sanitizedCheatsState = sanitizeLeonidaState({
+    checkedCheats: ['cash-250k', 'fake-cheat-id'],
+  });
+  assert.deepEqual(sanitizedCheatsState.checkedCheats, ['cash-250k']);
 
   // Toggling any of the 5 game chips changes installedGamesGb, diff, and bar proportions
   const baseline = computeLeonidaStorage({
@@ -447,9 +470,13 @@ test('3. Amazon Associates compliance, canonical /dp/ ASINs, GTA Online split li
   const storageSource = readRepoFile('src/components/StorageUnlockDeck.jsx');
   const dockSource = readRepoFile('src/components/games/GameStudioDock.jsx');
   const tunerSource = readRepoFile('src/components/gta6/Gta6SettingsTunerDeck.jsx');
+  const leonidaRailSource = readRepoFile('src/components/gta6/leonida/LeonidaSessionRail.jsx');
+  const leonidaStorageSource = readRepoFile('src/components/gta6/leonida/LeonidaStorageTab.jsx');
   assert.match(storageSource, /As an Amazon Associate I earn from qualifying purchases\./);
   assert.match(dockSource, /As an Amazon Associate I earn from qualifying purchases\./);
   assert.match(tunerSource, /As an Amazon Associate I earn from qualifying purchases\./);
+  assert.match(leonidaRailSource, /As an Amazon Associate I earn from qualifying purchases\./);
+  assert.match(leonidaStorageSource, /As an Amazon Associate I earn from qualifying purchases\./);
   assert.match(tunerSource, /\/dp\/B0C47ZX1WB\?tag=playunpause-20/);
   assert.match(tunerSource, /\/dp\/B0C44XVWCH\?tag=playunpause-20/);
   assert.match(dockSource, /amazon-plain-link/);

@@ -16,7 +16,7 @@ const QUICK_CONSOLES = [
   { id: 'xss', label: 'Series S' },
 ];
 
-export default function LeonidaSessionRail({
+function LeonidaSessionRail({
   state,
   runtimeConfig,
   previewSample,
@@ -123,7 +123,7 @@ export default function LeonidaSessionRail({
           </a>
 
           <p className="lh-card-sub" style={{ fontSize: '0.7rem', marginTop: '6px' }}>
-            As an Amazon Associate, PlayUnpause earns from qualifying purchases.
+            As an Amazon Associate I earn from qualifying purchases.
           </p>
         </div>
       </section>
@@ -202,3 +202,5 @@ export default function LeonidaSessionRail({
     </aside>
   );
 }
+
+export default React.memo(LeonidaSessionRail);

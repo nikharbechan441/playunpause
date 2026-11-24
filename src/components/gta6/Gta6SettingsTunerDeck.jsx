@@ -131,9 +131,9 @@ export default function Gta6SettingsTunerDeck({
         <div className="cheat-warning-banner fw-alert" role="alert">
           <AlertTriangle size={18} color="#F59E0B" aria-hidden="true" />
           <div>
-            <strong>MANDATORY PS5 FIRMWARE CHECK: 26.07-14.23.00 + PATCH 1.002.001</strong>
+            <strong>MANDATORY PS5 FIRMWARE CHECK: 26.07-14.23.00 + PATCH 01.002.002</strong>
             <p>
-              Verify PlayStation 5 System Software matches <strong>26.07-14.23.00</strong> before starting Campaign (prevents Day-1 cutscene hitching). Patch 1.002.001 adds +0.6 GB (PS5) / +1.6 GB (Xbox).
+              Verify PlayStation 5 System Software matches <strong>26.07-14.23.00</strong> before starting Campaign (prevents launch cutscene hitching). Patch 01.002.002 adds ~603.8 MB (PS5) / Patch 1.0.2.2 adds ~1.6 GB (Xbox).
             </p>
           </div>
         </div>

@@ -119,7 +119,7 @@ function buildLlmsTxt() {
 
   return `# Unpause (playunpause.com)
 
-> Fast, dark-mode, zero-popup browser utility for GTA VI Launch Day (console storage + Patch 1.002.001, 61 haptic cheats, chapter-gated money & 4-tier robberies, 30fps DF tuner, platinum/15-save tracker) and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
+> Fast, dark-mode, zero-popup browser utility for GTA VI Launch Week (console storage + Patch 01.002.002 / 1.0.2.2, pure D-Pad cheats, Apollo Aggregates & story robberies, 30fps DF tuner, platinum/15-save tracker) and 9 instant math calculators across COD Warzone, EA Sports FC 27, Minecraft, Roblox, CS2, Valorant, Fortnite, Apex Legends, and GTA Online.
 
 - Canonical Site: ${CANONICAL_ORIGIN}/
 - Extended Reference & Formula Tables: ${CANONICAL_ORIGIN}/llms-full.txt
@@ -131,7 +131,7 @@ ${toolLines}
 
 ## Compliance, Privacy & Attribution
 - All free interactive calculators execute 100% locally in the browser with zero ad-tech scripts and self-hosted fonts.
-- GTA VI launch data reflects November 19, 2026 release specs (Base 212 GB + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox).
+- GTA VI launch data reflects November 19, 2026 release & Nov 23 Patch 01.002.002 / 1.0.2.2 specs (Base 212 GB + ~603.8 MB PS5 / +1.6 GB Xbox).
 - NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 - All 10 game calculators, GTA VI launch companions, saved console SSD setups, and CSV/JSON exports are 100% free with zero consumer checkout.
 
@@ -156,7 +156,7 @@ function buildLlmsFullTxt() {
     .map((c) => {
       const pGb = c.patchGb ?? (c.platform === 'ps5' ? ps5PatchGb : xboxPatchGb);
       const totalGb = (c.installGb + pGb).toFixed(1);
-      return `| ${c.name} | ${c.usableGb} GB usable | ${c.installGb} GB base | ${totalGb} GB (+${pGb} GB Patch 1.002.001) | ${c.nzStatusShort} |`;
+      return `| ${c.name} | ${c.usableGb} GB usable | ${c.installGb} GB base | ${totalGb} GB (+${pGb} GB Patch 01.002.002) | ${c.nzStatusShort} |`;
     })
     .join('\n');
 
@@ -247,12 +247,12 @@ Total indexable clean routes: ${routes.length}
 Important attribution note: playunpause.com is an independent unofficial utility. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT. FIFA is a registered trademark of FIFA.
 
 ## 1. GTA VI Console Storage Specs (Launch Day Live — Nov 19, 2026)
-| Console | Usable OS Storage | Base Size | W/ Patch 1.002.001 | Spec / Mode |
+| Console | Usable OS Storage | Base Size | W/ Patch 01.002.002 | Spec / Mode |
 | --- | --- | --- | --- | --- |
 ${consoleRows}
 
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
-| Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.002.001 (${(212 + xboxPatchGb).toFixed(1)} GB) |
+| Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.0.2.2 (${(212 + xboxPatchGb).toFixed(1)} GB) |
 | --- | --- | --- |
 ${speedRows}
 

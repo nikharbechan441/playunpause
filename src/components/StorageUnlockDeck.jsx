@@ -314,17 +314,17 @@ export default function StorageUnlockDeck({
   };
 
   return (
-    <section className="deck-panel" aria-label="Console SSD & Patch 1.002.001 Calculator">
+    <section className="deck-panel" aria-label="Console SSD & Patch 01.002.002 Calculator">
       {isEmbed && (
         <div className="studio-hero-band">
           <div>
             <div className="panel-eyebrow">
               <HardDrive size={13} aria-hidden="true" />
-              <span>CONSOLES &amp; PATCH 1.002.001 · FREE STORAGE FIT PLANNER</span>
+              <span>CONSOLES &amp; PATCH 01.002.002 · FREE STORAGE FIT PLANNER</span>
             </div>
             <h1 className="panel-title">GTA VI Storage &amp; Launch Fit Planner</h1>
             <p className="panel-subtitle">
-              Check PS5 &amp; Xbox SSD headroom with Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) and download ETA.
+              Check PS5 &amp; Xbox SSD headroom with Patch 01.002.002 (+0.6 GB PS5 / +1.6 GB Xbox 1.0.2.2) and download ETA.
             </p>
           </div>
         </div>
@@ -386,7 +386,7 @@ export default function StorageUnlockDeck({
                     setIncludeDayOnePatch((v) => !v);
                   }}
                 >
-                  +0.6 GB PS5 / +1.6 GB Xbox (Patch 1.002.001) {includeDayOnePatch ? '(On)' : '(Off)'}
+                  +0.6 GB PS5 / +1.6 GB Xbox (Patch 01.002.002) {includeDayOnePatch ? '(On)' : '(Off)'}
                 </button>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <button
@@ -725,7 +725,7 @@ export default function StorageUnlockDeck({
                 </div>
 
                 <div className="receipt-diagnosis">{diagnosisLine}</div>
-                <div className="receipt-domain">OUT NOW (NOV 19) · PATCH 1.002.001 · PLAYUNPAUSE.COM</div>
+                <div className="receipt-domain">OUT NOW · PATCH 01.002.002 / 1.0.2.2 · PLAYUNPAUSE.COM</div>
               </div>
             </div>
 

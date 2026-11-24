@@ -1,7 +1,7 @@
 {
   "name": "PlayUnpause",
   "short_name": "PlayUnpause",
-  "description": "Zero-popup second-screen gaming utility for GTA VI Leonida Command Center (100% Tracker, 15 Save Slots, 212 GB SSD + Patch 1.002.001, 30fps settings, 6-Star Heat Decoder, 23 radio stations) and 9 game math calculators.",
+  "description": "Zero-popup second-screen gaming utility for GTA VI Leonida Command Center (100% Tracker, 15 Save Slots, 212 GB SSD + Patch 01.002.002, 30fps settings, 6-Star Heat Decoder, 23 radio stations) and 9 game math calculators.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

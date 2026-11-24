@@ -151,7 +151,7 @@ export default function Gta6FixesDeck({
           <div>
             <strong>LAUNCH-DAY FACT REMINDER (NOV 19, 2026)</strong>
             <p>
-              GTA VI launches strictly as single-player on PS5 (Firmware 26.07-14.23.00 required, Patch 1.002.001 +602.5 MB) and Xbox Series X|S (Patch 1.002.001 +1.59 GB). No PC build or GTA 6 Online is available at launch.
+              GTA VI launches strictly as single-player on PS5 (Firmware 26.07-14.23.00 required, Patch 01.002.002 ~603.8 MB) and Xbox Series X|S (Patch 1.0.2.2 ~1.6 GB). No PC build or GTA 6 Online is available at launch.
             </p>
           </div>
         </div>

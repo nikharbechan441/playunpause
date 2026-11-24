@@ -9,7 +9,7 @@ import React from 'react';
 export const WORLD_STRIP_PACK_A = {
   'gta-6': {
     leftLabel: 'LAUNCH DAY · LIVE',
-    centerTicks: '212 GB BASE · PATCH 1.002.001 · OUT NOW',
+    centerTicks: '212 GB BASE · PATCH 01.002.002 · OUT NOW',
     rightReadout: 'NOV 19 · LIVE',
   },
   'cod-warzone': {

@@ -349,6 +349,58 @@ export const LEONIDA_PROFILE_TIERS = [
   },
 ];
 
+export const LEONIDA_BEST_ENDING_GUARD = [
+  'Check Map > Jason & Lucia individually after major chases — each protagonist carries a separate Criminal Profile rating.',
+  'Stop civilian rampages and police massacres immediately if a slow-mo profile crack warning triggers; Irredeemable permanently locks out Focus perks & cooperative finale paths on that save.',
+  'Keep a clean Pre-Finale manual save in Slot #10 before advancing Chapter 5 missions.',
+];
+
+export const LEONIDA_STATIC_KEYPADS = [
+  {
+    id: 'brians-lockup',
+    name: "Brian's Lockup (SW Key Lento Fence)",
+    code: '7700',
+    note: 'Static keypad for every player — used to offload fenced loot & Apollo Aggregates stash bags.',
+  },
+  {
+    id: 'moonstone-acid',
+    name: 'Moonstone Boutique Acid Lab ("Lab Fees")',
+    code: '0420',
+    note: 'Static story-mission keypad inside the acid lab backroom during Lab Fees.',
+  },
+];
+
+export const LEONIDA_APOLLO_LOOP = {
+  statusBadge: 'UNPATCHED IN 01.002.002 (NOV 24)',
+  title: 'Apollo Aggregates ("Red Barn") Warehouse Loop',
+  location: 'South Vice-Dale County (north of Key Lento, east of Hamlet)',
+  summary:
+    'Rockstar’s Nov 23 Patch 01.002.002 / 1.0.2.2 did NOT patch the warehouse trunk respawn loop. Use ONLY in Chapter 2+ after the Ch. 1 wallet reset.',
+  steps: [
+    'Park a Personal Vehicle with clean trunk capacity right outside Apollo Aggregates (skip warehouse vans).',
+    'Clear the office safe, loose cash, and cocaine packages inside, loading the stash bags into your Personal Vehicle trunk.',
+    'Open Pause Menu -> Game -> Save Game on a fresh manual slot, then immediately Load that same save.',
+    'You reload near Jason’s safehouse with the bags still in your Personal Vehicle trunk while Apollo Aggregates loot respawns — cash out at a Fence (e.g., Brian’s Lockup keypad 7700).',
+  ],
+};
+
+export const LEONIDA_ULTIMATE_UNLOCKS = [
+  {
+    id: 'ult-squalo',
+    badge: 'CHAPTER 4 ONLY',
+    title: 'Shitzu Squalo (Offshore Speedboat)',
+    detail:
+      'Locked across Chapters 1–3. Opens automatically at your Washington Beach Canal dock once Chapter 4 begins.',
+  },
+  {
+    id: 'ult-cash',
+    badge: 'WAIT FOR CHAPTER 2+',
+    title: 'Ultimate Edition Bonus Cash Claim Rule',
+    detail:
+      'Redeem redeemable bonus cash only after transitioning into Chapter 2 so Chapter 1’s end-of-act wallet reset never wipes it.',
+  },
+];
+
 export const LEONIDA_MONEY_CHAPTERS = [
   {
     id: 'ch1',
@@ -364,7 +416,7 @@ export const LEONIDA_MONEY_CHAPTERS = [
     badge: 'CH. 2',
     title: 'Moses & Pawn Shop Loop',
     payout: '$1,000+ / 2 min',
-    detail: 'Safe codes randomize per playthrough/robbery — scan backrooms with Focus Mode (L3+R3) for sticky notes and invoices.',
+    detail: 'Open-world safe codes randomize per playthrough/robbery — scan backrooms with Focus Mode (L3+R3) for sticky notes and invoices.',
   },
   {
     id: 'ch3',
@@ -384,43 +436,248 @@ export const LEONIDA_MONEY_CHAPTERS = [
   },
 ];
 
-export const LEONIDA_CHEAT_CARDS = [
+export const LEONIDA_CHEAT_CATEGORIES = [
+  { id: 'All', label: 'All (19 Tracked · 61 Total)' },
+  { id: 'Player', label: 'Player (10)' },
+  { id: 'Combat', label: 'Combat (11)' },
+  { id: 'Spawn Vehicles', label: 'Vehicles (21)' },
+  { id: 'Environment', label: 'Environment (3 · Filters 16)' },
+];
+
+export const LEONIDA_VERIFIED_CHEATS = [
   {
-    id: 'instant-4',
-    badge: 'POST-STORY · ZERO CHALLENGES',
-    title: '4 Instant Post-Story Cheats',
-    detail: '$250,000 Cash, Unlimited Focus, and Attack Force unlock immediately right after story credits with zero side challenges.',
+    id: 'cash-250k',
+    name: '$250,000 Cash',
+    category: 'Player',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Beat the Main Story (auto-unlocked post-credits)',
+    effect: 'Adds $250,000 directly to your active character wallet.',
+    dpad: ['↑', '→', '↓', '←', '↑', '←', '↓', '→'],
+    codeTbc: false,
   },
   {
-    id: 'ammo-infinite',
-    badge: 'SHOOTING RANGE',
-    title: 'Max Ammo / Infinite Ammo',
-    detail: 'Requires 20 Bronze Shooting Range Medals for Max Ammo and 25 Silver Shooting Range Medals for Infinite Ammo.',
+    id: 'unlimited-focus',
+    name: 'Unlimited Focus',
+    category: 'Player',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Beat the Main Story (auto-unlocked post-credits)',
+    effect: 'Prevents Jason/Lucia precision Focus gauge from draining.',
+    dpad: ['↓', '↑', '↑', '↓', '↑', '↓', '↑', '↓', '↑', '→'],
+    codeTbc: false,
   },
   {
-    id: 'explosives',
-    badge: 'GRENADE CHALLENGE',
-    title: 'All Explosives',
-    detail: 'Unlocks upon clearing the 100 Grenade Kills/Throws Challenge.',
+    id: 'attack-force',
+    name: 'Attack Force',
+    category: 'Combat',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Beat the Main Story (auto-unlocked post-credits)',
+    effect: 'Boosts close-quarters & melee hit impulse.',
+    dpad: ['↓', '↑', '←', '←', '→', '↓', '↓', '↑', '↓'],
+    codeTbc: false,
   },
   {
-    id: 'total-61',
-    badge: 'D-PAD ACTIVATION',
-    title: '61 Total Cheats (~18 Codes Found)',
-    detail: 'Finish 91-93 story missions -> Progress > Cheats; enter via Phone (D-Pad Up) + L1+R1 / LB+RB + D-Pad.',
+    id: 'cycle-weather',
+    name: 'Cycle Weather',
+    category: 'Environment',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Post-Story / Map progression',
+    effect: 'Cycles weather states across Clear, Dusk, Rain, Storm & Fog.',
+    dpad: ['↓', '→', '↑', '↓', '→', '↑', '→'],
+    codeTbc: false,
+  },
+  {
+    id: 'body-armor',
+    name: 'Body Armor',
+    category: 'Player',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Complete 100 gym workouts',
+    effect: 'Grants full ballistic vest.',
+    dpad: ['↓', '↑', '←', '↑', '↑', '↑', '↑', '↑', '↓', '↓'],
+    codeTbc: false,
+  },
+  {
+    id: 'exploding-balls',
+    name: 'Exploding Balls',
+    category: 'Combat',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Deal explosive damage to 20 enemies',
+    effect: 'Amplifies throwable / explosive ordnance detonation.',
+    dpad: ['↓', '↑', '←', '←', '→', '↓', '↓', '↑', '→'],
+    codeTbc: false,
+  },
+  {
+    id: 'raise-heat-level',
+    name: 'Raise Heat Level',
+    category: 'Player',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Escape a 3-Star Wanted Level 25 times',
+    effect: 'Escalates local district Heat state.',
+    dpad: ['←', '↓', '→', '↓', '↑', '↓', '↑'],
+    codeTbc: false,
+  },
+  {
+    id: 'raise-wanted-level',
+    name: 'Raise Wanted Level',
+    category: 'Player',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Escape a 3-Star Wanted Level 50 times',
+    effect: 'Raises Wanted Stars up to 6-Star Federal response.',
+    dpad: ['←', '↓', '→', '↓', '↑', '→', '↑'],
+    codeTbc: false,
+  },
+  {
+    id: 'vehicle-force',
+    name: 'Vehicle Force',
+    category: 'Combat',
+    status: 'CONFIRMED',
+    unlockChallenge: 'Kill 25 enemies with a vehicle',
+    effect: 'Multiplies vehicle ramming impact force.',
+    dpad: ['↓', '↑', '←', '←', '→', '↓', '←', '↑', '↓'],
+    codeTbc: false,
+  },
+  {
+    id: 'maibatsu-boomazoom',
+    name: 'Maibatsu Boomazoom',
+    category: 'Spawn Vehicles',
+    status: 'COMMUNITY-VERIFIED',
+    unlockChallenge: 'Complete 5 shopping challenges',
+    effect: 'Spawns the Maibatsu Boomazoom street ride.',
+    dpad: ['←', '↑', '→', '↓', '←', '←', '↑', '←'],
+    codeTbc: false,
+  },
+  {
+    id: 'mtl-pumper',
+    name: 'MTL Pumper',
+    category: 'Spawn Vehicles',
+    status: 'COMMUNITY-VERIFIED',
+    unlockChallenge: 'Unlock in Progress > Cheats',
+    effect: 'Spawns the MTL Pumper heavy fire/utility rig.',
+    dpad: ['←', '↑', '→', '↓', '←', '→', '→', '↑'],
+    codeTbc: false,
+  },
+  {
+    id: 'hvy-bulldozer',
+    name: 'HVY Bulldozer',
+    category: 'Spawn Vehicles',
+    status: 'COMMUNITY-VERIFIED',
+    unlockChallenge: 'Unlock in Progress > Cheats',
+    effect: 'Spawns the heavy industrial HVY Bulldozer.',
+    dpad: ['←', '↑', '→', '↓', '←', '→', '→', '↓'],
+    codeTbc: false,
+  },
+  {
+    id: 'max-ammo',
+    name: 'Max Ammo',
+    category: 'Combat',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Earn 20 Bronze Shooting Range Medals',
+    effect: 'Refills reserve weapon ammunition pools.',
+    dpad: [],
+    codeTbc: true,
+  },
+  {
+    id: 'infinite-ammo',
+    name: 'Infinite Ammo',
+    category: 'Combat',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Earn 25 Silver Shooting Range Medals',
+    effect: 'Removes ammo expenditure.',
+    dpad: [],
+    codeTbc: true,
+  },
+  {
+    id: 'all-explosives',
+    name: 'All Explosives',
+    category: 'Combat',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Clear 100 Grenade kills/throws challenge',
+    effect: 'Restocks heavy explosive ordnance.',
+    dpad: [],
+    codeTbc: true,
+  },
+  {
+    id: 'drunk-mode',
+    name: 'Drunk Mode',
+    category: 'Player',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Spend $2,500 on alcohol in bars & shops',
+    effect: 'Toggles ragdoll/camera intoxication physics.',
+    dpad: [],
+    codeTbc: true,
+  },
+  {
+    id: 'no-fall-damage',
+    name: 'No Fall Damage',
+    category: 'Player',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Survive 20 freefalls from 40+ feet',
+    effect: 'Negates vertical impact damage.',
+    dpad: [],
+    codeTbc: true,
+  },
+  {
+    id: 'parachute',
+    name: 'Spawn Parachute',
+    category: 'Player',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Complete 50 skydives or BASE jumps from 300+ ft',
+    effect: 'Equips reserve chute directly.',
+    dpad: [],
+    codeTbc: true,
+  },
+  {
+    id: 'inflatable-flamingo',
+    name: 'Inflatable Pink Flamingo',
+    category: 'Spawn Vehicles',
+    status: 'CHALLENGE ONLY · TBC',
+    unlockChallenge: 'Destroy 50 Cocaine Flamingos',
+    effect: 'Spawns the collectible pink flamingo toy/float.',
+    dpad: [],
+    codeTbc: true,
+  },
+];
+
+export const LEONIDA_CHEAT_CARDS = LEONIDA_VERIFIED_CHEATS;
+
+export const LEONIDA_PHONE_MYTHBUSTERS = [
+  {
+    title: 'No Manual Phone Dial Pad',
+    detail: 'GTA VI has NO keypad for dialing 911 or cheat digits. Every call happens strictly through saved Contacts.',
+  },
+  {
+    title: 'Skunk Ape Flyer (461-555-0139)',
+    detail:
+      'Do NOT try to dial 461-555-0139. Inspect a "Have You Seen Skunk Ape???" flyer (Rusty Anchor bar in Key Lento right of entrance, or Skeers Bar in Hamlet) to add Kirk -> call Kirk -> meet at Pelican River marshes at night.',
+  },
+  {
+    title: 'Static Keypads vs Randomized Safes',
+    detail: "Open-world store/bank safes randomize per run, while Brian's Lockup (7700) and Moonstone Boutique (0420) stay static.",
   },
 ];
 
 export const LEONIDA_LAUNCH_FIXES = [
   {
+    id: 'patch_01002002',
+    label: 'Patch 01.002.002 / 1.0.2.2 (Nov 23)',
+    badge: 'NOV 23 HOTFIX · 7 OFFICIAL FIXES',
+    isScam: false,
+    summary:
+      'Rockstar released Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox) on Nov 23, 2026 fixing 7 major blockers (while Apollo Aggregates remains unpatched as of Nov 24).',
+    steps: [
+      'Stability & Saves: Fixed multiple game crashes and a bug causing autosave failures.',
+      'Story & World Fixes: Fixed weather getting stuck without changing, story phone calls not triggering, Wanted Levels refusing to clear, broken gym deadlift bars, and partners failing to hand over bags to sell at Fences.',
+      'If a scripted phone call stalled pre-patch, install 01.002.002 / 1.0.2.2 and reload Pause > Game > Load Game or retry checkpoint.',
+    ],
+  },
+  {
     id: 'ps5_boot',
     label: "PS5 Won't Launch",
     badge: 'FIRMWARE 26.07-14.23.00',
     isScam: false,
-    summary: 'Install mandatory PS5 Firmware 26.07-14.23.00 (1.267 GB, Nov 17, 2026) and confirm Patch 1.002.001 (602.5 MB PS5).',
+    summary: 'Install mandatory PS5 Firmware 26.07-14.23.00 (1.267 GB, Nov 17, 2026) and confirm Patch 01.002.002 (~603.8 MB PS5).',
     steps: [
       'Open PS5 Settings -> System -> System Software -> System Software Update and Settings.',
-      'Update to FW 26.07-14.23.00 (1.267 GB), reboot your console cleanly, and confirm GTA VI shows Patch 1.002.001 (602.5 MB).',
+      'Update to FW 26.07-14.23.00 (1.267 GB), reboot your console cleanly, and confirm GTA VI shows Patch 01.002.002.',
       'Verify free SSD space leaves breathing room on 667 GB net PS5 825GB / 848 GB Slim 1TB.',
     ],
   },
@@ -443,7 +700,7 @@ export const LEONIDA_LAUNCH_FIXES = [
     isScam: false,
     summary: 'GTA VI has zero mission replay and only 1 overwriting autosave. Protect every chapter transition with rotated manual saves.',
     steps: [
-      'Confirm Patch 1.002.001 is installed (+0.6 GB PS5 / +1.6 GB Xbox Series X|S) before loading older saves.',
+      'Confirm Patch 01.002.002 (PS5 ~603.8 MB) / 1.0.2.2 (Xbox ~1.6 GB) is installed before loading older saves.',
       'Rotate Pause Menu -> Game -> Save Game across all 15 manual slots (10 story checkpoints + 5 free-roam).',
       'Never save after activating any cheat code; reload your last clean uncheated slot before hunting trophies.',
     ],
@@ -617,26 +874,35 @@ export const LEONIDA_SEARCH_ENTRIES = [
   },
   {
     id: 'money-safes',
-    category: 'Money',
-    title: 'Randomized Safes, $20K Cash Cap & Ch. 1 Wipe',
-    detail: 'Scan rooms with Focus L3+R3 · Moses · Randy Wish List · Shitzu Squalo',
-    keywords: 'safes keypad cash cap wipe moses jewelry randy bank vault shitzu squalo',
+    category: 'Money & Safes',
+    title: 'Static Keypads (7700 / 0420) & Apollo Aggregates Loop',
+    detail: 'Brian’s Lockup 7700, Moonstone 0420, Apollo loop unpatched in 01.002.002',
+    keywords: 'safes keypad 7700 0420 brian lockup moonstone apollo aggregates warehouse glitch cash cap wipe moses jewelry randy bank vault shitzu squalo',
     tab: 'money',
   },
   {
     id: 'cheats-61',
     category: 'Cheats',
-    title: '61 Cheats Unlock Protocol (Post-Story)',
-    detail: 'Phone Up + L1+R1 / LB+RB · Disables trophies & saving',
-    keywords: 'cheats 61 250000 attack force max ammo infinite explosives phone dpad',
+    title: '61 Verified D-Pad Cheats & Challenge Tracker',
+    detail: 'Phone ↑ + L1+R1 / LB+RB · Pure D-Pad sequences · Disables trophies & saving',
+    keywords: 'cheats 61 250000 unlimited focus attack force exploding balls body armor raise heat boomazoom pumper bulldozer max ammo infinite dpad',
     tab: 'money',
+  },
+  {
+    id: 'skunk-ape-phone',
+    category: 'Mythbuster',
+    title: 'Skunk Ape Flyer (461-555-0139) & No Dial Pad',
+    detail: 'Rusty Anchor / Skeers Bar flyer adds Kirk -> Pelican River at night',
+    keywords: '461-555-0139 skunk ape kirk phone dial pad rusty anchor skeers bar pelican river',
+    tab: 'fixes',
+    activeFix: 'patch_01002002',
   },
   {
     id: 'ssd-fit',
     category: 'Storage',
-    title: 'Console Fit & SSD Surgery (212 GB + Patch 1.002.001)',
+    title: 'Console Fit & SSD Surgery (212 GB + Patch 01.002.002)',
     detail: 'PS5 825GB/Slim/Pro & Xbox Series X/S fit + Download ETA',
-    keywords: 'ssd storage 212 gb patch 1.002.001 series s ps5 pro eta mbps',
+    keywords: 'ssd storage 212 gb patch 01.002.002 1.0.2.2 series s ps5 pro eta mbps',
     tab: 'storage',
   },
   {

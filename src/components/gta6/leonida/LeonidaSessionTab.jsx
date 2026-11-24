@@ -36,7 +36,7 @@ export default function LeonidaSessionTab({
               Four single-player checks before rolling out in Leonida — click any pill to jump straight to it.
             </p>
           </div>
-          <span className="lh-badge teal">OUT NOW · PATCH 1.002.001</span>
+          <span className="lh-badge teal">OUT NOW · PATCH 01.002.002 / 1.0.2.2</span>
         </div>
 
         <div className="lh-launch-pills-grid">

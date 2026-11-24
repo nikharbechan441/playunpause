@@ -12,6 +12,7 @@ import {
   LEONIDA_PACE_MODES,
   LEONIDA_SETTINGS_ITEMS,
   LEONIDA_TRACKER_ITEMS,
+  LEONIDA_VERIFIED_CHEATS,
 } from '../data/games/leonidaV2Data.js';
 
 export const LEONIDA_STORAGE_KEY = 'playunpause_gta6_leonida_v2';
@@ -23,11 +24,12 @@ const VALID_PACE_IDS = new Set(['rush', 'normal', 'plat']);
 const VALID_SET_CONSOLES = new Set(['ps5_pro', 'ps5', 'xsx', 'xss']);
 const VALID_SET_TVS = new Set(['oled', 'led']);
 const VALID_SET_STYLES = new Set(['standard', 'motion', 'streamer']);
-const VALID_FIX_IDS = new Set(['ps5_boot', 'psn_error', 'crash_save', 'pc_scam', 'fast_travel']);
+const VALID_FIX_IDS = new Set(['patch_01002002', 'ps5_boot', 'psn_error', 'crash_save', 'pc_scam', 'fast_travel']);
 const VALID_STAR_STATES = new Set(['grey', 'w_out', 'white', 'flash', 'red', 'r_out']);
 const VALID_HEAT_FACTORS = new Set(['car', 'outfit', 'weapon', 'appearance', 'cctv', 'partner']);
 const VALID_PROFILE_TIERS = new Set(['pro', 'hard', 'viol', 'psycho', 'irred']);
 const VALID_SETTING_IDS = new Set(LEONIDA_SETTINGS_ITEMS.map((s) => s.id));
+const VALID_CHEAT_IDS = new Set(LEONIDA_VERIFIED_CHEATS.map((c) => c.id));
 const TRACKER_MAX_MAP = Object.fromEntries(LEONIDA_TRACKER_ITEMS.map((t) => [t.key, t.target]));
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -76,7 +78,8 @@ export function createDefaultLeonidaState() {
     setTv: 'oled',
     setStyle: 'standard',
     checkedSettings: [],
-    activeFix: 'ps5_boot',
+    checkedCheats: [],
+    activeFix: 'patch_01002002',
     radioQuery: '',
     pace: 'normal',
     hoursPerDay: 2.5,
@@ -127,6 +130,10 @@ export function sanitizeLeonidaState(raw, fallback = createDefaultLeonidaState()
     ? Array.from(new Set(clean.checkedSettings.filter((id) => VALID_SETTING_IDS.has(id))))
     : [...base.checkedSettings];
 
+  const checkedCheats = Array.isArray(clean.checkedCheats)
+    ? Array.from(new Set(clean.checkedCheats.filter((id) => VALID_CHEAT_IDS.has(id))))
+    : [...(base.checkedCheats || [])];
+
   const activeHeat = Array.isArray(clean.activeHeat)
     ? Array.from(new Set(clean.activeHeat.filter((id) => VALID_HEAT_FACTORS.has(id))))
     : [...base.activeHeat];
@@ -147,6 +154,7 @@ export function sanitizeLeonidaState(raw, fallback = createDefaultLeonidaState()
     setTv: VALID_SET_TVS.has(clean.setTv) ? clean.setTv : base.setTv,
     setStyle: VALID_SET_STYLES.has(clean.setStyle) ? clean.setStyle : base.setStyle,
     checkedSettings,
+    checkedCheats,
     activeFix: VALID_FIX_IDS.has(clean.activeFix) ? clean.activeFix : base.activeFix,
     radioQuery: typeof clean.radioQuery === 'string' ? clean.radioQuery.slice(0, 60) : base.radioQuery,
     pace: VALID_PACE_IDS.has(clean.pace) ? clean.pace : base.pace,
@@ -449,33 +457,55 @@ const ROUTE_TAB_MAP = {
   radio: 'fixes',
 };
 
+const ROUTE_FIX_MAP = {
+  'patch-01002002': 'patch_01002002',
+  'ps5-wont-launch': 'ps5_boot',
+  'psn-error': 'psn_error',
+  'crash-save': 'crash_save',
+  'pc-scam': 'pc_scam',
+  'fast-travel': 'fast_travel',
+};
+
 export function mapRoutePresetToLeonida(route, preset = {}) {
   const rawTab = route?.tab || 'session';
-  const tab = ROUTE_TAB_MAP[rawTab] || 'session';
+  const path = route?.path || '/gta-6';
+  const isUltimate = path === '/gta-6/ultimate' || preset?.subTab === 'ultimate';
+  const tab = isUltimate ? 'money' : ROUTE_TAB_MAP[rawTab] || 'session';
   const mappedConsole = preset?.consoleId && ROUTE_CONSOLE_MAP[preset.consoleId]
     ? ROUTE_CONSOLE_MAP[preset.consoleId]
     : null;
   const mappedMbps = typeof preset?.mbps === 'number' && Number.isFinite(preset.mbps)
     ? clampInt(preset.mbps, 100, 5, 2500)
     : null;
-  const focusAnchor =
-    rawTab === 'cheats'
-      ? 'leonida-cheats-section'
-      : rawTab === 'radio'
-        ? 'leonida-radio-section'
-        : rawTab === 'platinum'
-          ? 'leonida-tracker-section'
-          : route?.path === '/gta-6/robberies'
-            ? 'leonida-money-section'
-            : route?.path === '/gta-6/ultimate'
-              ? 'leonida-money-section'
-              : null;
+  const rawSymptom = preset?.symptomId;
+  const mappedActiveFix = rawSymptom
+    ? ROUTE_FIX_MAP[rawSymptom] || (VALID_FIX_IDS.has(rawSymptom) ? rawSymptom : null)
+    : path === '/gta-6/fixes'
+      ? 'patch_01002002'
+      : null;
+  const routeFocus =
+    path === '/gta-6/robberies' || preset?.subTab === 'robberies'
+      ? 'robberies'
+      : path === '/gta-6/cheats' || rawTab === 'cheats'
+        ? 'cheats'
+        : isUltimate
+          ? 'ultimate'
+          : path === '/gta-6/money' || rawTab === 'money'
+            ? 'money'
+            : path === '/gta-6/radio' || rawTab === 'radio'
+              ? 'radio'
+              : path === '/gta-6/fixes' || rawTab === 'fixes'
+                ? 'fixes'
+                : path === '/gta-6/platinum' || rawTab === 'platinum'
+                  ? 'platinum'
+                  : null;
 
   return {
     tab,
     rawTab,
     consoleId: mappedConsole,
     mbps: mappedMbps,
-    focusAnchor,
+    activeFix: mappedActiveFix,
+    routeFocus,
   };
 }

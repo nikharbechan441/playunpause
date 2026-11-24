@@ -72,36 +72,38 @@ export function triggerHaptic(ms = 8) {
 
 export function playSwitchTick(soundEnabled = true, pitchHz = 680) {
   triggerHaptic(8);
-  if (!soundEnabled) return;
-  const callMs = nowTimestampMs();
-  if (callMs - lastTickOscMs < MIN_OSC_COALESCE_MS) return;
-  const ctx = getCtx();
-  if (!ctx || ctx.state === 'closed') return;
-  lastTickOscMs = callMs;
-
+  if (!soundEnabled || typeof window === 'undefined') return;
   const safePitch =
     Number.isFinite(pitchHz) && pitchHz > 0 ? Math.min(8000, Math.max(60, pitchHz)) : 680;
 
-  try {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+  window.setTimeout(() => {
+    const callMs = nowTimestampMs();
+    if (callMs - lastTickOscMs < MIN_OSC_COALESCE_MS) return;
+    const ctx = getCtx();
+    if (!ctx || ctx.state === 'closed') return;
+    lastTickOscMs = callMs;
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(safePitch, now);
-    osc.frequency.exponentialRampToValueAtTime(190, now + 0.028);
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    gain.gain.setValueAtTime(0.06, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(safePitch, now);
+      osc.frequency.exponentialRampToValueAtTime(190, now + 0.028);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.onended = () => disconnectAudioNodes(osc, gain);
-    osc.start(now);
-    osc.stop(now + 0.032);
-  } catch {
-    // Audio blocked before gesture
-  }
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.onended = () => disconnectAudioNodes(osc, gain);
+      osc.start(now);
+      osc.stop(now + 0.032);
+    } catch {
+      // Audio blocked before gesture
+    }
+  }, 0);
 }
 
 export function playKeypadBeep(soundEnabled = true, digit = '5') {
@@ -122,30 +124,33 @@ export function playKeypadBeep(soundEnabled = true, digit = '5') {
 
 export function playUnlockChime(soundEnabled = true) {
   triggerHaptic([12, 30, 16]);
-  if (!soundEnabled) return;
-  const callMs = nowTimestampMs();
-  if (callMs - lastChimeOscMs < MIN_OSC_COALESCE_MS) return;
-  const ctx = getCtx();
-  if (!ctx || ctx.state === 'closed') return;
-  lastChimeOscMs = callMs;
+  if (!soundEnabled || typeof window === 'undefined') return;
 
-  try {
-    const now = ctx.currentTime;
-    [523.25, 659.25, 783.99].forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const start = now + idx * 0.055;
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, start);
-      gain.gain.setValueAtTime(0.055, start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.onended = () => disconnectAudioNodes(osc, gain);
-      osc.start(start);
-      osc.stop(start + 0.17);
-    });
-  } catch {
-    // Ignore
-  }
+  window.setTimeout(() => {
+    const callMs = nowTimestampMs();
+    if (callMs - lastChimeOscMs < MIN_OSC_COALESCE_MS) return;
+    const ctx = getCtx();
+    if (!ctx || ctx.state === 'closed') return;
+    lastChimeOscMs = callMs;
+
+    try {
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + idx * 0.055;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.055, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.onended = () => disconnectAudioNodes(osc, gain);
+        osc.start(start);
+        osc.stop(start + 0.17);
+      });
+    } catch {
+      // Ignore
+    }
+  }, 0);
 }

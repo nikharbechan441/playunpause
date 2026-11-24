@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import {
   HardDrive,
   KeyRound,
@@ -60,28 +60,17 @@ import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHe
 import StorageUnlockDeck from './components/StorageUnlockDeck.jsx';
 import MultiGameToolDeck from './components/MultiGameToolDeck.jsx';
 import LeonidaCommandCenter from './components/gta6/LeonidaCommandCenter.jsx';
-import Gta6SpoilerShieldBar from './components/gta6/Gta6SpoilerShieldBar.jsx';
 import { isChunkLoadError, tryAutoReloadForStaleChunk } from './utils/chunkRecovery.js';
 
-const loadGta6CheatDeck = () => import('./components/gta6/Gta6CheatDeck.jsx');
-const loadGta6MoneyRobberyDeck = () => import('./components/gta6/Gta6MoneyRobberyDeck.jsx');
-const loadGta6SettingsTunerDeck = () => import('./components/gta6/Gta6SettingsTunerDeck.jsx');
-const loadGta6PlatinumUltimateDeck = () => import('./components/gta6/Gta6PlatinumUltimateDeck.jsx');
-const loadGta6FixesDeck = () => import('./components/gta6/Gta6FixesDeck.jsx');
-const loadGta6RadioDeck = () => import('./components/gta6/Gta6RadioDeck.jsx');
-const loadGameSelectorModal = () => import('./components/GameSelectorModal.jsx');
-const loadLegalComplianceModal = () => import('./components/LegalComplianceModal.jsx');
-const loadEmbedWidgetModal = () => import('./components/EmbedWidgetModal.jsx');
-
-const Gta6CheatDeck = lazy(loadGta6CheatDeck);
-const Gta6MoneyRobberyDeck = lazy(loadGta6MoneyRobberyDeck);
-const Gta6SettingsTunerDeck = lazy(loadGta6SettingsTunerDeck);
-const Gta6PlatinumUltimateDeck = lazy(loadGta6PlatinumUltimateDeck);
-const Gta6FixesDeck = lazy(loadGta6FixesDeck);
-const Gta6RadioDeck = lazy(loadGta6RadioDeck);
-const GameSelectorModal = lazy(loadGameSelectorModal);
-const LegalComplianceModal = lazy(loadLegalComplianceModal);
-const EmbedWidgetModal = lazy(loadEmbedWidgetModal);
+const Gta6CheatDeck = lazy(() => import('./components/gta6/Gta6CheatDeck.jsx'));
+const Gta6MoneyRobberyDeck = lazy(() => import('./components/gta6/Gta6MoneyRobberyDeck.jsx'));
+const Gta6SettingsTunerDeck = lazy(() => import('./components/gta6/Gta6SettingsTunerDeck.jsx'));
+const Gta6PlatinumUltimateDeck = lazy(() => import('./components/gta6/Gta6PlatinumUltimateDeck.jsx'));
+const Gta6FixesDeck = lazy(() => import('./components/gta6/Gta6FixesDeck.jsx'));
+const Gta6RadioDeck = lazy(() => import('./components/gta6/Gta6RadioDeck.jsx'));
+const GameSelectorModal = lazy(() => import('./components/GameSelectorModal.jsx'));
+const LegalComplianceModal = lazy(() => import('./components/LegalComplianceModal.jsx'));
+const EmbedWidgetModal = lazy(() => import('./components/EmbedWidgetModal.jsx'));
 
 const STORAGE_KEY = 'unpause_deck_state_v5';
 const SPOILER_STORAGE_KEY = 'unpause_gta6_spoiler_ch_v1';
@@ -93,13 +82,13 @@ const LEGACY_KEYS = [
 ];
 
 const GTA_MODES = [
-  { id: 'storage', label: 'SSD & Patch 1.002.001', mobileLabel: 'SSD', icon: HardDrive },
+  { id: 'storage', label: 'SSD & Patch 01.002.002', mobileLabel: 'SSD', icon: HardDrive },
   { id: 'cheats', label: 'Cheats (61)', mobileLabel: 'Cheats', icon: KeyRound },
   { id: 'money', label: 'Money & Robberies', mobileLabel: 'Money', icon: DollarSign },
   { id: 'settings', label: '30fps Tuner & PNG', mobileLabel: '30fps', icon: Clock },
   { id: 'platinum', label: 'Platinum & Ult', mobileLabel: 'Plat', icon: Sparkles },
   { id: 'fixes', label: 'Crash & PSN Fixes', mobileLabel: 'Fixes', icon: Wrench },
-  { id: 'radio', label: '6 Radio Stations', mobileLabel: 'Radio', icon: Radio },
+  { id: 'radio', label: '23 Radio Stations', mobileLabel: 'Radio', icon: Radio },
 ];
 
 export function sanitizeHttpsUrl(rawUrl, fallback = null) {
@@ -453,6 +442,7 @@ export default function App() {
   const [showProModal, setShowProModal] = useState(false);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [otherGamesDrawerOpen, setOtherGamesDrawerOpen] = useState(false);
 
   const [claimInput, setClaimInput] = useState('');
   const [claimReceiptInput, setClaimReceiptInput] = useState('');
@@ -525,7 +515,9 @@ export default function App() {
       } else {
         window.history.pushState({}, '', nextUrl);
       }
-      setRouteState(readRouteFromLocation());
+      startTransition(() => {
+        setRouteState(readRouteFromLocation());
+      });
       if (scrollToTop) {
         window.scrollTo({ top: 0, behavior: 'auto' });
       }
@@ -610,43 +602,6 @@ export default function App() {
       setStorageError(msg);
     }
   }, [deckState]);
-
-  // Idle warm-preloading of lazy calculator & modal chunks so visited sessions switch cleanly offline
-  useEffect(() => {
-    if (isEmbed || typeof window === 'undefined') return undefined;
-    if (navigator?.connection?.saveData) return undefined;
-
-    let cancelled = false;
-    const warmChunks = () => {
-      if (cancelled) return;
-      Promise.allSettled([
-        loadGta6CheatDeck(),
-        loadGta6MoneyRobberyDeck(),
-        loadGta6SettingsTunerDeck(),
-        loadGta6PlatinumUltimateDeck(),
-        loadGta6FixesDeck(),
-        loadGta6RadioDeck(),
-        loadGameSelectorModal(),
-        loadLegalComplianceModal(),
-        loadEmbedWidgetModal(),
-        import('./utils/qrCode.js'),
-      ]);
-    };
-
-    if (typeof window.requestIdleCallback === 'function') {
-      const idleId = window.requestIdleCallback(warmChunks, { timeout: 2200 });
-      return () => {
-        cancelled = true;
-        window.cancelIdleCallback?.(idleId);
-      };
-    }
-
-    const timerId = window.setTimeout(warmChunks, 900);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timerId);
-    };
-  }, [isEmbed]);
 
   // Tick minute countdown clock cleanly on mount
   useEffect(() => {
@@ -1611,7 +1566,7 @@ export default function App() {
             {activeGamePack.isGta6Suite ? (
               <div
                 className="nz-hud-pill"
-                title="Grand Theft Auto VI is OUT NOW (Nov 19, 2026) · Patch 1.002.001 Live"
+                title="Grand Theft Auto VI is OUT NOW (Nov 19, 2026) · Patch 01.002.002 (PS5) / 1.0.2.2 (Xbox) Live"
               >
                 <span className="nz-live-dot" aria-hidden="true" />
                 <span className="nz-full-text">GTA VI · OUT NOW</span>
@@ -1928,7 +1883,7 @@ export default function App() {
               <p className="consumer-sub">
                 {activeRoute?.answerSummary ||
                   (activeGamePack.isGta6Suite
-                    ? 'GTA VI is OUT NOW. Check 212 GB SSD + Patch 1.002.001 headroom, 61 haptic cheats, story money/robberies, 30fps DF tuning & Platinum tracking — free.'
+                    ? 'GTA VI is OUT NOW. Check 212 GB SSD + Patch 01.002.002 / 1.0.2.2 headroom, verified D-Pad cheats, Apollo story money/robberies, 30fps DF tuning & Platinum tracking — free.'
                     : `${activeGamePack.tagline} · Free, instant browser math with zero ads.`)}
               </p>
             </div>
@@ -2070,33 +2025,38 @@ export default function App() {
           </div>
 
           {otherGameGroups.length > 0 && (
-            <details className="cross-game-directory-drawer">
+            <details
+              className="cross-game-directory-drawer"
+              onToggle={(e) => setOtherGamesDrawerOpen(e.currentTarget.open)}
+            >
               <summary className="cross-game-directory-summary">
                 <span>Browse Other 9 Games</span>
                 <ChevronDown className="cross-game-drawer-icon" size={16} aria-hidden="true" />
               </summary>
-              <div className="seo-directory-grid cross-game-directory-inner">
-                {otherGameGroups.map((group) => (
-                  <div key={group.cluster} className="seo-directory-card">
-                    <h3>{group.cluster}</h3>
-                    <div className="seo-directory-links">
-                      {group.links.map((link) => (
-                        <a
-                          key={link.path}
-                          href={link.path}
-                          className={`seo-dir-link ${activeRoute?.path === link.path ? 'active' : ''}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigateToPath(link.path, { scrollToTop: true });
-                          }}
-                        >
-                          {link.label}
-                        </a>
-                      ))}
+              {otherGamesDrawerOpen && (
+                <div className="seo-directory-grid cross-game-directory-inner">
+                  {otherGameGroups.map((group) => (
+                    <div key={group.cluster} className="seo-directory-card">
+                      <h3>{group.cluster}</h3>
+                      <div className="seo-directory-links">
+                        {group.links.map((link) => (
+                          <a
+                            key={link.path}
+                            href={link.path}
+                            className={`seo-dir-link ${activeRoute?.path === link.path ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigateToPath(link.path, { scrollToTop: true });
+                            }}
+                          >
+                            {link.label}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </details>
           )}
         </section>

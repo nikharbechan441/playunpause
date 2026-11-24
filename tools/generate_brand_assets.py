@@ -59,8 +59,8 @@ OG_CARDS = [
         "accent": (56, 189, 248),
         "category": "GTA VI STORAGE CHECKER",
         "headline": "Will GTA VI Fit On Your Console?",
-        "sub": "212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) Headroom & Mbps Download ETA.",
-        "pills": ["212 GB BASE", "PATCH 1.002.001", "PS5 · XSX · XSS"],
+        "sub": "212 GB Base + Patch 01.002.002 / 1.0.2.2 (+0.6 GB PS5 / +1.6 GB Xbox) Headroom & Mbps Download ETA.",
+        "pills": ["212 GB BASE", "PATCH 01.002.002", "PS5 · XSX · XSS"],
     },
     {
         "filename": "gta-6-cheats.png",

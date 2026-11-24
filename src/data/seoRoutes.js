@@ -49,7 +49,7 @@ export const LEGAL_META = {
     description:
       'Read Unpause Terms of Service, ECTA s.43 disclosures, GTA VI launch-day tools, and free utility terms. Support: hello@playunpause.com.',
     h1: 'Unpause Terms of Service & ECTA s. 43 Disclosures',
-    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, GTA VI launch companions, OBS overlays, 16 saved setups, and CSV/JSON exports are 100% free with zero self-serve consumer checkout. Grand Theft Auto VI launched November 19, 2026 (212 GB Base + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox). Full ECTA s.43(1) physical service address and phone particulars for $149/day B2B sponsor contracts are provided on written request via sponsors@playunpause.com prior to invoicing. Support: hello@playunpause.com.',
+    body: 'playunpause.com is an independent, unofficial read-only browser calculator and companion utility. All 10 game calculators, GTA VI launch companions, OBS overlays, 16 saved setups, and CSV/JSON exports are 100% free with zero self-serve consumer checkout. Grand Theft Auto VI launched November 19, 2026 (212 GB Base + Patch 01.002.002 PS5 ~603.8 MB / Patch 1.0.2.2 Xbox +1.6 GB). Full ECTA s.43(1) physical service address and phone particulars for $149/day B2B sponsor contracts are provided on written request via sponsors@playunpause.com prior to invoicing. Support: hello@playunpause.com.',
   },
   privacy: {
     path: '/legal/privacy',
@@ -131,10 +131,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'Xbox Series S 512GB',
     title: 'GTA 6 Xbox Series S 512GB Fit Check (212 GB) — Unpause',
     description:
-      'Will GTA 6 fit on Xbox Series S 512GB? Calculate exact 212 GB + Patch 1.002.001 (+1.6 GB) vs 364 GB usable NVMe headroom and expansion cards.',
+      'Will GTA 6 fit on Xbox Series S 512GB? Calculate exact 212 GB + Patch 1.0.2.2 (+1.6 GB) vs 364 GB usable NVMe headroom and expansion cards.',
     h1: 'Will GTA VI Fit on Xbox Series S (512 GB)?',
     answer:
-      'Xbox Series S (512 GB) provides 364 GB of usable internal NVMe space. With Base 212 GB + Patch 1.002.001 (+1.6 GB = 213.6 GB total), GTA VI uses 58.7% of your usable drive—leaving 150.4 GB spare.',
+      'Xbox Series S (512 GB) provides 364 GB of usable internal NVMe space. With Base 212 GB + Xbox Patch 1.0.2.2 (+1.6 GB = 213.6 GB total), GTA VI uses 58.7% of your usable drive—leaving 150.4 GB spare.',
     faqs: [
       {
         q: 'Can Xbox Series S run GTA 6 off a cheap USB external drive?',
@@ -154,10 +154,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'Xbox Series S 1TB',
     title: 'GTA 6 Xbox Series S 1TB Storage Check (212 GB) — Unpause',
     description:
-      'Check GTA 6 fit on Xbox Series S 1TB (802 GB usable). Compare 212 GB base + Patch 1.002.001 (+1.6 GB Xbox) headroom and download ETA in seconds.',
+      'Check GTA 6 fit on Xbox Series S 1TB (802 GB usable). Compare 212 GB base + Patch 1.0.2.2 (+1.6 GB Xbox) headroom and download ETA in seconds.',
     h1: 'GTA VI Storage Check for Xbox Series S (1 TB)',
     answer:
-      'The 1 TB Xbox Series S exposes 802 GB of usable NVMe storage. GTA VI Base (212 GB) + Patch 1.002.001 (+1.6 GB = 213.6 GB) leaves 588.4 GB for CoD HQ, Fortnite, and EA FC 27 with zero expansion card needed.',
+      'The 1 TB Xbox Series S exposes 802 GB of usable NVMe storage. GTA VI Base (212 GB) + Xbox Patch 1.0.2.2 (+1.6 GB = 213.6 GB) leaves 588.4 GB for CoD HQ, Fortnite, and EA FC 27 with zero expansion card needed.',
   },
   {
     slug: 'xbox-series-x-1tb',
@@ -167,10 +167,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'Xbox Series X 1TB',
     title: 'GTA 6 Xbox Series X 1TB Storage & 120Hz VRR — Unpause',
     description:
-      'Calculate Xbox Series X 1TB (802 GB usable) headroom for GTA 6 212 GB + Patch 1.002.001 (+1.6 GB), Mbps download ETA, and 120Hz VRR 30fps specs.',
+      'Calculate Xbox Series X 1TB (802 GB usable) headroom for GTA 6 212 GB + Patch 1.0.2.2 (+1.6 GB), Mbps download ETA, and 120Hz VRR 30fps specs.',
     h1: 'GTA VI Storage Fit & 120Hz VRR on Xbox Series X (1 TB)',
     answer:
-      'Xbox Series X 1 TB provides 802 GB of usable internal storage, so GTA VI Base (212 GB) + Patch 1.002.001 (+1.6 GB = 213.6 GB) uses 26.6% of capacity and supports 120Hz VRR output.',
+      'Xbox Series X 1 TB provides 802 GB of usable internal storage, so GTA VI Base (212 GB) + Xbox Patch 1.0.2.2 (+1.6 GB = 213.6 GB) uses 26.6% of capacity and supports 120Hz VRR output.',
   },
   {
     slug: 'ps5-base-825gb',
@@ -180,10 +180,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'PS5 Base / Slim Digital 825GB',
     title: 'GTA 6 PS5 825GB & CFI-2100 Storage Check — Unpause',
     description:
-      'Does 212 GB GTA 6 fit on PS5 Base or Sept 2025 CFI-2100 Slim Digital (667 GB usable)? Check Patch 1.002.001 (+0.6 GB) & PS5 FW 26.07-14.23.00.',
+      'Does 212 GB GTA 6 fit on PS5 Base or Sept 2025 CFI-2100 Slim Digital (667 GB usable)? Check Patch 01.002.002 (~603.8 MB) & PS5 FW 26.07-14.23.00.',
     h1: 'Will GTA VI Fit on PS5 Base / Slim Digital (825 GB)?',
     answer:
-      'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 Slim Digital expose 667 GB of usable SSD space (212.6 GB with Patch 1.002.001 +0.6 GB). Always confirm PS5 Firmware 26.07-14.23.00 is installed.',
+      'Both launch 825GB PS5 models and Sony’s Sept 2025 CFI-2100 Slim Digital expose 667 GB of usable SSD space (212.6 GB with Patch 01.002.002 ~603.8 MB). Always confirm PS5 Firmware 26.07-14.23.00 is installed.',
   },
   {
     slug: 'ps5-slim-1tb',
@@ -193,10 +193,10 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'PS5 Slim Disc 1TB',
     title: 'GTA 6 PS5 Slim 1TB Storage Fit & ETA Check — Unpause',
     description:
-      'Test GTA 6 212 GB + Patch 1.002.001 (+0.6 GB) space on PS5 Slim Disc 1TB (848 GB usable). Check remaining NVMe headroom & FW 26.07-14.23.00 notes.',
+      'Test GTA 6 212 GB + Patch 01.002.002 (~603.8 MB) space on PS5 Slim Disc 1TB (848 GB usable). Check remaining NVMe headroom & FW 26.07-14.23.00 notes.',
     h1: 'GTA VI Storage Check for PS5 Slim Disc (1 TB · 848 GB)',
     answer:
-      'PS5 Slim Disc models ship with 848 GB usable SSD capacity. GTA VI Base (212 GB) + Patch 1.002.001 (+0.6 GB = 212.6 GB) uses ~25.1% of the drive, leaving 635.4 GB spare.',
+      'PS5 Slim Disc models ship with 848 GB usable SSD capacity. GTA VI Base (212 GB) + Patch 01.002.002 (+0.6 GB = 212.6 GB) uses ~25.1% of the drive, leaving 635.4 GB spare.',
   },
   {
     slug: 'ps5-pro-2tb',
@@ -206,23 +206,23 @@ const CONSOLE_SEO_SPECS = [
     shortLabel: 'PS5 Pro 2TB',
     title: 'GTA 6 PS5 Pro 2TB Storage & 1440p PSSR — Unpause',
     description:
-      'Check GTA 6 212 GB + Patch 1.002.001 (+0.6 GB PS5) impact on PS5 Pro (1,890 GB usable SSD) plus Digital Foundry 1440p PSSR + RT Shadows specs.',
+      'Check GTA 6 212 GB + Patch 01.002.002 (~603.8 MB PS5) impact on PS5 Pro (1,890 GB usable SSD) plus Digital Foundry 1440p PSSR + RT Shadows specs.',
     h1: 'GTA VI Storage & 1440p PSSR Spec on PS5 Pro (2 TB)',
     answer:
-      'PlayStation 5 Pro delivers 1,890 GB of usable SSD space, meaning GTA VI Base (212 GB) + Patch 1.002.001 (+0.6 GB = 212.6 GB) uses just 11.2% of internal storage while running at 1440p PSSR + RT Shadows.',
+      'PlayStation 5 Pro delivers 1,890 GB of usable SSD space, meaning GTA VI Base (212 GB) + Patch 01.002.002 (+0.6 GB = 212.6 GB) uses just 11.2% of internal storage while running at 1440p PSSR + RT Shadows.',
   },
   {
     slug: '212gb-day-one-patch',
     consoleId: 'ps5-base',
     freeGb: 190,
     includePatch: true,
-    shortLabel: '212 GB + Patch 1.002.001',
-    title: 'GTA 6 Patch 1.002.001 Size (+0.6 GB PS5 / +1.6 GB Xbox) — Unpause',
+    shortLabel: '212 GB + Patch 01.002.002',
+    title: 'GTA 6 Patch 01.002.002 / 1.0.2.2 Size Breakdown — Unpause',
     description:
-      'Compare GTA 6 Launch Patch 1.002.001 exact sizes: 212.6 GB total on PS5 (+0.6 GB patch) and 213.6 GB total on Xbox Series X|S (+1.6 GB patch).',
-    h1: 'GTA VI Base (212 GB) + Patch 1.002.001 Size Breakdown',
+      'Compare GTA 6 Patch 01.002.002 / 1.0.2.2 exact sizes: 212.6 GB total on PS5 (~603.8 MB patch) and 213.6 GB total on Xbox Series X|S (+1.6 GB patch).',
+    h1: 'GTA VI Base (212 GB) + Patch 01.002.002 / 1.0.2.2 Size',
     answer:
-      'Launch Patch 1.002.001 adds +0.6 GB on PlayStation 5 (212.6 GB total) and +1.6 GB on Xbox Series X|S (213.6 GB total), keeping your SSD requirements lean without bloated extra buffers.',
+      'Nov 23 Patch 01.002.002 (~603.8 MB / +0.6 GB on PlayStation 5 = 212.6 GB total) and Xbox Patch 1.0.2.2 (+1.6 GB = 213.6 GB total) fix launch progression and crash bugs while keeping SSD requirements lean.',
   },
   {
     slug: 'external-usb-drive-xbox-ps5',
@@ -244,12 +244,12 @@ const UNLOCK_SEO_SPECS = [
     slug: 'new-zealand-trick-xbox-ps5',
     path: '/gta-6/unlock-time/new-zealand-trick-xbox-ps5',
     consoleId: 'xsx-1tb',
-    title: 'GTA 6 Xbox vs PS5 Launch Specs & Patch 1.002.001 — Unpause',
+    title: 'GTA 6 Xbox vs PS5 Launch Specs & Patch 01.002.002 — Unpause',
     description:
-      'Compare GTA VI Xbox Series X|S vs PS5 launch build behavior, Patch 1.002.001 sizes (+1.6 GB Xbox / +0.6 GB PS5), and Digital Foundry frame metrics.',
+      'Compare GTA VI Xbox Series X|S vs PS5 launch build behavior, Patch 1.0.2.2 / 01.002.002 sizes (+1.6 GB Xbox / ~603.8 MB PS5), and Digital Foundry frame metrics.',
     h1: 'GTA VI Console Edition Specs: Xbox Series X|S vs PS5',
     answer:
-      'Grand Theft Auto VI is live worldwide on Nov 19, 2026 across PS5 & Xbox Series X|S with Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox). Compare storage headroom and 30fps performance profiles below.',
+      'Grand Theft Auto VI is live worldwide across PS5 & Xbox Series X|S with Nov 23 Patch 01.002.002 (PS5 ~603.8 MB) / 1.0.2.2 (Xbox +1.6 GB). Compare storage headroom and 30fps performance profiles below.',
   },
   {
     slug: 'ps5-midnight-region-lock',
@@ -257,10 +257,10 @@ const UNLOCK_SEO_SPECS = [
     consoleId: 'ps5-base',
     title: 'PS5 Firmware 26.07-14.23.00 & SSD Space Check — Unpause',
     description:
-      'Confirm PS5 Firmware 26.07-14.23.00 before running GTA VI, verify 212.6 GB w/ Patch 1.002.001 on 825GB & CFI-2100 consoles, and export a Spec PNG.',
+      'Confirm PS5 Firmware 26.07-14.23.00 before running GTA VI, verify 212.6 GB w/ Patch 01.002.002 on 825GB & CFI-2100 consoles, and export a Spec PNG.',
     h1: 'PS5 Firmware 26.07-14.23.00 & CFI-2100 SSD Checklist',
     answer:
-      'PlayStation 5 users should confirm System Software 26.07-14.23.00 plus Patch 1.002.001 (+0.6 GB) are applied for smooth 30fps frame pacing across Base PS5, Slim CFI-2100, and PS5 Pro.',
+      'PlayStation 5 users should confirm System Software 26.07-14.23.00 plus Patch 01.002.002 (~603.8 MB) are applied for smooth 30fps frame pacing across Base PS5, Slim CFI-2100, and PS5 Pro.',
   },
 ];
 
@@ -331,7 +331,7 @@ function buildProgrammaticRoutes() {
       metaRows: [
         { label: 'Usable Internal Capacity', val: `${consoleObj.usableGb} GB` },
         {
-          label: 'Launch Size + Patch 1.002.001',
+          label: 'Launch Size + Patch 01.002.002',
           val: `${consoleObj.installGb} GB base${spec.includePatch ? ` (+${pGb} GB = ${(consoleObj.installGb + pGb).toFixed(1)} GB)` : ''}`,
         },
         { label: 'Console Profile', val: consoleObj.nzStatusShort },
@@ -363,7 +363,7 @@ function buildProgrammaticRoutes() {
       ],
       preset: { consoleId: spec.consoleId, freeGb: 180, includePatch: false, mbps: 120 },
       metaRows: [
-        { label: 'Release & Patch 1.002.001', val: 'OUT NOW (Nov 19) · +0.6 GB PS5 / +1.6 GB Xbox' },
+        { label: 'Patch 01.002.002 / 1.0.2.2', val: 'Nov 23 Patch · ~603.8 MB PS5 / +1.6 GB Xbox' },
         { label: 'Selected Console Spec', val: `${consoleObj.name}: ${consoleObj.nzStatusShort}` },
       ],
       faqs: getGameFaqs('gta-6'),
@@ -387,10 +387,10 @@ function buildProgrammaticRoutes() {
       changefreq: 'weekly',
       title: clampTitle(`GTA 6 Download Time on ${cleanSpeed} (${baseEta}) — Unpause`),
       description: clampDesc(
-        `How long is 212 GB GTA 6 on ${spd.label}? ${baseEta} base (${patchEta} with +1.6 GB Xbox Patch 1.002.001) with 10% protocol overhead.`
+        `How long is 212 GB GTA 6 on ${spd.label}? ${baseEta} base (${patchEta} with +1.6 GB Xbox Patch 1.0.2.2) with 10% protocol overhead.`
       ),
       h1: `GTA VI Download Time on ${spd.label}: ${baseEta} (212 GB Base)`,
-      answerSummary: `At ${spd.mbps} Mbps (90% realistic CDN throughput), downloading GTA VI Base (212 GB) takes ${baseEta} (${patchEta} including Xbox Patch 1.002.001 +1.6 GB; PS5 Patch adds +0.6 GB).`,
+      answerSummary: `At ${spd.mbps} Mbps (90% realistic CDN throughput), downloading GTA VI Base (212 GB) takes ${baseEta} (${patchEta} including Xbox Patch 1.0.2.2 +1.6 GB; PS5 Patch 01.002.002 adds ~603.8 MB).`,
       ogImage: '/og/gta-6-storage.png',
       ogAlt: `GTA VI download duration at ${spd.mbps} Mbps on Unpause`,
       breadcrumbs: [
@@ -400,8 +400,8 @@ function buildProgrammaticRoutes() {
       ],
       preset: { consoleId: 'ps5-base', freeGb: 250, includePatch: false, mbps: spd.mbps },
       metaRows: [
-        { label: `PS5 (212.6 GB w/ 1.002.001) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
-        { label: `Xbox (213.6 GB w/ 1.002.001) @ ${spd.mbps} Mbps`, val: `${patchEta} (with 10% overhead)` },
+        { label: `PS5 (212.6 GB w/ 01.002.002) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
+        { label: `Xbox (213.6 GB w/ 1.0.2.2) @ ${spd.mbps} Mbps`, val: `${patchEta} (with 10% overhead)` },
       ],
       faqs: getGameFaqs('gta-6'),
     });
@@ -1296,11 +1296,11 @@ export const CORE_ROUTES = [
     changefreq: 'daily',
     title: clampTitle('Unpause — GTA VI Leonida Hub & Game Math Tools'),
     description: clampDesc(
-      'GTA VI Leonida Command Center: 212 GB SSD + Patch 1.002.001 fit, 6-star Heat Decoder, 23 Radio Stations, 30fps settings, 100% Tracker & 9 more game tools.'
+      'GTA VI Leonida Hub: 212 GB + Patch 01.002.002 fit, D-Pad cheats, Apollo money, 23 Radio Stations, 30fps settings, 100% Tracker & 9 game tools.'
     ),
     h1: 'GTA VI Leonida Hub & Console Fit Command Center',
     answerSummary:
-      'GTA VI is OUT NOW. Track 100% completion, 15 manual save slots, 212 GB SSD + Patch 1.002.001 fit, 30fps clarity settings, 6-Star Heat Decoder, Criminal Profile guard, and all 23 verified radio stations — 100% free with #s= share links.',
+      'GTA VI is OUT NOW (Patch 01.002.002 / 1.0.2.2). Track 100% completion, 15 manual save slots, 212 GB SSD fit, 30fps clarity settings, 6-Star Heat Decoder, Best Ending guard, and all 23 verified radio stations — 100% free with #s= share links.',
     ogImage: '/og-cover.png',
     ogAlt: 'Unpause — Clean second-screen calculators across 10 games',
     breadcrumbs: [],
@@ -1322,7 +1322,7 @@ export const CORE_ROUTES = [
     ),
     h1: 'PLAYUNPAUSE / GTA VI LEONIDA HUB',
     answerSummary:
-      'All-in-one single-player GTA VI Session Hub featuring the True 100% Tracker, Ch. 1–4 Spoiler Shield, 15-Slot Save Guard, 212 GB + Patch 1.002.001 SSD surgery, 30fps settings, 6-Star Heat Decoder, and all 23 verified radio stations.',
+      'All-in-one single-player GTA VI Session Hub featuring the True 100% Tracker, Ch. 1–4 Spoiler Shield, 15-Slot Save Guard, 212 GB + Patch 01.002.002 / 1.0.2.2 SSD surgery, 30fps settings, 6-Star Heat Decoder, and all 23 verified radio stations.',
     ogImage: '/og-cover.png',
     ogAlt: 'Unpause GTA VI Leonida Command Center & 9:16 Passport Exporter',
     breadcrumbs: [
@@ -1331,7 +1331,7 @@ export const CORE_ROUTES = [
     ],
     preset: { consoleId: 'xss-512', mbps: 100 },
     metaRows: [
-      { label: 'Launch Install Size', val: '212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)' },
+      { label: 'Launch Install + Patch', val: '212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (+1.6 GB Xbox)' },
       { label: 'True 100% Tracker', val: '200 WAiNK · 100 Wildlife · 100 Flamingos · 300 Stunts · 15 Cards' },
       { label: 'Verified Radio Dial', val: '22 Launch Stations + Secret #23 The Vault Radio' },
     ],
@@ -1342,16 +1342,16 @@ export const CORE_ROUTES = [
     gameId: 'gta-6',
     tab: 'storage',
     cluster: 'GTA VI Launch Storage',
-    shortLabel: 'SSD & Patch 1.002.001',
+    shortLabel: 'SSD & Patch 01.002.002',
     priority: '0.95',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Storage Fit Check (212 GB + Patch 1.002.001) — Unpause'),
+    title: clampTitle('GTA 6 Storage Fit Check (212 GB + 01.002.002) — Unpause'),
     description: clampDesc(
-      'Test if GTA 6 (212 GB Base + Patch 1.002.001: +0.6 GB PS5 / +1.6 GB Xbox) fits on Series S, Series X, or PS5 SSDs, clear games & export a Spec PNG.'
+      'Test if GTA 6 (212 GB + Patch 01.002.002 / 1.0.2.2) fits on Series S, Series X, or PS5 SSDs, clear old games, check ETA & export a Spec PNG.'
     ),
-    h1: 'GTA VI Console Storage Surgery (212 GB + Patch 1.002.001)',
+    h1: 'GTA VI Console Storage Surgery (212 GB + Patch 01.002.002)',
     answerSummary:
-      'Compare usable NVMe space (364 GB Series S up to 1,890 GB PS5 Pro) against GTA VI Launch Base (212 GB) + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox) and calculate Mbps download ETA free.',
+      'Compare usable NVMe space (364 GB Series S up to 1,890 GB PS5 Pro) against GTA VI Launch Base (212 GB) + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (+1.6 GB Xbox) and calculate Mbps download ETA free.',
     ogImage: '/og/gta-6-storage.png',
     ogAlt: 'Unpause GTA VI Console Storage Fit & Download ETA Calculator',
     breadcrumbs: [
@@ -1360,7 +1360,7 @@ export const CORE_ROUTES = [
     ],
     preset: { consoleId: 'xss-512', freeGb: 140, mbps: 120 },
     metaRows: [
-      { label: 'Launch Install Size', val: '212 GB Base + Patch 1.002.001 (+0.6 GB PS5 / +1.6 GB Xbox)' },
+      { label: 'Launch Install + Patch', val: '212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (+1.6 GB Xbox)' },
       { label: 'Launch Status', val: 'OUT NOW Worldwide (Nov 19, 2026) · $79.99 Std / $99.99 Ult' },
       { label: 'PS5 System Requirement', val: 'Mandatory PS5 Firmware 26.07-14.23.00' },
     ],
@@ -1371,85 +1371,113 @@ export const CORE_ROUTES = [
     gameId: 'gta-6',
     tab: 'cheats',
     cluster: 'GTA VI Launch Tools',
-    shortLabel: 'Cheats (61 Haptic D-Pad)',
+    shortLabel: 'Cheats (Verified D-Pad + 61)',
     priority: '0.95',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Cheats (61 Codes & Haptic D-Pad Simulator) — Unpause'),
+    title: clampTitle('GTA 6 Cheats (Verified D-Pad Codes & Tracker) — Unpause'),
     description: clampDesc(
-      'Dial PS5 & Xbox GTA VI cheats using Phone Up + L1/LB + R1/RB. Animate 12 confirmed codes ($250K, Unlimited Focus, Boomazoom) & track 61 challenges.'
+      'Dial verified pure D-Pad GTA VI cheats (Phone Up + L1/LB + R1/RB): 12 working combos ($250K, Focus, Boomazoom, Weather) + 7 challenge trackers.'
     ),
-    h1: 'GTA VI Haptic D-Pad Cheat Deck (61 Cheats · PS5 & Xbox)',
+    h1: 'GTA VI Pure D-Pad Cheat Deck (12 Verified + 7 Challenge Trackers)',
     answerSummary:
-      'Dial cheats using Phone (Up) + L1/R1 (PS5) or LB/RB (Xbox). Watch the Post-Story + Unlock Challenge requirement and Trophy/Save disable warning before entering $250K, Unlimited Focus, Exploding Balls, or Boomazoom.',
+      'Dial verified pure D-Pad cheats using Phone (Up) + L1/R1 (PS5) or LB/RB (Xbox) — zero face buttons. Animate 12 working codes ($250K, Unlimited Focus, Exploding Ammo, Boomazoom, Moon Gravity, Weather) and track 7 TBC unlock challenges.',
     ogImage: '/og/gta-6-cheats.png',
-    ogAlt: 'Unpause GTA VI Haptic D-Pad Cheat Deck',
+    ogAlt: 'Unpause GTA VI Pure D-Pad Cheat Deck',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
       { name: 'Haptic Cheat Deck', path: '/gta-6/cheats' },
     ],
     preset: { cheatPlatform: 'ps5' },
     metaRows: [
-      { label: 'Total In-Game Cheats', val: '61 Codes (Post-Story + Unlock Challenges Required)' },
+      { label: 'Verified Cheat Combos', val: '12 Pure D-Pad Sequences + 7 TBC Challenge Trackers (61 Pool)' },
       { label: 'Activation Trigger', val: 'Phone Up + L1 + R1 (PS5) / Phone Up + LB + RB (Xbox)' },
       { label: 'Achievement Rule', val: 'Disables Trophies & Manual/Auto Saving while active' },
     ],
-    faqs: getGameFaqs('gta-6'),
+    faqs: [
+      {
+        q: 'How do GTA 6 cheat codes actually enter on PS5 and Xbox?',
+        a: 'GTA VI cheats use Phone (Up) + L1+R1 (PS5) or LB+RB (Xbox) followed by pure D-Pad directional inputs only — never face buttons (X, Circle, Square, Triangle) or triggers. Unverified cheats remain marked TBC until confirmed.',
+      },
+      {
+        q: 'Do cheats disable trophies and saving in GTA VI?',
+        a: 'Yes. Activating any cheat disables Trophies/Achievements and Manual/Auto Saving for your active session, and most cheats require post-story + in-game unlock challenges.',
+      },
+    ],
   },
   {
     path: '/gta-6/money',
     gameId: 'gta-6',
     tab: 'money',
     cluster: 'GTA VI Launch Tools',
-    shortLabel: 'Story Money & Cash Wipe',
+    shortLabel: 'Apollo Loop & Ch. 1 Cash Wipe',
     priority: '0.94',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Money Guide (Ch. 1 Cash Wipe Alert & ROI) — Unpause'),
+    title: clampTitle('GTA 6 Money Guide (Apollo Loop & Ch. 1 Cash Wipe) — Unpause'),
     description: clampDesc(
-      'STOP: Jason & Lucia cash wipes after Chapter 1! Plan Ch. 2 Moses ($1K+/2m), Ch. 3 Jewelry + Randy Wish List ($30K+) & Ch. 4 Bank Vaults ($65K-$205K).'
+      'Farm the unpatched Apollo Aggregates Red Barn loop in Patch 01.002.002, avoid the Ch. 1 cash wipe, and plan Ch. 2-4 loot & best ending choices.'
     ),
-    h1: 'GTA VI Jason & Lucia Money ROI (Ch. 1 Wipe Alert)',
+    h1: 'GTA VI Jason & Lucia Money Loops (Unpatched Apollo + Ch. 1 Wipe)',
     answerSummary:
-      'Spend unbanked cash before finishing Chapter 1 because story transition wipes your wallet. Compare Ch. 2 Moses loops ($1K+/2m), Ch. 3 Jewelry + Snap Gun + Randy’s Wish List ($30K+), and Ch. 4 Bank Vaults ($65K-$205K) behind the Spoiler Shield.',
+      'Still unpatched in Patch 01.002.002 / 1.0.2.2: run the Apollo Aggregates (Red Barn) loop safely after clearing Ch. 1, spend unbanked cash before the Ch. 1 wipe, and follow Ch. 2-4 Moses, Jewelry & Vault loops behind the Spoiler Shield.',
     ogImage: '/og/gta-6-money.png',
-    ogAlt: 'Unpause GTA VI Story Money ROI & Chapter 1 Cash Wipe Alert',
+    ogAlt: 'Unpause GTA VI Story Money ROI, Apollo Loop & Chapter 1 Cash Wipe Alert',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
       { name: 'Money & Robberies', path: '/gta-6/money' },
     ],
     preset: { subTab: 'money', sessionMinutes: 45 },
     metaRows: [
+      { label: 'Apollo Aggregates (01.002.002)', val: 'Unpatched Red Barn solo money loop in Nov 23 update' },
       { label: 'Chapter 1 Warning', val: 'Wallet Cash Wipes at End of Ch. 1 (Spend Mods First)' },
       { label: 'Ch. 2 -> Ch. 4 Loop Scale', val: 'Moses $1K+/2m -> Jewelry $10K-$25K -> Vaults $65K-$205K' },
     ],
-    faqs: getGameFaqs('gta-6'),
+    faqs: [
+      {
+        q: 'Is the Apollo Aggregates Red Barn money loop patched in 01.002.002?',
+        a: 'As of Nov 23 Patch 01.002.002 (PS5) and 1.0.2.2 (Xbox), the Apollo Aggregates Red Barn money loop remains unpatched, though clearing Chapter 1 first protects you from losing unbanked cash in the Ch. 1 story wipe.',
+      },
+      {
+        q: 'Why does cash disappear after GTA VI Chapter 1?',
+        a: 'At the end of Chapter 1 your unbanked wallet resets — spend leftover launch cash on early mods or guns before finishing the final Ch. 1 story mission, and save Ultimate cash claims for Chapter 2.',
+      },
+    ],
   },
   {
     path: '/gta-6/robberies',
     gameId: 'gta-6',
     tab: 'money',
     cluster: 'GTA VI Launch Tools',
-    shortLabel: '4-Tier Robbery Protocol',
+    shortLabel: 'Keypads (7700/0420) & Safes',
     priority: '0.93',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Robberies Guide (Randomized Safes & CCTV) — Unpause'),
+    title: clampTitle('GTA 6 Safe Codes & Keypads (7700, 0420 & CCTV) — Unpause'),
     description: clampDesc(
-      'Master GTA VI 4-Tier Robberies: why safe combinations randomize every playthrough, how to shoot Cloud-icon CCTV cameras, and Ch. 3 Dye Pack Jammer rules.'
+      'Unlock GTA VI static keypads (7700 Brian’s Lockup, 0420 Moonstone Boutique), handle randomized safes via room notes, and counter Cloud CCTV + Dye Packs.'
     ),
-    h1: 'GTA VI 4-Tier Robbery Protocol, Randomized Safes & CCTV',
+    h1: 'GTA VI Safe Codes, Static Keypads (7700/0420) & 4-Tier Robberies',
     answerSummary:
-      'Safe combinations randomize per playthrough—scan in-room sticky notes & invoices instead of fake static lists. Shoot Cloud-icon CCTV cameras immediately and equip the Ch. 3 Dye Pack Jammer before Ch. 4 Large Bank Vaults ($65K-$205K).',
+      'Two static keypads stay fixed every run: 7700 (Brian’s Lockup, Ch. 1) and 0420 (Moonstone Boutique back office). All other wall safes randomize per playthrough—scan sticky notes & invoices, shoot Cloud-icon CCTV immediately, and equip Ch. 3 Dye Pack Jammers.',
     ogImage: '/og/gta-6-money.png',
-    ogAlt: 'Unpause GTA VI 4-Tier Robbery Protocol & Randomized Safe Guide',
+    ogAlt: 'Unpause GTA VI Static Keypads, Randomized Safes & 4-Tier Robbery Guide',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
       { name: '4-Tier Robberies', path: '/gta-6/robberies' },
     ],
     preset: { subTab: 'robberies', sessionMinutes: 45 },
     metaRows: [
-      { label: 'Safe Keypads Rule', val: 'Randomized per playthrough (Locate local room clues)' },
-      { label: 'Stealth Counter', val: 'Shoot Cloud-Icon CCTV + Equip Ch. 3 Dye Pack Jammer' },
+      { label: 'Static Keypads (Fixed)', val: '7700 (Brian’s Lockup) · 0420 (Moonstone Boutique)' },
+      { label: 'World Safes & CCTV', val: 'Randomized per run · Shoot Cloud CCTV + Ch. 3 Jammer' },
     ],
-    faqs: getGameFaqs('gta-6'),
+    faqs: [
+      {
+        q: 'Are any GTA 6 keypad or safe codes fixed across every playthrough?',
+        a: 'Yes — two story/room keypads are fixed every playthrough: 7700 for Brian’s Lockup (Ch. 1) and 0420 for the Moonstone Boutique back-office door. All general store and side-job wall safes randomize their 4-digit codes per save file.',
+      },
+      {
+        q: 'How do you prevent backup alerts and ruined bills on big GTA VI robberies?',
+        a: 'Shoot Cloud-icon CCTV cameras immediately before threat escalation, keep Criminal Profile away from Psychopath/Irredeemable tiers, and equip the Chapter 3 Dye Pack Jammer before hitting Ch. 4 Bank Vaults.',
+      },
+    ],
   },
   {
     path: '/gta-6/settings',
@@ -1465,7 +1493,7 @@ export const CORE_ROUTES = [
     ),
     h1: 'GTA VI 30fps DF Console Tuner, FW 26.07-14.23.00 & PNG Card',
     answerSummary:
-      'Verify mandatory PS5 Firmware 26.07-14.23.00 + Patch 1.002.001, compare PS5 Pro 1440p PSSR + RT Shadows, Series X 120Hz VRR & Series S 720p FSR 4, drop Motion Blur 3->0, toggle Hidden Fuel Gauge On, and export your Launch Card PNG.',
+      'Verify mandatory PS5 Firmware 26.07-14.23.00 + Patch 01.002.002 / 1.0.2.2, compare PS5 Pro 1440p PSSR + RT Shadows, Series X 120Hz VRR & Series S 720p FSR 4, drop Motion Blur 3->0, toggle Hidden Fuel Gauge On, and export your Launch Card PNG.',
     ogImage: '/og/gta-6-settings.png',
     ogAlt: 'Unpause GTA VI 30fps Console Specs & Shareable Launch Card PNG',
     breadcrumbs: [
@@ -1540,40 +1568,40 @@ export const CORE_ROUTES = [
     gameId: 'gta-6',
     tab: 'fixes',
     cluster: 'GTA VI Launch Tools',
-    shortLabel: 'Crash, PSN & Offline Fixes',
+    shortLabel: 'Patch 01.002.002 & PSN Fixes',
     priority: '0.93',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 Launch Fixes (PS5 FW 26.07-14.23.00 & PSN Offline) — Unpause'),
+    title: clampTitle('GTA 6 Patch 01.002.002 Notes, PSN & Phone Fixes — Unpause'),
     description: clampDesc(
-      'Fix GTA 6 not launching on PS5 (Firmware 26.07-14.23.00), bypass PSN Error WS-116449-5 with Offline Play, prevent autosave loss & spot PC scams.'
+      'Read all 7 official Nov 23 Patch 01.002.002 / 1.0.2.2 fixes, bypass PSN Error WS-116449-5 offline, verify Skunk Ape 461-555-0139 & no phone dial pad.'
     ),
-    h1: 'GTA VI Launch-Day Crash, PSN WS-116449-5 & Offline Play Fixes',
+    h1: 'GTA VI Patch 01.002.002 / 1.0.2.2 Notes, PSN Offline & Phone Fixes',
     answerSummary:
-      'Step-by-step single-player launch triage: verify mandatory PS5 firmware 26.07-14.23.00 (1.267 GB, Nov 17, 2026), enable Console Sharing and Offline Play against WS-116449-5, protect your 1 overwriting autosave via 15 manual slots + Patch 1.002.001, and avoid fake PC download scams.',
+      'Nov 23 Patch 01.002.002 (~603.8 MB PS5) & 1.0.2.2 (+1.6 GB Xbox) ship 7 official Rockstar fixes for boot stability, cutscene sync & progression blockers, plus PSN WS-116449-5 offline bypass, PS5 FW 26.07-14.23.00 checks, and Phone Mythbusters (no manual dial pad; Skunk Ape 461-555-0139 RydeMe event).',
     ogImage: '/og/gta-6-fixes.png',
-    ogAlt: 'Unpause GTA VI Launch-Day Crash, PSN & Offline Play Triage',
+    ogAlt: 'Unpause GTA VI Patch 01.002.002 Notes, PSN & Phone Triage',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'Launch Fixes', path: '/gta-6/fixes' },
+      { name: 'Patch 01.002.002 & Fixes', path: '/gta-6/fixes' },
     ],
-    preset: { symptomId: 'ps5-wont-launch' },
+    preset: { symptomId: 'patch-01002002' },
     metaRows: [
+      { label: 'Nov 23 Patch', val: '01.002.002 PS5 (~603.8 MB) / 1.0.2.2 Xbox (+1.6 GB) · 7 Fixes' },
       { label: 'Mandatory PS5 Firmware', val: '26.07-14.23.00 (1.267 GB · Nov 17, 2026)' },
-      { label: 'Patch 1.002.001 Size', val: '602.5 MB PS5 / 1.59 GB Xbox Series X|S' },
-      { label: 'PC Launch Status', val: 'Not Available — Console Only (Beware PC Scams)' },
+      { label: 'Phone Dial / Skunk Ape', val: 'No Dial Pad in GTA VI · RydeMe App 461-555-0139' },
     ],
     faqs: [
       {
-        q: "Why won't GTA VI launch on PS5 on launch day?",
-        a: 'Install mandatory PS5 System Software 26.07-14.23.00 (1.267 GB, released Nov 17, 2026) via Settings -> System -> System Software -> Update System Software, then apply Patch 1.002.001 (602.5 MB PS5).',
+        q: 'What did Nov 23 GTA VI Patch 01.002.002 (PS5) / 1.0.2.2 (Xbox) fix?',
+        a: 'Patch 01.002.002 (~603.8 MB on PS5) and 1.0.2.2 (~1.6 GB on Xbox) deliver 7 official Rockstar Support stability, audio/cutscene sync, and mission blocker fixes — while the Apollo Aggregates Red Barn loop stays unpatched.',
+      },
+      {
+        q: 'Can you manually dial numbers or call 461-555-0139 on the GTA VI phone?',
+        a: 'No — Jason and Lucia’s in-game phone has no manual dial pad for arbitrary numbers. Number 461-555-0139 belongs to the RydeMe Skunk Ape encounter script rather than a free-roam dialable number.',
       },
       {
         q: 'How do I launch GTA VI offline during PSN Error WS-116449-5?',
-        a: 'Run a PS5 Network Connection Test to reset session state, then enable Settings -> Users and Accounts -> Other -> Console Sharing and Offline Play while PSN responds briefly so single-player boots offline.',
-      },
-      {
-        q: 'Is there a real GTA 6 free PC download on launch day?',
-        a: 'No. GTA VI launched Nov 19, 2026 exclusively on PS5 and Xbox Series X|S. Any site offering a "free PC download" is a phishing or malware scam.',
+        a: 'Run a PS5 Network Connection Test to reset session state, verify Firmware 26.07-14.23.00 + Patch 01.002.002, and enable Settings -> Users and Accounts -> Other -> Console Sharing and Offline Play so single-player boots offline.',
       },
     ],
   },
