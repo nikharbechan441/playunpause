@@ -22,8 +22,8 @@ export default function LeonidaStorageTab({
     ? runtimeConfig?.affiliates?.ps5SsdUrl || 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20'
     : runtimeConfig?.affiliates?.xboxCardUrl || 'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20';
   const hardwareCta = isPs5
-    ? 'Check WD_BLACK SN850P (PS5 M.2 SSD) on Amazon'
-    : 'Check WD_BLACK C50 1TB Expansion Card on Amazon';
+    ? 'Check WD_BLACK SN850P 1TB NVMe SSD for PS5 on Amazon'
+    : 'Check WD_BLACK C50 1TB Expansion Card for Xbox on Amazon';
 
   return (
     <section className="lh-card" aria-labelledby="lh-storage-heading">

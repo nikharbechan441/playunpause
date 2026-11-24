@@ -70,7 +70,7 @@ export function triggerHaptic(ms = 8) {
   }
 }
 
-export function playSwitchTick(soundEnabled = true, pitchHz = 680) {
+export function playSwitchTick(soundEnabled = false, pitchHz = 680) {
   triggerHaptic(8);
   if (!soundEnabled || typeof window === 'undefined') return;
   const safePitch =
@@ -106,7 +106,7 @@ export function playSwitchTick(soundEnabled = true, pitchHz = 680) {
   }, 0);
 }
 
-export function playKeypadBeep(soundEnabled = true, digit = '5') {
+export function playKeypadBeep(soundEnabled = false, digit = '5') {
   const freqMap = {
     '1': 697,
     '2': 740,
@@ -122,7 +122,7 @@ export function playKeypadBeep(soundEnabled = true, digit = '5') {
   playSwitchTick(soundEnabled, freqMap[String(digit)] || 820);
 }
 
-export function playUnlockChime(soundEnabled = true) {
+export function playUnlockChime(soundEnabled = false) {
   triggerHaptic([12, 30, 16]);
   if (!soundEnabled || typeof window === 'undefined') return;
 

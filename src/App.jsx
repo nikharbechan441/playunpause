@@ -50,7 +50,6 @@ import {
   resolveSeoRequest,
   parseSafeStatefulQuery,
   getRelatedRoutesFor,
-  getGroupedDirectoryLinks,
 } from './data/seoRoutes.js';
 import { formatCountdownMs } from './utils/shareUrlHelpers.js';
 import { playSwitchTick, playUnlockChime } from './utils/soundHaptics.js';
@@ -60,6 +59,7 @@ import GameWorldHero, { GameWorldTopStrip } from './components/games/GameWorldHe
 import StorageUnlockDeck from './components/StorageUnlockDeck.jsx';
 import MultiGameToolDeck from './components/MultiGameToolDeck.jsx';
 import LeonidaCommandCenter from './components/gta6/LeonidaCommandCenter.jsx';
+import GameSelectorModal from './components/GameSelectorModal.jsx';
 import { isChunkLoadError, tryAutoReloadForStaleChunk } from './utils/chunkRecovery.js';
 
 const Gta6CheatDeck = lazy(() => import('./components/gta6/Gta6CheatDeck.jsx'));
@@ -68,7 +68,6 @@ const Gta6SettingsTunerDeck = lazy(() => import('./components/gta6/Gta6SettingsT
 const Gta6PlatinumUltimateDeck = lazy(() => import('./components/gta6/Gta6PlatinumUltimateDeck.jsx'));
 const Gta6FixesDeck = lazy(() => import('./components/gta6/Gta6FixesDeck.jsx'));
 const Gta6RadioDeck = lazy(() => import('./components/gta6/Gta6RadioDeck.jsx'));
-const GameSelectorModal = lazy(() => import('./components/GameSelectorModal.jsx'));
 const LegalComplianceModal = lazy(() => import('./components/LegalComplianceModal.jsx'));
 const EmbedWidgetModal = lazy(() => import('./components/EmbedWidgetModal.jsx'));
 
@@ -236,7 +235,7 @@ class ChunkErrorBoundary extends React.Component {
 
 const DEFAULT_DECK_STATE = {
   theme: 'obsidian',
-  soundEnabled: true,
+  soundEnabled: false,
   isPro: false,
   deckCode: null,
   clanTag: '',
@@ -257,7 +256,7 @@ function sanitizeClanTag(val) {
 function sanitizeDeckState(raw, baseFallback = DEFAULT_DECK_STATE, { legacyMode = false } = {}) {
   const safeBase = {
     theme: baseFallback.theme === 'paper' ? 'paper' : 'obsidian',
-    soundEnabled: typeof baseFallback.soundEnabled === 'boolean' ? baseFallback.soundEnabled : true,
+    soundEnabled: typeof baseFallback.soundEnabled === 'boolean' ? baseFallback.soundEnabled : false,
     isPro: baseFallback.isPro === true && Boolean(sanitizeDeckCode(baseFallback.deckCode)),
     deckCode: sanitizeDeckCode(baseFallback.deckCode),
     clanTag: sanitizeClanTag(baseFallback.clanTag),
@@ -442,7 +441,6 @@ export default function App() {
   const [showProModal, setShowProModal] = useState(false);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
-  const [otherGamesDrawerOpen, setOtherGamesDrawerOpen] = useState(false);
 
   const [claimInput, setClaimInput] = useState('');
   const [claimReceiptInput, setClaimReceiptInput] = useState('');
@@ -814,18 +812,16 @@ export default function App() {
     deckState.crewPresets,
   ]);
 
-  // Keyboard shortcuts: Ctrl/Cmd + K opens Game/Tool Switcher (non-GTA6; Leonida handles Ctrl+K search), Escape closes active modal
+  // Keyboard shortcuts: Ctrl/Cmd + K opens Global Game Switcher on ALL routes, Escape closes active modal
   useEffect(() => {
     const onKeyDown = (e) => {
       if (isEmbed) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        if (!activeGamePack.isGta6Suite || legalSection || isNotFound) {
-          e.preventDefault();
-          setShowProModal(false);
-          setShowSponsorModal(false);
-          setShowEmbedModal(false);
-          setShowGameModal((open) => !open);
-        }
+        e.preventDefault();
+        setShowProModal(false);
+        setShowSponsorModal(false);
+        setShowEmbedModal(false);
+        setShowGameModal((open) => !open);
       } else if (e.key === 'Escape') {
         setShowGameModal(false);
         setShowProModal(false);
@@ -836,7 +832,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEmbed, legalSection, activeGamePack.isGta6Suite, isNotFound]);
+  }, [isEmbed, legalSection]);
 
   // Browser back/forward URL navigation support
   useEffect(() => {
@@ -1343,22 +1339,8 @@ export default function App() {
     [relatedLinks, activeGameId]
   );
 
-  const directoryGroups = useMemo(() => getGroupedDirectoryLinks(), []);
-  const activeGameGroups = useMemo(
-    () =>
-      directoryGroups.filter((group) =>
-        group.links.some((link) => link.gameId === activeGameId)
-      ),
-    [directoryGroups, activeGameId]
-  );
-  const otherGameGroups = useMemo(
-    () =>
-      directoryGroups.filter(
-        (group) => !group.links.some((link) => link.gameId === activeGameId)
-      ),
-    [directoryGroups, activeGameId]
-  );
-  const isDedicatedGamePage = !isNotFound && activeRoute?.path !== '/' && !legalSection;
+  const isSponsorPage = activeRoute?.path === '/sponsor';
+  const isDedicatedGamePage = !isNotFound && activeRoute?.path !== '/' && !isSponsorPage && !legalSection;
   const activeHubPath = GAME_TO_CANONICAL_PATH[activeGamePack.id] || '/';
 
   const handleOpenProTarget = isEmbed
@@ -1569,10 +1551,7 @@ export default function App() {
                 title="Grand Theft Auto VI is OUT NOW (Nov 19, 2026) · Patch 01.002.002 (PS5) / 1.0.2.2 (Xbox) Live"
               >
                 <span className="nz-live-dot" aria-hidden="true" />
-                <span className="nz-full-text">GTA VI · OUT NOW</span>
-                <span className="nz-compact-text" aria-hidden="true">
-                  OUT NOW
-                </span>
+                <span>GTA VI · OUT NOW</span>
               </div>
             ) : (
               <div
@@ -1580,18 +1559,14 @@ export default function App() {
                 title={`${activeGamePack.fullTitle} · ${activeGamePack.audienceBadge}`}
               >
                 <span className="nz-live-dot game-context-dot" aria-hidden="true" />
-                <span className="nz-full-text">
-                  {activeGamePack.shortTitle} · {activeGamePack.audienceBadge}
-                </span>
-                <span className="nz-compact-text" aria-hidden="true">
-                  {activeGamePack.shortTitle}
-                </span>
+                <span>{activeGamePack.audienceBadge}</span>
               </div>
             )}
 
             <button
               type="button"
               className="tactile-icon-btn header-sound-btn"
+              aria-pressed={!deckState.soundEnabled}
               onClick={toggleSound}
               aria-label={deckState.soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
               title={deckState.soundEnabled ? 'Mute clicks' : 'Enable clicks'}
@@ -1634,18 +1609,15 @@ export default function App() {
             <button
               type="button"
               className={`tactile-icon-btn pass-header-btn ${deckState.deckCode ? 'sync-pill-pro' : ''}`}
+              aria-label={deckState.deckCode ? 'Phone to PC Synced' : 'Phone to PC Sync'}
+              title="Phone ↔ PC Cloud Sync"
               onClick={() => {
                 playSwitchTick(deckState.soundEnabled, 700);
                 setShowProModal(true);
               }}
             >
               <QrCode size={14} aria-hidden="true" />
-              <span className="pass-full-label">
-                {deckState.deckCode ? 'Phone ↔ PC Synced' : 'Phone ↔ PC Sync'}
-              </span>
-              <span className="pass-short-label" aria-hidden="true">
-                {deckState.deckCode ? 'Synced' : 'Sync'}
-              </span>
+              <span>{deckState.deckCode ? 'Synced' : 'Sync'}</span>
             </button>
           </div>
         </div>
@@ -1723,7 +1695,8 @@ export default function App() {
               }}
             >
               <Sparkles size={13} aria-hidden="true" />
-              <span>All 10 Games · Ctrl+K</span>
+              <span>All 10 Games</span>
+              <span className="kbd-hint">Ctrl+K</span>
             </button>
           </div>
         </nav>
@@ -1818,6 +1791,44 @@ export default function App() {
                     </a>
                   );
                 })}
+              </div>
+            </div>
+          </section>
+        ) : isSponsorPage ? (
+          <section className="deck-panel" aria-label="Sponsor a Game Hub">
+            <div className="deck-body-pad">
+              <div className="panel-eyebrow">
+                <span>$149 / 24H FLAT-RATE HEADER SLOT</span>
+              </div>
+              <h1 className="consumer-h1">Sponsor a Game Hub ($149/Day Header Placement)</h1>
+              <p className="consumer-sub">
+                Reserve one clean text-pill labeled <strong>Sponsored:</strong> above our free calculators across all 10 live PlayUnpause games. Zero pop-ups, zero third-party ad pixels, and manual HTTPS review before invoicing.
+              </p>
+              <div className="footer-actions-row">
+                <a
+                  href={`mailto:${runtimeConfig.sponsorEmail}?subject=${encodeURIComponent('PlayUnpause 24h Header Sponsor Inquiry ($149)')}`}
+                  className="primary-coral-btn"
+                >
+                  <span>Email {runtimeConfig.sponsorEmail} · ${runtimeConfig.sponsorPriceUsd}/day</span>
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
+                  onClick={() => setShowSponsorModal(true)}
+                >
+                  Open Sponsor Specs &amp; Ad Rules
+                </button>
+                <a
+                  href="/"
+                  className="subtle-pill-btn"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateToPath('/', { scrollToTop: true });
+                  }}
+                >
+                  Back to Calculators
+                </a>
               </div>
             </div>
           </section>
@@ -1978,91 +1989,29 @@ export default function App() {
         </>
         )}
 
-        {/* SCOPED ACTIVE-GAME DIRECTORY + COLLAPSED "BROWSE OTHER 9 GAMES" DRAWER */}
-        <section className="seo-directory-hub" aria-label="Unpause Calculator Directory">
-          <div className="seo-directory-head">
-            <div>
-              <h2>
-                {`${activeGamePack.shortTitle} Calculators & Launch Scenarios`}
-              </h2>
-              <p>
-                {`Zero-ad ${activeGamePack.fullTitle} scenario presets and deep links — expand below to jump across all 10 games.`}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="subtle-pill-btn"
-              onClick={() => {
-                playSwitchTick(deckState.soundEnabled, 680);
-                setShowEmbedModal(true);
-              }}
-            >
-              <Code2 size={14} />
-              <span>Embed Free Calculator Widget</span>
-            </button>
-          </div>
-          <div className="seo-directory-grid">
-            {activeGameGroups.map((group) => (
-              <div key={group.cluster} className="seo-directory-card">
-                <h3>{group.cluster}</h3>
-                <div className="seo-directory-links">
-                  {group.links.map((link) => (
-                    <a
-                      key={link.path}
-                      href={link.path}
-                      className={`seo-dir-link ${activeRoute?.path === link.path ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigateToPath(link.path, { scrollToTop: true });
-                      }}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {otherGameGroups.length > 0 && (
-            <details
-              className="cross-game-directory-drawer"
-              onToggle={(e) => setOtherGamesDrawerOpen(e.currentTarget.open)}
-            >
-              <summary className="cross-game-directory-summary">
-                <span>Browse Other 9 Games</span>
-                <ChevronDown className="cross-game-drawer-icon" size={16} aria-hidden="true" />
-              </summary>
-              {otherGamesDrawerOpen && (
-                <div className="seo-directory-grid cross-game-directory-inner">
-                  {otherGameGroups.map((group) => (
-                    <div key={group.cluster} className="seo-directory-card">
-                      <h3>{group.cluster}</h3>
-                      <div className="seo-directory-links">
-                        {group.links.map((link) => (
-                          <a
-                            key={link.path}
-                            href={link.path}
-                            className={`seo-dir-link ${activeRoute?.path === link.path ? 'active' : ''}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              navigateToPath(link.path, { scrollToTop: true });
-                            }}
-                          >
-                            {link.label}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </details>
-          )}
-        </section>
-
-        {/* TRANSPARENT STUDIO FOOTER */}
+        {/* TRANSPARENT STUDIO FOOTER (CLEAN 10-GAME HUB NAV + DISCLOSURES) */}
         <footer className="studio-footer">
+          <nav className="footer-hubs-nav" aria-label="All 10 Game Hubs">
+            {GAME_PACKS.map((g) => {
+              const target = GAME_TO_CANONICAL_PATH[g.id] || '/';
+              const activeHub = !isNotFound && !isSponsorPage && activeGameId === g.id;
+              return (
+                <a
+                  key={g.id}
+                  href={target}
+                  className={`footer-hub-link ${activeHub ? 'active' : ''}`}
+                  aria-current={activeHub ? 'page' : undefined}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateToPath(target, { scrollToTop: true });
+                  }}
+                >
+                  {g.shortTitle}
+                </a>
+              );
+            })}
+          </nav>
+
           <div className="footer-main-row">
             <div className="footer-brand-row">
               <span>Unpause (playunpause.com) · Independent Player Companion</span>
@@ -2089,17 +2038,6 @@ export default function App() {
                 )}
                 <span>{deckState.soundEnabled ? 'Sound: On' : 'Sound: Muted'}</span>
               </button>
-              <button
-                type="button"
-                className="subtle-pill-btn"
-                onClick={() => {
-                  playSwitchTick(deckState.soundEnabled, 680);
-                  setShowEmbedModal(true);
-                }}
-              >
-                <Code2 size={13} aria-hidden="true" />
-                <span>Embed Widget</span>
-              </button>
               <a
                 href={LEGAL_META.terms.path}
                 className="subtle-pill-btn"
@@ -2108,7 +2046,7 @@ export default function App() {
                   setLegalSection('terms');
                 }}
               >
-                Terms
+                Terms &amp; Disclosures
               </a>
               <a
                 href={LEGAL_META.privacy.path}
@@ -2121,16 +2059,6 @@ export default function App() {
                 Privacy
               </a>
               <a
-                href={LEGAL_META.refunds.path}
-                className="subtle-pill-btn"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setLegalSection('refunds');
-                }}
-              >
-                Refund Policy
-              </a>
-              <a
                 href={LEGAL_META.ip.path}
                 className="subtle-pill-btn"
                 onClick={(e) => {
@@ -2139,6 +2067,16 @@ export default function App() {
                 }}
               >
                 IP &amp; DMCA
+              </a>
+              <a
+                href="/sponsor"
+                className="subtle-pill-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowSponsorModal(true);
+                }}
+              >
+                Sponsor a Game Hub
               </a>
               <button
                 type="button"
@@ -2199,17 +2137,15 @@ export default function App() {
           onRecover={() => setShowGameModal(false)}
           recoverLabel="Close"
         >
-          <Suspense fallback={null}>
-            <GameSelectorModal
-              isOpen={showGameModal}
-              onClose={() => setShowGameModal(false)}
-              activeGameId={activeGameId}
-              onSelectGame={handleSelectGame}
-              onSelectPath={(path) => navigateToPath(path, { scrollToTop: true })}
-              soundEnabled={deckState.soundEnabled}
-              modalRef={gameModalRef}
-            />
-          </Suspense>
+          <GameSelectorModal
+            isOpen={showGameModal}
+            onClose={() => setShowGameModal(false)}
+            activeGameId={activeGameId}
+            onSelectGame={handleSelectGame}
+            onSelectPath={(path) => navigateToPath(path, { scrollToTop: true })}
+            soundEnabled={deckState.soundEnabled}
+            modalRef={gameModalRef}
+          />
         </ChunkErrorBoundary>
       )}
 

@@ -102,7 +102,7 @@ test('App.jsx isolates non-GTA-VI game chrome and hides Nov 19 countdown outside
   assert.match(appSrc, /data-game=\{activeGamePack\.id\}/);
   assert.match(appSrc, /activeGamePack\.isGta6Suite \?/);
   assert.match(appSrc, /className="game-studio-subbar"/);
-  assert.match(appSrc, /className="cross-game-directory-drawer"/);
+  assert.match(appSrc, /className="footer-hubs-nav"/);
 });
 
 test('motionPrimitives provides reduced-motion aware animation components', () => {
@@ -712,18 +712,17 @@ test('Discord summary includes live shareUrl + clanTag and renderStudioSpecCardC
   assert.match(dockSrc, /shareUrl:\s*currentShareUrl/);
   assert.match(dockSrc, /canvasBgHex:\s*game\.canvasHexObsidian/);
   assert.match(dockSrc, /themePersonaLabel:\s*game\.themePersonaLabel/);
-  assert.match(dockSrc, /onOpenEmbedModal/);
   assert.match(dockSrc, /rel="sponsored nofollow noopener noreferrer"/);
 });
 
-test('Youth Firewall enforces gearOffer === null on Minecraft/Roblox/Fortnite while adult hubs disclose affiliates cleanly', () => {
-  const youthGames = new Set(['minecraft', 'roblox', 'fortnite']);
+test('Youth Firewall enforces gearOffer === null on Minecraft/Roblox/Fortnite and competitive packs omit clutter offer', () => {
+  const noGearGames = new Set(['minecraft', 'roblox', 'fortnite', 'cod-warzone', 'ea-fc-27']);
   for (const pack of TOP_GAMES) {
-    if (youthGames.has(pack.id)) {
+    if (noGearGames.has(pack.id)) {
       assert.equal(
         pack.gearOffer,
         null,
-        `Youth Compliance Firewall violation: ${pack.id} must have gearOffer === null`
+        `Compliance / zero-clutter rule violation: ${pack.id} must have gearOffer === null`
       );
     } else {
       assert.ok(

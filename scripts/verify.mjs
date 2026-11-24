@@ -174,10 +174,12 @@ async function main() {
   // App.jsx structural requirements
   const appSrc = readRel('src/App.jsx');
   assert.match(appSrc, /GTA VI · OUT NOW/, 'Header must display "GTA VI · OUT NOW"');
-  assert.match(appSrc, /Browse Other 9 Games/, 'Footer must collapse cross-game SEO directory under "Browse Other 9 Games"');
-  assert.match(appSrc, /className="nz-compact-text"\s+aria-hidden="true"|aria-hidden="true"[^>]*nz-compact-text/);
-  assert.match(appSrc, /className="pass-short-label"\s+aria-hidden="true"|aria-hidden="true"[^>]*pass-short-label/);
-  assert.doesNotMatch(appSrc, /<span>\s*Sponsor Slot\s*<\/span>/, 'Footer Sponsor Slot button must be hidden until traffic scales');
+  assert.match(appSrc, /className="footer-hubs-nav"/, 'Footer must include compact 10-game footer-hubs-nav');
+  assert.doesNotMatch(appSrc, /nz-compact-text|pass-short-label/, 'Header must not duplicate hidden text spans');
+  assert.match(appSrc, /Terms &amp; Disclosures|Terms & Disclosures/, 'Footer must include Terms & Disclosures link');
+  assert.match(appSrc, /Sponsor a Game Hub/, 'Footer must include Sponsor a Game Hub link');
+  const redirectsSrc = readRel('public/_redirects');
+  assert.match(redirectsSrc, /^\/gta-6\s+\/\s+301/m, 'public/_redirects must 301 /gta-6 -> /');
 
   // Direct /dp/ ASIN links + verbatim Associate disclosure
   for (const affiliateFile of [
@@ -314,7 +316,9 @@ async function main() {
 
   const sitemapXml = readRel('public/sitemap.xml');
   const distSitemapXml = readRel('dist/sitemap.xml');
-  assert.ok(sitemapXml.includes('https://playunpause.com/gta-6</loc>'), 'sitemap.xml missing /gta-6');
+  assert.equal(sitemapXml.includes('https://playunpause.com/gta-6</loc>'), false, 'sitemap.xml must exclude 301 /gta-6');
+  assert.ok(sitemapXml.includes('https://playunpause.com/</loc>'), 'sitemap.xml missing root /');
+  assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/platinum</loc>'), 'sitemap.xml missing /gta-6/platinum');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/fixes'), 'sitemap.xml missing /gta-6/fixes');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/radio'), 'sitemap.xml missing /gta-6/radio');
   assert.ok(distSitemapXml.includes('<lastmod>2026-11-24</lastmod>'), 'dist/sitemap.xml missing <lastmod>2026-11-24</lastmod>');
@@ -332,7 +336,6 @@ async function main() {
 
   const required200Routes = [
     '/',
-    '/gta-6',
     '/gta-6/storage',
     '/gta-6/cheats',
     '/gta-6/money',
@@ -347,6 +350,7 @@ async function main() {
     '/roblox',
     '/roblox/devex/100000-robux-to-usd',
     '/gta-online',
+    '/sponsor',
     '/legal/refunds',
     '/legal/terms',
   ];
@@ -414,7 +418,8 @@ async function main() {
   assert.equal(wwwWorkerRes.headers.get('location'), 'https://playunpause.com/gta-6/fixes?v=2');
 
   const requiredRedirects = [
-    ['/gta-6/', 'https://playunpause.com/gta-6'],
+    ['/gta-6', 'https://playunpause.com/'],
+    ['/gta-6/', 'https://playunpause.com/'],
     ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/port-gellhorn', 'https://playunpause.com/gta-6/robberies'],

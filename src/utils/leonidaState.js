@@ -14,8 +14,10 @@ import {
   LEONIDA_TRACKER_ITEMS,
   LEONIDA_VERIFIED_CHEATS,
 } from '../data/games/leonidaV2Data.js';
+import { computeDownloadEtaSeconds, formatDownloadEta } from './downloadEta.js';
 
 export const LEONIDA_STORAGE_KEY = 'playunpause_gta6_leonida_v2';
+export const DEFAULT_HOURS_PER_DAY = 2.5;
 
 const VALID_TABS = new Set(['session', 'storage', 'settings', 'money', 'fixes']);
 const VALID_CONSOLES = new Map(LEONIDA_CONSOLES.map((c) => [c.id, c]));
@@ -82,7 +84,7 @@ export function createDefaultLeonidaState() {
     activeFix: 'patch_01002002',
     radioQuery: '',
     pace: 'normal',
-    hoursPerDay: 2.5,
+    hoursPerDay: DEFAULT_HOURS_PER_DAY,
     starState: 'red',
     activeHeat: ['car', 'weapon'],
     profileTier: 'pro',
@@ -234,13 +236,8 @@ export function computeLeonidaStorage({
   const overPct = Number(((overCapGb / denom) * 100).toFixed(2));
 
   const safeMbps = clampInt(mbps, 100, 5, 2500);
-  const totalSeconds = Math.round((gtaGb * 8000) / safeMbps);
-  const hours = Math.floor(totalSeconds / 3600);
-  const mins = Math.round((totalSeconds % 3600) / 60);
-  const adjustedHours = mins === 60 ? hours + 1 : hours;
-  const adjustedMins = mins === 60 ? 0 : mins;
-  const etaLabel =
-    adjustedHours > 0 ? `${adjustedHours}h ${adjustedMins}m` : `${Math.max(1, adjustedMins)}m`;
+  const totalSeconds = computeDownloadEtaSeconds(gtaGb, safeMbps);
+  const etaLabel = formatDownloadEta(gtaGb, safeMbps);
 
   return {
     console: con,
@@ -297,16 +294,19 @@ export function computeTrackerStats(counts = {}) {
 export function computeFinishDate({
   pace = 'normal',
   chapter = 1,
-  hoursPerDay = 2.5,
+  hoursPerDay = DEFAULT_HOURS_PER_DAY,
   nowDate = new Date(),
 } = {}) {
   const paceObj = LEONIDA_PACE_MODES.find((p) => p.id === pace) || LEONIDA_PACE_MODES[1];
   const ch = clampInt(chapter, 1, 1, 5);
-  const hpd = clampHalfStep(hoursPerDay, 2.5, 0.5, 16);
+  const hpd = clampHalfStep(hoursPerDay, DEFAULT_HOURS_PER_DAY, 0.5, 16);
   const remHrs = Math.max(2, paceObj.hours * (1 - Math.min(0.95, (ch - 1) * 0.2)));
   const daysNeeded = Math.ceil(remHrs / hpd);
-  const finish = new Date(nowDate.getTime());
-  finish.setDate(finish.getDate() + daysNeeded);
+  const finish = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth(),
+    nowDate.getDate() + daysNeeded
+  );
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const formattedDate = `${months[finish.getMonth()]} ${finish.getDate()}`;
   return {
@@ -466,9 +466,18 @@ const ROUTE_FIX_MAP = {
   'fast-travel': 'fast_travel',
 };
 
+export function normalizePathname(rawPath = '/') {
+  const clean = String(rawPath || '/').split('?')[0].split('#')[0].trim() || '/';
+  const withLead = clean.startsWith('/') ? clean : `/${clean}`;
+  if (withLead.length > 1) {
+    return withLead.replace(/\/+$/, '') || '/';
+  }
+  return withLead;
+}
+
 export function mapRoutePresetToLeonida(route, preset = {}) {
   const rawTab = route?.tab || 'session';
-  const path = route?.path || '/gta-6';
+  const path = normalizePathname(route?.path || '/');
   const isUltimate = path === '/gta-6/ultimate' || preset?.subTab === 'ultimate';
   const tab = isUltimate ? 'money' : ROUTE_TAB_MAP[rawTab] || 'session';
   const mappedConsole = preset?.consoleId && ROUTE_CONSOLE_MAP[preset.consoleId]

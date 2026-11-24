@@ -254,11 +254,9 @@ test('1. GTA VI ground-truth: 212 GB + Patch 01.002.002 / 1.0.2.2, pure D-Pad ch
     assert.ok(fs.existsSync(path.join(ROOT, rel)), `Expected GTA VI component ${rel}`);
   }
 
-  const resolvedGta6Home = resolveSeoRequest('/gta-6');
-  assert.equal(resolvedGta6Home.status, 200, 'Expected /gta-6 to return 200 OK');
-
   for (const [oldPath, destUrl] of [
-    ['/gta-6/', 'https://playunpause.com/gta-6'],
+    ['/gta-6', 'https://playunpause.com/'],
+    ['/gta-6/', 'https://playunpause.com/'],
     ['/gta-6/safe-codes', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/safe-codes/vice-beach', 'https://playunpause.com/gta-6/robberies'],
     ['/gta-6/heist-split', 'https://playunpause.com/gta-online'],
@@ -534,11 +532,11 @@ test('4. Zombie $6.99 gate removed, 16 setups & OBS free, SVG QR matrix works, /
   assert.match(body.deckCode || '', /^UP-[A-Z0-9]{6,12}$/);
 });
 
-test('5. Ctrl+K switcher, fixed viewport modal centering, header aria-hidden labels', () => {
+test('5. Ctrl+K switcher, fixed viewport modal centering, zero duplicate header aria-hidden spans', () => {
   const appSource = readRepoFile('src/App.jsx');
   assert.match(appSource, /key\.toLowerCase\(\)\s*===\s*'k'/);
-  assert.match(appSource, /nz-compact-text"[^>]*aria-hidden="true"|aria-hidden="true"[^>]*nz-compact-text/);
-  assert.match(appSource, /pass-short-label"[^>]*aria-hidden="true"|aria-hidden="true"[^>]*pass-short-label/);
+  assert.doesNotMatch(appSource, /nz-compact-text/);
+  assert.doesNotMatch(appSource, /pass-short-label/);
 
   const cssSource = readRepoFile('src/styles/deck.css');
   assert.match(cssSource, /position:\s*fixed/);
@@ -550,18 +548,16 @@ test('5. Ctrl+K switcher, fixed viewport modal centering, header aria-hidden lab
 test('6. Worker single-hop 301s, YouTube slug 301s, UTF-8 robots.txt & complete llms.txt', async () => {
   const env = makeWorkerEnv();
 
-  const gta6Res = await worker.fetch(new Request('https://playunpause.com/gta-6?src=short'), env);
-  assert.equal(gta6Res.status, 200, 'Expected 200 for https://playunpause.com/gta-6');
-
   for (const url of [
     'http://playunpause.com/gta-6?src=short',
     'http://www.playunpause.com/gta-6?src=short',
     'https://www.playunpause.com/gta-6?src=short',
     'https://playunpause.com/gta-6/?src=short',
+    'https://playunpause.com/gta-6?src=short',
   ]) {
     const res = await worker.fetch(new Request(url), env);
     assert.equal(res.status, 301, `Expected 301 for ${url}`);
-    assert.equal(res.headers.get('location'), 'https://playunpause.com/gta-6?src=short');
+    assert.equal(res.headers.get('location'), 'https://playunpause.com/?src=short');
   }
 
   const wwwRes = await worker.fetch(new Request('https://www.playunpause.com/cod-warzone?x=1'), env);

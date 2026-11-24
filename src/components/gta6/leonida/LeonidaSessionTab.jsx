@@ -132,7 +132,7 @@ export default function LeonidaSessionTab({
             {stats.rows.map((row) => (
               <div key={row.key} className="lh-tracker-row">
                 <div className="lh-tracker-row-top">
-                  <div>
+                  <div className="lh-tracker-label-col">
                     <div className="lh-tracker-name">
                       {row.label}:{' '}
                       <span className="lh-num">

@@ -4,7 +4,7 @@
  */
 
 export const LEONIDA_TABS = [
-  { id: 'session', label: 'Session Hub', mobileLabel: 'Session', path: '/gta-6' },
+  { id: 'session', label: 'Session Hub', mobileLabel: 'Session', path: '/' },
   { id: 'storage', label: 'Fit & SSD', mobileLabel: 'Fit & SSD', path: '/gta-6/storage' },
   { id: 'settings', label: '30fps Settings', mobileLabel: '30fps', path: '/gta-6/settings' },
   { id: 'money', label: 'Heat, Money & Cheats', mobileLabel: 'Heat/Money', path: '/gta-6/money' },

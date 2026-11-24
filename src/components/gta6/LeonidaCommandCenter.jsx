@@ -66,7 +66,7 @@ export default function LeonidaCommandCenter({
   preset,
   presetKey,
   runtimeConfig,
-  soundEnabled = true,
+  soundEnabled = false,
   onNavigatePath,
 }) {
   const [initialSetup] = useState(() => {
@@ -149,9 +149,23 @@ export default function LeonidaCommandCenter({
   const saveTimerRef = useRef(null);
   const firstSaveRunRef = useRef(true);
 
-  // Sync URL route (/gta-6, /gta-6/storage, /gta-6/settings, /gta-6/money, /gta-6/robberies, /gta-6/cheats, /gta-6/ultimate, /gta-6/fixes, /gta-6/radio, /gta-6/platinum)
+  // Single source of truth for active tab derived from router state
+  const routeMapped = useMemo(
+    () => mapRoutePresetToLeonida(activeRoute, preset),
+    [activeRoute, preset]
+  );
+  const activeTabId = typeof onNavigatePath === 'function' ? routeMapped.tab : state.tab;
+
+  // Clear stale focus border on any tab button when route changes
   useEffect(() => {
-    const mapped = mapRoutePresetToLeonida(activeRoute, preset);
+    if (typeof document !== 'undefined' && document.activeElement?.closest?.('.lh-tabs-bar')) {
+      document.activeElement.blur();
+    }
+  }, [activeRoute?.path]);
+
+  // Sync URL route (/, /gta-6/storage, /gta-6/settings, /gta-6/money, /gta-6/robberies, /gta-6/cheats, /gta-6/ultimate, /gta-6/fixes, /gta-6/radio, /gta-6/platinum)
+  useEffect(() => {
+    const mapped = routeMapped;
     const routePath = activeRoute?.path || '/';
     const isSpecificStorageScenario =
       routePath.startsWith('/gta-6/storage/') || routePath.startsWith('/gta-6/download/');
@@ -180,7 +194,7 @@ export default function LeonidaCommandCenter({
         };
       });
     });
-  }, [activeRoute, preset, presetKey]);
+  }, [activeRoute, presetKey, routeMapped]);
 
   // Debounced persist to localStorage (ONLY when NOT previewing a shared conflict over existing local data)
   useEffect(() => {
@@ -272,7 +286,7 @@ export default function LeonidaCommandCenter({
     };
   }, []);
 
-  // Keyboard shortcuts: "/" or Ctrl/Cmd+K focuses Global Instant Search; Escape closes dropdown & modal
+  // Keyboard shortcuts: "/" focuses local Leonida Search ONLY when not inside an input/textarea/select; Ctrl/Cmd+K belongs globally to Game Switcher; Escape closes dropdown & modal
   useEffect(() => {
     const onKeyDown = (e) => {
       const target = e.target;
@@ -283,11 +297,7 @@ export default function LeonidaCommandCenter({
           target.tagName === 'SELECT' ||
           target.isContentEditable);
 
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-        setSearchOpen(true);
-      } else if (e.key === '/' && !isTyping && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (e.key === '/' && !isTyping && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         searchInputRef.current?.focus();
         setSearchOpen(true);
@@ -362,7 +372,9 @@ export default function LeonidaCommandCenter({
       typeof window !== 'undefined' && window.location?.origin
         ? window.location.origin
         : 'https://playunpause.com';
-    const shareUrl = `${origin}/gta-6${hash}`;
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname || '/' : '/';
+    const currentSearch = typeof window !== 'undefined' ? window.location.search || '' : '';
+    const shareUrl = `${origin}${currentPath}${currentSearch}${hash}`;
 
     let copied = false;
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
@@ -378,7 +390,7 @@ export default function LeonidaCommandCenter({
     }
     if (typeof window !== 'undefined') {
       try {
-        window.history.replaceState({}, '', `/gta-6${hash}`);
+        window.history.replaceState({}, '', `${currentPath}${currentSearch}${hash}`);
       } catch {
         // Ignore history restriction
       }
@@ -614,7 +626,7 @@ export default function LeonidaCommandCenter({
                   type="search"
                   className="lh-search-input"
                   aria-label="Global instant Leonida search"
-                  placeholder="Search safes, motion blur, WS-116449-5, firmware, cheats, radio..."
+                  placeholder="Search fixes, cheats, radio..."
                   value={searchQuery}
                   onFocus={() => setSearchOpen(true)}
                   onChange={(e) => {
@@ -681,12 +693,7 @@ export default function LeonidaCommandCenter({
                 onClick={handleToggleWakeLock}
               >
                 {wakeEnabled && <span className="lh-teal-dot" aria-hidden="true" />}
-                <span className="lh-wake-full">
-                  {wakeEnabled ? 'Screen On ✓' : 'Keep Screen On'}
-                </span>
-                <span className="lh-wake-short">
-                  {wakeEnabled ? 'On ✓' : 'Keep On'}
-                </span>
+                <span>{wakeEnabled ? 'Screen On ✓' : 'Keep Screen On'}</span>
               </button>
 
               <button
@@ -705,7 +712,7 @@ export default function LeonidaCommandCenter({
         <nav className="lh-tabs-bar" role="tablist" aria-label="Leonida Command Center Tabs">
           {LEONIDA_TABS.map((t) => {
             const IconComp = TAB_ICONS[t.id] || LayoutDashboard;
-            const active = state.tab === t.id;
+            const active = activeTabId === t.id;
             return (
               <button
                 key={t.id}
@@ -726,7 +733,7 @@ export default function LeonidaCommandCenter({
       {/* Desktop 2-Column Bento Layout: 8-Col Workbench + 4-Col Sticky Right Session Rail */}
       <div className="lh-bento-grid">
         <div className="lh-workbench-col" role="tabpanel">
-          {state.tab === 'session' && (
+          {activeTabId === 'session' && (
             <LeonidaSessionTab
               state={state}
               onJumpToPill={handleJumpToPill}
@@ -750,7 +757,7 @@ export default function LeonidaCommandCenter({
             />
           )}
 
-          {state.tab === 'storage' && (
+          {activeTabId === 'storage' && (
             <LeonidaStorageTab
               state={state}
               runtimeConfig={runtimeConfig}
@@ -776,7 +783,7 @@ export default function LeonidaCommandCenter({
             />
           )}
 
-          {state.tab === 'settings' && (
+          {activeTabId === 'settings' && (
             <LeonidaSettingsTab
               state={state}
               onSelectSetConsole={(setConsole) => {
@@ -806,7 +813,7 @@ export default function LeonidaCommandCenter({
             />
           )}
 
-          {state.tab === 'money' && (
+          {activeTabId === 'money' && (
             <LeonidaHeatMoneyCheatsTab
               state={state}
               activeRoutePath={activeRoute?.path || '/gta-6'}
@@ -835,7 +842,7 @@ export default function LeonidaCommandCenter({
             />
           )}
 
-          {state.tab === 'fixes' && (
+          {activeTabId === 'fixes' && (
             <LeonidaFixesRadioTab
               state={state}
               activeRoutePath={activeRoute?.path || '/gta-6'}
@@ -855,6 +862,7 @@ export default function LeonidaCommandCenter({
           runtimeConfig={runtimeConfig}
           previewSample={previewSample}
           isExporting={isExporting}
+          hideMiniStorage={activeTabId === 'storage'}
           onSelectConsole={(consoleId) => {
             playSwitchTick(soundEnabled, 700);
             setState((prev) => ({ ...prev, consoleId }));
@@ -866,20 +874,6 @@ export default function LeonidaCommandCenter({
           }}
           onExportPng={handleExportPng}
         />
-      </div>
-
-      {/* Mobile Sticky Bottom Export Bar (<1024px) */}
-      <div className="lh-mobile-export-bar">
-        <button
-          type="button"
-          disabled={isExporting}
-          className="lh-btn primary-gold lh-pressable"
-          style={{ width: '100%', minHeight: '44px' }}
-          onClick={handleExportPng}
-        >
-          <Download size={16} aria-hidden="true" />
-          <span>{isExporting ? 'Rendering 9:16 Card...' : 'Export 9:16 Flex Card PNG'}</span>
-        </button>
       </div>
 
       {/* In-Page Modal for 15-Slot Save Guard Editing */}

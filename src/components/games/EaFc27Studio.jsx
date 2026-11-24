@@ -246,7 +246,7 @@ export default function EaFc27Studio({
           <div className="mg-stat-mini-grid">
             <div className="mg-stat-mini">
               <span>EA 5% Tax / Card</span>
-              <strong>-<AnimatedValue value={eaTaxResult.taxPerCard} /></strong>
+              <strong><AnimatedValue prefix="-" value={eaTaxResult.taxPerCard} /></strong>
             </div>
             <div className="mg-stat-mini">
               <span>Max Safe Snipe Bid</span>

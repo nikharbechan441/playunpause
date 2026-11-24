@@ -22,6 +22,7 @@ import {
   calcRobloxDevEx,
   getFreeApexLevelPacks,
 } from '../src/utils/gameMath.js';
+import { formatDownloadEta } from '../src/utils/downloadEta.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -140,13 +141,6 @@ ${legalLines}
 `;
 }
 
-function formatDownloadEta(gb, mbps) {
-  const mins = Math.max(1, Math.round((gb * 8000) / (mbps * 60 * 0.9)));
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h === 0 ? `${m}m` : `${h}h ${m}m (${mins}m)`;
-}
-
 function buildLlmsFullTxt() {
   const routes = getSitemapRoutes();
   const ps5PatchGb = gta6Pack.dayOnePatchPs5Gb ?? 0.6;
@@ -163,7 +157,7 @@ function buildLlmsFullTxt() {
   const speedRows = [25, 50, 100, 150, 300, 500, 1000]
     .map(
       (mbps) =>
-        `| ${mbps} Mbps | ${formatDownloadEta(212, mbps)} | ${formatDownloadEta(212 + xboxPatchGb, mbps)} |`
+        `| ${mbps} Mbps | ${formatDownloadEta(212, mbps, { includeMinutes: true })} | ${formatDownloadEta(212 + xboxPatchGb, mbps, { includeMinutes: true })} |`
     )
     .join('\n');
 

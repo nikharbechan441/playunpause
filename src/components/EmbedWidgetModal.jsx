@@ -9,7 +9,7 @@ export default function EmbedWidgetModal({
   isOpen,
   onClose,
   initialEmbedPath = '/embed/gta-6/storage',
-  soundEnabled = true,
+  soundEnabled = false,
   isPro = false,
   onOpenProModal = null,
 }) {

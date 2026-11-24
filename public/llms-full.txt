@@ -17,13 +17,13 @@ Important attribution note: playunpause.com is an independent unofficial utility
 ### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
 | Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.0.2.2 (213.6 GB) |
 | --- | --- | --- |
-| 25 Mbps | 20h 56m (1256m) | 21h 6m (1266m) |
-| 50 Mbps | 10h 28m (628m) | 10h 33m (633m) |
-| 100 Mbps | 5h 14m (314m) | 5h 16m (316m) |
-| 150 Mbps | 3h 29m (209m) | 3h 31m (211m) |
-| 300 Mbps | 1h 45m (105m) | 1h 45m (105m) |
-| 500 Mbps | 1h 3m (63m) | 1h 3m (63m) |
-| 1000 Mbps | 31m | 32m |
+| 25 Mbps | 18h 51m (1131m) | 18h 59m (1139m) |
+| 50 Mbps | 9h 25m (565m) | 9h 30m (570m) |
+| 100 Mbps | 4h 43m (283m) | 4h 45m (285m) |
+| 150 Mbps | 3h 8m (188m) | 3h 10m (190m) |
+| 300 Mbps | 1h 34m (94m) | 1h 35m (95m) |
+| 500 Mbps | 57m | 57m |
+| 1000 Mbps | 28m | 28m |
 
 ## 2. Call of Duty: Warzone / BO7 (300 HP Armor Plate TTK Matrix)
 | Weapon | Fire Rate | Base Body Damage | 300 HP (1 HS) | 300 HP (Body Only) |
@@ -128,13 +128,13 @@ Important attribution note: playunpause.com is an independent unofficial utility
 
 ## 10. Complete Canonical Route Index (124 Pages)
 - https://playunpause.com/ — Unpause — GTA VI Leonida Hub & Game Math Tools
-- https://playunpause.com/gta-6 — GTA VI Leonida Command Center (100%, SSD, Heat) — Unpause
+- https://playunpause.com/sponsor — Sponsor a Game Hub ($149/Day Slot) — Unpause
 - https://playunpause.com/gta-6/storage — GTA 6 Storage Fit Check (212 GB + 01.002.002) — Unpause
 - https://playunpause.com/gta-6/cheats — GTA 6 Cheats (Verified D-Pad Codes & Tracker) — Unpause
 - https://playunpause.com/gta-6/money — GTA 6 Money Guide (Apollo Loop & Ch. 1 Cash Wipe) — Unpause
 - https://playunpause.com/gta-6/robberies — GTA 6 Safe Codes & Keypads (7700, 0420 & CCTV) — Unpause
 - https://playunpause.com/gta-6/settings — GTA 6 Best 30fps Settings, DF Specs & PS5 Firmware — Unpause
-- https://playunpause.com/gta-6/platinum — GTA 6 100% Tracker (Missable, 15 Saves & — Unpause
+- https://playunpause.com/gta-6/platinum — GTA 6 100% Tracker (Missables & 15 Save Slots) | PlayUnpause
 - https://playunpause.com/gta-6/ultimate — GTA 6 $99.99 Ultimate Edition Unlock Checklist — Unpause
 - https://playunpause.com/gta-6/fixes — GTA 6 Patch 01.002.002 Notes, PSN & Phone Fixes — Unpause
 - https://playunpause.com/gta-6/radio — GTA 6 Radio Stations (All 23 + Secret Vault) — Unpause
@@ -157,16 +157,16 @@ Important attribution note: playunpause.com is an independent unofficial utility
 - https://playunpause.com/gta-6/storage/external-usb-drive-xbox-ps5 — Can GTA 6 Run From External USB Drive? Rules — Unpause
 - https://playunpause.com/gta-6/unlock-time/new-zealand-trick-xbox-ps5 — GTA 6 Xbox vs PS5 Launch Specs & Patch 01.002.002 — Unpause
 - https://playunpause.com/gta-6/unlock-time/ps5-midnight-region-lock — PS5 Firmware 26.07-14.23.00 & SSD Space Check — Unpause
-- https://playunpause.com/gta-6/download-time/25-mbps — GTA 6 Download Time on 25 Mbps (20h 56m) — Unpause
-- https://playunpause.com/gta-6/download-time/50-mbps — GTA 6 Download Time on 50 Mbps (10h 28m) — Unpause
-- https://playunpause.com/gta-6/download-time/100-mbps — GTA 6 Download Time on 100 Mbps (5h 14m) — Unpause
-- https://playunpause.com/gta-6/download-time/150-mbps — GTA 6 Download Time on 150 Mbps (3h 29m) — Unpause
-- https://playunpause.com/gta-6/download-time/250-mbps — GTA 6 Download Time on 250 Mbps (2h 6m) — Unpause
-- https://playunpause.com/gta-6/download-time/300-mbps — GTA 6 Download Time on 300 Mbps (1h 45m) — Unpause
-- https://playunpause.com/gta-6/download-time/500-mbps — GTA 6 Download Time on 500 Mbps (1h 3m) — Unpause
-- https://playunpause.com/gta-6/download-time/1000-mbps-gigabit — GTA 6 Download Time on 1000 Mbps Gigabit (31m) — Unpause
-- https://playunpause.com/gta-6/download-time/starlink-satellite — GTA 6 Download Time on 115 Mbps (4h 33m) — Unpause
-- https://playunpause.com/gta-6/download-time/5g-home-internet — GTA 6 Download Time on 180 Mbps (2h 54m) — Unpause
+- https://playunpause.com/gta-6/download-time/25-mbps — GTA 6 Download Time on 25 Mbps (18h 51m) — Unpause
+- https://playunpause.com/gta-6/download-time/50-mbps — GTA 6 Download Time on 50 Mbps (9h 25m) — Unpause
+- https://playunpause.com/gta-6/download-time/100-mbps — GTA 6 Download Time on 100 Mbps (4h 43m) — Unpause
+- https://playunpause.com/gta-6/download-time/150-mbps — GTA 6 Download Time on 150 Mbps (3h 8m) — Unpause
+- https://playunpause.com/gta-6/download-time/250-mbps — GTA 6 Download Time on 250 Mbps (1h 53m) — Unpause
+- https://playunpause.com/gta-6/download-time/300-mbps — GTA 6 Download Time on 300 Mbps (1h 34m) — Unpause
+- https://playunpause.com/gta-6/download-time/500-mbps — GTA 6 Download Time on 500 Mbps (57m) — Unpause
+- https://playunpause.com/gta-6/download-time/1000-mbps-gigabit — GTA 6 Download Time on 1000 Mbps Gigabit (28m) — Unpause
+- https://playunpause.com/gta-6/download-time/starlink-satellite — GTA 6 Download Time on 115 Mbps (4h 6m) — Unpause
+- https://playunpause.com/gta-6/download-time/5g-home-internet — GTA 6 Download Time on 180 Mbps (2h 37m) — Unpause
 - https://playunpause.com/cod-warzone/ttk/c9-smg — C9 (SMG) Warzone TTK (544 ms @ 300 HP) — Unpause
 - https://playunpause.com/cod-warzone/ttk/xm4 — XM4 Warzone TTK (624 ms @ 300 HP) — Unpause
 - https://playunpause.com/cod-warzone/ttk/m4 — M4 Warzone TTK (720 ms @ 300 HP) — Unpause

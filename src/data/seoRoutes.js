@@ -12,6 +12,7 @@ import {
   calcGtaOnlineHeist,
   clampNum,
 } from '../utils/gameMath.js';
+import { formatDownloadEta } from '../utils/downloadEta.js';
 
 export const CANONICAL_ORIGIN = 'https://playunpause.com';
 export const INDEXNOW_KEY = 'a8f4c2e91b7d40639e5a2c81f0d3b7e4';
@@ -30,7 +31,7 @@ export const GAME_TO_CANONICAL_PATH = {
 };
 
 export const TAB_TO_CANONICAL_PATH = {
-  session: '/gta-6',
+  session: '/',
   storage: '/gta-6/storage',
   cheats: '/gta-6/cheats',
   money: '/gta-6/money',
@@ -372,10 +373,8 @@ function buildProgrammaticRoutes() {
 
   // 2. GTA VI Download Times (10)
   for (const spd of DOWNLOAD_SPEED_SPECS) {
-    const baseMins = (212 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
-    const patchMins = (213.6 * 8000) / (Math.max(10, spd.mbps * 0.9) * 60);
-    const baseEta = formatEta(baseMins);
-    const patchEta = formatEta(patchMins);
+    const baseEta = formatDownloadEta(212, spd.mbps);
+    const patchEta = formatDownloadEta(213.6, spd.mbps);
     const cleanSpeed = spd.mbps === 1000 ? '1000 Mbps Gigabit' : `${spd.mbps} Mbps`;
     pages.push({
       path: `/gta-6/download-time/${spd.slug}`,
@@ -387,10 +386,10 @@ function buildProgrammaticRoutes() {
       changefreq: 'weekly',
       title: clampTitle(`GTA 6 Download Time on ${cleanSpeed} (${baseEta}) — Unpause`),
       description: clampDesc(
-        `How long is 212 GB GTA 6 on ${spd.label}? ${baseEta} base (${patchEta} with +1.6 GB Xbox Patch 1.0.2.2) with 10% protocol overhead.`
+        `How long is 212 GB GTA 6 on ${spd.label}? ${baseEta} base (${patchEta} with +1.6 GB Xbox Patch 1.0.2.2) at full decimal line rate.`
       ),
       h1: `GTA VI Download Time on ${spd.label}: ${baseEta} (212 GB Base)`,
-      answerSummary: `At ${spd.mbps} Mbps (90% realistic CDN throughput), downloading GTA VI Base (212 GB) takes ${baseEta} (${patchEta} including Xbox Patch 1.0.2.2 +1.6 GB; PS5 Patch 01.002.002 adds ~603.8 MB).`,
+      answerSummary: `At ${spd.mbps} Mbps (decimal GB, 0% overhead), downloading GTA VI Base (212 GB) takes ${baseEta} (${patchEta} including Xbox Patch 1.0.2.2 +1.6 GB; PS5 Patch 01.002.002 adds ~603.8 MB).`,
       ogImage: '/og/gta-6-storage.png',
       ogAlt: `GTA VI download duration at ${spd.mbps} Mbps on Unpause`,
       breadcrumbs: [
@@ -400,8 +399,8 @@ function buildProgrammaticRoutes() {
       ],
       preset: { consoleId: 'ps5-base', freeGb: 250, includePatch: false, mbps: spd.mbps },
       metaRows: [
-        { label: `PS5 (212.6 GB w/ 01.002.002) @ ${spd.mbps} Mbps`, val: `${baseEta} (with 10% overhead)` },
-        { label: `Xbox (213.6 GB w/ 1.0.2.2) @ ${spd.mbps} Mbps`, val: `${patchEta} (with 10% overhead)` },
+        { label: `PS5 (212.6 GB w/ 01.002.002) @ ${spd.mbps} Mbps`, val: `${formatDownloadEta(212.6, spd.mbps)}` },
+        { label: `Xbox (213.6 GB w/ 1.0.2.2) @ ${spd.mbps} Mbps`, val: `${patchEta}` },
       ],
       faqs: getGameFaqs('gta-6'),
     });
@@ -1309,31 +1308,30 @@ export const CORE_ROUTES = [
     faqs: getGameFaqs('gta-6'),
   },
   {
-    path: '/gta-6',
+    path: '/sponsor',
     gameId: 'gta-6',
     tab: 'session',
-    cluster: 'GTA VI Launch Tools',
-    shortLabel: 'Leonida Command Center',
-    priority: '0.98',
-    changefreq: 'daily',
-    title: clampTitle('GTA VI Leonida Command Center (100%, SSD, Heat) — Unpause'),
+    cluster: 'Legal & Sponsorship',
+    shortLabel: 'Sponsor a Game Hub ($149/Day)',
+    priority: '0.5',
+    changefreq: 'monthly',
+    title: clampTitle('Sponsor a Game Hub ($149/Day Slot) — Unpause'),
     description: clampDesc(
-      'Run the all-in-one GTA VI Leonida Hub: True 100% Tracker, 15 Save Slots, 212 GB SSD fit, 6-Star Heat Decoder, 23 Radio Stations & 9:16 Passport PNG export.'
+      'Book a single 24-hour Sponsored header pill across all 10 PlayUnpause game calculators ($149/day flat, zero pop-ups or trackers) via sponsors@playunpause.com.'
     ),
-    h1: 'PLAYUNPAUSE / GTA VI LEONIDA HUB',
+    h1: 'Sponsor a Game Hub ($149/Day Header Placement)',
     answerSummary:
-      'All-in-one single-player GTA VI Session Hub featuring the True 100% Tracker, Ch. 1–4 Spoiler Shield, 15-Slot Save Guard, 212 GB + Patch 01.002.002 / 1.0.2.2 SSD surgery, 30fps settings, 6-Star Heat Decoder, and all 23 verified radio stations.',
+      'Reserve a clean, labeled 24-hour Sponsored: header badge across PlayUnpause ($149/day flat rate, HTTPS links only, manual review before invoicing via sponsors@playunpause.com). Zero pop-ups or ad trackers.',
     ogImage: '/og-cover.png',
-    ogAlt: 'Unpause GTA VI Leonida Command Center & 9:16 Passport Exporter',
+    ogAlt: 'Sponsor a PlayUnpause Game Hub ($149/day header slot)',
     breadcrumbs: [
       { name: 'Unpause', path: '/' },
-      { name: 'GTA VI Leonida Hub', path: '/gta-6' },
+      { name: 'Sponsor a Game Hub', path: '/sponsor' },
     ],
-    preset: { consoleId: 'xss-512', mbps: 100 },
+    preset: {},
     metaRows: [
-      { label: 'Launch Install + Patch', val: '212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (+1.6 GB Xbox)' },
-      { label: 'True 100% Tracker', val: '200 WAiNK · 100 Wildlife · 100 Flamingos · 300 Stunts · 15 Cards' },
-      { label: 'Verified Radio Dial', val: '22 Launch Stations + Secret #23 The Vault Radio' },
+      { label: 'Placement & Rate', val: '$149 USD / 24h Featured Header Pill' },
+      { label: 'Ad Review Contact', val: 'sponsors@playunpause.com (ECTA s.43 compliant)' },
     ],
     faqs: getGameFaqs('gta-6'),
   },
@@ -1515,7 +1513,7 @@ export const CORE_ROUTES = [
     shortLabel: 'Platinum & 15 Save Slots',
     priority: '0.92',
     changefreq: 'daily',
-    title: clampTitle('GTA 6 100% Tracker (Missable, 15 Saves & Collectibles) — Unpause'),
+    title: clampTitle('GTA 6 100% Tracker (Missables & 15 Save Slots) | PlayUnpause'),
     description: clampDesc(
       'Track 0 in-game 100% missables + Ch. 1 Positive Mental Attitude trophy, 15 manual save slots, WAiNK 200, Wildlife 100, Flamingos 100, Stunts 300 & Cards 15.'
     ),
@@ -1958,7 +1956,15 @@ export function resolveSeoRequest(rawPathname = '/', searchParamsInput = null) {
       ? new URLSearchParams(searchParamsInput.toString())
       : new URLSearchParams(searchParamsInput || '');
 
-  // 0. /gta-6 serves HTTP 200 Leonida Command Center; /gta-6/ trims via step 1 to /gta-6
+  // 0. /gta-6 & /gta-6/ single-hop 301 redirect to canonical /
+  const rawLowerPath = pathname.toLowerCase();
+  if (rawLowerPath === '/gta-6' || rawLowerPath === '/gta-6/') {
+    const qs = params.toString();
+    return {
+      status: 301,
+      redirectTo: `${CANONICAL_ORIGIN}/${qs ? `?${qs}` : ''}`,
+    };
+  }
   // 1. Trailing slash cleanup (except root '/')
   if (pathname.length > 1 && pathname.endsWith('/')) {
     const trimmed = pathname.slice(0, -1);

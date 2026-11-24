@@ -914,7 +914,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   max-width: 1240px;
   margin: 0 auto;
   padding: 6px 20px;
@@ -924,8 +924,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex: 1 1 auto;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.game-studio-subbar-left::-webkit-scrollbar {
+  display: none;
 }
 
 .game-studio-active-badge {
@@ -1004,17 +1011,6 @@
 }
 
 /* ==================== 2. HARDWARE-ACCELERATED MOTION PRIMITIVES ==================== */
-@keyframes gsStudioCardIn {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 12px, 0) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
 @keyframes gsValuePulse {
   0% {
     transform: scale(1);
@@ -1171,11 +1167,9 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--game-radius-panel, var(--radius-lg));
   padding: 20px;
-  animation: gsStudioCardIn 0.42s var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1)) both;
-}
-
-.gs-work-card {
-  animation-delay: 0.05s;
+  opacity: 1;
+  transform: none;
+  animation: none;
 }
 
 .gs-hero-instrument {
@@ -1266,7 +1260,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  animation: gsStudioCardIn 0.28s var(--ease-spring) both;
+  opacity: 1;
+  transform: none;
 }
 
 .gs-pin-copy {
@@ -1352,6 +1347,8 @@
   letter-spacing: -0.025em;
   line-height: 1.15;
   color: var(--ink-primary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .gs-pill-cluster {
@@ -1381,6 +1378,8 @@
   background: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   color: var(--ink-primary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .gs-verdict-chip.win,
@@ -1800,6 +1799,11 @@
   font-size: 0.69rem;
   color: var(--ink-muted);
   margin-bottom: 7px;
+}
+
+.gs-mc-y-labels span {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .gs-mc-y-track {
@@ -2868,21 +2872,22 @@
 @media (max-width: 860px) {
   .game-studio-subbar {
     flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
     gap: 6px;
     padding: 4px 12px;
     margin: 0 auto;
   }
 
-  .game-studio-subbar::-webkit-scrollbar {
-    display: none;
-  }
-
   .game-studio-subbar-left {
     flex-wrap: nowrap;
-    flex-shrink: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
     gap: 6px;
+  }
+
+  .game-studio-subbar-left::-webkit-scrollbar {
+    display: none;
   }
 
   .game-studio-active-badge {

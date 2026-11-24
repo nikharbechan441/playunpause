@@ -21,6 +21,7 @@ function LeonidaSessionRail({
   runtimeConfig,
   previewSample,
   isExporting,
+  hideMiniStorage = false,
   onSelectConsole,
   onToggleInstalledGame,
   onTogglePreviewSample,
@@ -31,8 +32,8 @@ function LeonidaSessionRail({
   const codInstalled = state.installedGames.includes('cod');
 
   const hardwareTitle = isPs5
-    ? 'WD_BLACK SN850P NVMe SSD (PS5)'
-    : 'WD_BLACK C50 1TB Expansion Card (Xbox)';
+    ? 'WD_BLACK SN850P 1TB NVMe SSD for PS5'
+    : 'WD_BLACK C50 1TB Expansion Card for Xbox';
   const hardwareUrl = isPs5
     ? runtimeConfig?.affiliates?.ps5SsdUrl || 'https://www.amazon.com/dp/B0C47ZX1WB?tag=playunpause-20'
     : runtimeConfig?.affiliates?.xboxCardUrl || 'https://www.amazon.com/dp/B0C44XVWCH?tag=playunpause-20';
@@ -52,7 +53,8 @@ function LeonidaSessionRail({
 
   return (
     <aside className="lh-sticky-rail" aria-label="Live Session Rail">
-      {/* 1. Mini Console Fit & SSD Card */}
+      {/* 1. Mini Console Fit & SSD Card (hidden on /gta-6/storage to avoid duplicate calculator) */}
+      {!hideMiniStorage && (
       <section className="lh-card" aria-labelledby="lh-rail-ssd-heading">
         <div className="lh-card-header" style={{ marginBottom: '8px' }}>
           <h2 id="lh-rail-ssd-heading" className="lh-card-title" style={{ fontSize: '1.15rem' }}>
@@ -127,6 +129,7 @@ function LeonidaSessionRail({
           </p>
         </div>
       </section>
+      )}
 
       {/* 2. Leonida 100% Passport Card */}
       <section className="lh-card" aria-labelledby="lh-passport-heading">

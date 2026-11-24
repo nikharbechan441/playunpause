@@ -374,10 +374,6 @@
   flex-shrink: 0;
 }
 
-.lh-wake-short {
-  display: none;
-}
-
 /* 5 Operate-Mode Tabs bar */
 .lh-tabs-bar {
   position: relative;
@@ -418,6 +414,15 @@
 .lh-mode-tab:hover {
   color: var(--lh-ivory);
   background-color: var(--lh-inset);
+}
+
+.lh-mode-tab:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.lh-mode-tab:focus-visible {
+  outline: 2px solid var(--lh-gold);
+  outline-offset: -2px;
 }
 
 .lh-mode-tab.active {
@@ -699,10 +704,15 @@
 
 .lh-tracker-row-top {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.lh-tracker-label-col {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .lh-tracker-name {
@@ -721,6 +731,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .lh-couch-btn {
@@ -1155,10 +1166,6 @@
   font-weight: 600;
 }
 
-.lh-mobile-export-bar {
-  display: none;
-}
-
 .lh-clipboard-ghost {
   position: fixed;
   left: -9999px;
@@ -1167,12 +1174,8 @@
   pointer-events: none;
 }
 
-/* Mobile Responsive Rules (<1024px & <640px) */
+/* Mobile Responsive Rules (<1024px & <768px) */
 @media (max-width: 1023px) {
-  .leonida-hud-root {
-    padding-bottom: 72px;
-  }
-
   .lh-top-hud-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
@@ -1190,31 +1193,28 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .lh-mobile-export-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 45;
-    display: flex;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-    background-color: var(--lh-surface);
-    border-top: 1px solid var(--lh-hairline);
-  }
-
   .lh-toast {
-    bottom: 76px;
+    bottom: 20px;
     left: 14px;
     right: 14px;
     max-width: none;
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 767px) {
+  .lh-hero-banner-wrap {
+    min-height: 0;
+    padding: 10px 12px;
+  }
+
+  .lh-search-kbd {
+    display: none;
+  }
+
   .leonida-hud-root input,
   .leonida-hud-root select,
   .leonida-hud-root textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 
   .lh-tracker-split {
@@ -1231,23 +1231,37 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .lh-wake-full {
-    display: none;
+  .lh-shield-group {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: 4px;
   }
 
-  .lh-wake-short {
-    display: inline;
+  .lh-shield-pill {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lh-couch-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .lh-tabs-bar {
-    flex-wrap: wrap;
-    overflow-x: visible;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     gap: 6px;
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
 
   .lh-mode-tab {
+    min-height: 44px;
     padding: 6px 10px;
     font-size: 0.9rem;
+    flex-shrink: 0;
   }
 }

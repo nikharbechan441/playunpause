@@ -257,20 +257,6 @@ export function GameStudioSideDock({
                   : 'Copy Shareable Link'}
             </span>
           </button>
-
-          {!isEmbed && typeof onOpenEmbedModal === 'function' && (
-            <button
-              type="button"
-              className="subtle-pill-btn share-link-wide-btn"
-              onClick={() => {
-                playSwitchTick(soundEnabled, 740);
-                onOpenEmbedModal();
-              }}
-            >
-              <Code2 size={14} aria-hidden="true" />
-              <span>Embed / OBS Overlay</span>
-            </button>
-          )}
         </div>
 
         {shareFallbackUrl && (

@@ -251,17 +251,6 @@ textarea {
 /* =========================================================================
    CLASSY MOTION CHOREOGRAPHY
    ========================================================================= */
-@keyframes studioStageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes modalSpringIn {
   from {
     opacity: 0;
@@ -286,7 +275,9 @@ textarea {
 }
 
 .deck-stage-transition {
-  animation: studioStageEnter 260ms var(--ease-spring) both;
+  opacity: 1;
+  transform: none;
+  animation: none;
 }
 
 /* Spotlight edge catchlight tracking --mouse-x / --mouse-y */
@@ -510,10 +501,6 @@ textarea {
   flex-shrink: 0;
 }
 
-.nz-compact-text {
-  display: none;
-}
-
 .tactile-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -563,10 +550,6 @@ textarea {
   color: var(--ink-primary);
   background: var(--bg-elevated);
   border-color: var(--select-accent);
-}
-
-.pass-short-label {
-  display: none;
 }
 
 .sync-pill-pro {
@@ -2251,7 +2234,7 @@ input[type='range']::-moz-range-thumb {
   padding: 10px 12px;
 }
 
-.mg-stat-mini span {
+.mg-stat-mini > span {
   display: block;
   font-size: 0.77rem;
   font-weight: 600;
@@ -2260,10 +2243,13 @@ input[type='range']::-moz-range-thumb {
 }
 
 .mg-stat-mini strong {
+  display: inline-block;
   font-family: var(--font-mono);
   font-size: 1.02rem;
   font-weight: 700;
   color: var(--ink-primary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Unblurred Meta Reference & Pin Rail */
@@ -2386,7 +2372,7 @@ input[type='range']::-moz-range-thumb {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 120;
   background: rgba(6, 9, 14, 0.72);
   backdrop-filter: blur(8px);
   display: grid;
@@ -2572,16 +2558,9 @@ input[type='range']::-moz-range-thumb {
     padding: 6px 12px;
   }
 
-  .nz-full-text,
   .kbd-hint,
-  .pass-full-label,
   .gta-workspace-nav {
     display: none;
-  }
-
-  .nz-compact-text,
-  .pass-short-label {
-    display: inline;
   }
 
   .quick-game-dock {
@@ -3604,6 +3583,53 @@ input[type='range']::-moz-range-thumb {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.footer-hubs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-hub-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.footer-hub-link:hover,
+.footer-hub-link.active {
+  border-color: var(--select-accent);
+  color: var(--ink-primary);
+}
+
+@media (max-width: 767px) {
+  .kbd-hint,
+  .embed-header-btn,
+  .nz-hud-pill {
+    display: none !important;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .calc-stepper-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .footer-disclaimer {

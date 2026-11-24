@@ -3,7 +3,7 @@
  */
 
 import { LEONIDA_CHAPTERS, LEONIDA_SAMPLE_COUNTS } from '../data/games/leonidaV2Data.js';
-import { computeFinishDate, computeTrackerStats } from './leonidaState.js';
+import { computeFinishDate, computeTrackerStats, DEFAULT_HOURS_PER_DAY } from './leonidaState.js';
 
 function drawRoundRect(ctx, x, y, w, h, r) {
   const radius = Math.min(r, w / 2, h / 2);
@@ -56,7 +56,7 @@ export async function exportLeonidaPassportPng({
   const finish = computeFinishDate({
     pace: state?.pace || 'normal',
     chapter: state?.chapter || 1,
-    hoursPerDay: state?.hoursPerDay || 2.5,
+    hoursPerDay: state?.hoursPerDay ?? DEFAULT_HOURS_PER_DAY,
   });
   const chMeta = LEONIDA_CHAPTERS.find((c) => c.id === (state?.chapter || 1)) || LEONIDA_CHAPTERS[0];
   const savedCount = Array.isArray(state?.saves)

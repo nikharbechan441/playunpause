@@ -29,6 +29,7 @@ import {
   buildStorageSharePath,
   buildStorageShareUrl,
 } from '../utils/shareUrlHelpers.js';
+import { formatDownloadEta } from '../utils/downloadEta.js';
 
 export { formatDurationMinutes, formatCountdownMs };
 
@@ -132,14 +133,11 @@ export default function StorageUnlockDeck({
     return formatCountdownMs(targetMs - nowMs);
   }, [gamePack.nzUnlockIsoUtc, nowMs]);
 
-  // Download time in minutes: GB * 8000 Mb / (Mbps * 60 sec * 0.90 realistic throughput factor)
-  const downloadMinutes = useMemo(() => {
-    const remainingToDownloadGb = installTargetGb;
-    const effectiveMbps = Math.max(10, mbps * 0.9);
-    return (remainingToDownloadGb * 8000) / (effectiveMbps * 60);
-  }, [installTargetGb, mbps]);
-
-  const downloadTimeText = useMemo(() => formatDurationMinutes(downloadMinutes), [downloadMinutes]);
+  // Shared decimal-GB Download ETA helper (0% overhead)
+  const downloadTimeText = useMemo(
+    () => formatDownloadEta(installTargetGb, mbps),
+    [installTargetGb, mbps]
+  );
 
   const freePct = Math.min(100, (clampedFreeGb / usableGb) * 100);
   const freedPct = Math.min(100 - freePct, (freedByUninstallGb / usableGb) * 100);

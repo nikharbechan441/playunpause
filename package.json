@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.0",
+    "playwright-core": "^1.65.1",
     "vite": "^6.3.5"
   },
   "engines": {
