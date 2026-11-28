@@ -439,6 +439,7 @@ export function decodeLeonidaShareHash(rawHash) {
 
 const ROUTE_CONSOLE_MAP = {
   'xss-512': 'xss',
+  'xss-1tb': 'xss_1tb',
   'xsx-1tb': 'xsx',
   'xsx-2tb': 'xsx',
   'ps5-base': 'ps5_825',
@@ -514,6 +515,7 @@ export function mapRoutePresetToLeonida(route, preset = {}) {
     rawTab,
     consoleId: mappedConsole,
     mbps: mappedMbps,
+    includePatch: typeof preset?.includePatch === 'boolean' ? preset.includePatch : null,
     activeFix: mappedActiveFix,
     routeFocus,
   };

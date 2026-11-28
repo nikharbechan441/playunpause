@@ -440,6 +440,7 @@ export default function App() {
   const [showGameModal, setShowGameModal] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [sponsorEmailCopied, setSponsorEmailCopied] = useState(false);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
 
   const [claimInput, setClaimInput] = useState('');
@@ -1434,7 +1435,7 @@ export default function App() {
                   isEmbed
                   onOpenProModal={handleOpenProTarget}
                   runtimeConfig={runtimeConfig}
-                  clanTag={deckState.isPro ? deckState.clanTag : ''}
+                  clanTag={deckState.clanTag}
                   soundEnabled={deckState.soundEnabled}
                   savedPins={deckState.savedPins}
                   onSavePin={handleSavePin}
@@ -1489,8 +1490,8 @@ export default function App() {
 
   return (
     <div data-game={activeGamePack.id} className="game-theme-shell">
-      {/* OPTIONAL SPONSOR BAR (HIDDEN WHEN SYNC PASS ACTIVE) */}
-      {!deckState.isPro && runtimeConfig.activeSponsor && activeSponsorHref && (
+      {/* OPTIONAL SPONSOR BAR */}
+      {runtimeConfig.activeSponsor && activeSponsorHref && (
         <div className="sponsor-strip">
           <div className="sponsor-strip-inner">
             <a
@@ -1815,6 +1816,19 @@ export default function App() {
                 <button
                   type="button"
                   className="subtle-pill-btn"
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(runtimeConfig.sponsorEmail).catch(() => {});
+                    }
+                    setSponsorEmailCopied(true);
+                    window.setTimeout(() => setSponsorEmailCopied(false), 2500);
+                  }}
+                >
+                  {sponsorEmailCopied ? 'Email Copied ✓' : 'Copy Email'}
+                </button>
+                <button
+                  type="button"
+                  className="subtle-pill-btn"
                   onClick={() => setShowSponsorModal(true)}
                 >
                   Open Sponsor Specs &amp; Ad Rules
@@ -1964,7 +1978,7 @@ export default function App() {
               onOpenProModal={() => setShowProModal(true)}
               onOpenEmbedModal={() => setShowEmbedModal(true)}
               runtimeConfig={runtimeConfig}
-              clanTag={deckState.isPro ? deckState.clanTag : ''}
+              clanTag={deckState.clanTag}
               soundEnabled={deckState.soundEnabled}
               savedPins={deckState.savedPins}
               onSavePin={handleSavePin}
@@ -2627,13 +2641,28 @@ export default function App() {
               </p>
             </div>
 
-            <a
-              href={`mailto:${runtimeConfig.sponsorEmail}?subject=${encodeURIComponent('PlayUnpause 24h Header Sponsor Inquiry ($149)')}`}
-              className="primary-coral-btn full-width-btn"
-            >
-              <span>Request 24h Sponsor Slot · ${runtimeConfig.sponsorPriceUsd}</span>
-              <ExternalLink size={14} aria-hidden="true" />
-            </a>
+            <div className="footer-actions-row">
+              <a
+                href={`mailto:${runtimeConfig.sponsorEmail}?subject=${encodeURIComponent('PlayUnpause 24h Header Sponsor Inquiry ($149)')}`}
+                className="primary-coral-btn full-width-btn"
+              >
+                <span>Request 24h Sponsor Slot · ${runtimeConfig.sponsorPriceUsd}</span>
+                <ExternalLink size={14} aria-hidden="true" />
+              </a>
+              <button
+                type="button"
+                className="subtle-pill-btn"
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(runtimeConfig.sponsorEmail).catch(() => {});
+                  }
+                  setSponsorEmailCopied(true);
+                  window.setTimeout(() => setSponsorEmailCopied(false), 2500);
+                }}
+              >
+                {sponsorEmailCopied ? 'Email Copied ✓' : 'Copy Email'}
+              </button>
+            </div>
           </div>
         </div>
       )}

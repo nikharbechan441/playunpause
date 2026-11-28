@@ -321,6 +321,9 @@ export function buildMultiGameSharePath(gameId, rawState, pathnameOverride) {
         ['rate', sanitizeStr(state.devexRate ?? 'std-2025', 32, 'std-2025')],
         ['split', safeIntBound(state.groupSplit, 100, 1, 100)],
         ['net', safeIntBound(state.desiredNet, 30000, 0, 15000000)],
+        ['mode', state.rbxMode === 'gross' ? 'gross' : 'net'],
+        ['wh', safeIntBound(state.rbxWithholdingPct, 0, 0, 30)],
+        ['pp', state.rbxPaypalFee ? 1 : 0],
       ];
       break;
     case 'cs2': {

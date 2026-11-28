@@ -1,6 +1,7 @@
 import React, { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
+  Copy,
   Download,
   Lock,
   Radio,
@@ -18,6 +19,7 @@ import {
   LEONIDA_TABS,
 } from '../../data/games/leonidaV2Data.js';
 import {
+  computeTrackerStats,
   decodeLeonidaShareHash,
   encodeLeonidaShareHash,
   hasSavedLeonidaState,
@@ -77,7 +79,9 @@ export default function LeonidaCommandCenter({
     const mapped = mapRoutePresetToLeonida(activeRoute, preset);
     const routePath = activeRoute?.path || '/';
     const isSpecificStorageScenario =
-      routePath.startsWith('/gta-6/storage/') || routePath.startsWith('/gta-6/download/');
+      routePath.startsWith('/gta-6/storage/') ||
+      routePath.startsWith('/gta-6/download-time/') ||
+      routePath.startsWith('/gta-6/unlock-time/');
 
     const baseWithRoute = {
       ...localState,
@@ -85,6 +89,9 @@ export default function LeonidaCommandCenter({
       ...(mapped.activeFix ? { activeFix: mapped.activeFix } : {}),
       ...(isSpecificStorageScenario && mapped.consoleId ? { consoleId: mapped.consoleId } : {}),
       ...(isSpecificStorageScenario && mapped.mbps ? { mbps: mapped.mbps } : {}),
+      ...(isSpecificStorageScenario && typeof mapped.includePatch === 'boolean'
+        ? { includePatch: mapped.includePatch }
+        : {}),
     };
 
     if (decoded) {
@@ -168,7 +175,9 @@ export default function LeonidaCommandCenter({
     const mapped = routeMapped;
     const routePath = activeRoute?.path || '/';
     const isSpecificStorageScenario =
-      routePath.startsWith('/gta-6/storage/') || routePath.startsWith('/gta-6/download/');
+      routePath.startsWith('/gta-6/storage/') ||
+      routePath.startsWith('/gta-6/download-time/') ||
+      routePath.startsWith('/gta-6/unlock-time/');
 
     startTransition(() => {
       setState((prev) => {
@@ -176,11 +185,16 @@ export default function LeonidaCommandCenter({
           isSpecificStorageScenario && mapped.consoleId ? mapped.consoleId : prev.consoleId;
         const nextMbps =
           isSpecificStorageScenario && mapped.mbps ? mapped.mbps : prev.mbps;
+        const nextIncludePatch =
+          isSpecificStorageScenario && typeof mapped.includePatch === 'boolean'
+            ? mapped.includePatch
+            : prev.includePatch;
         const nextActiveFix = mapped.activeFix || prev.activeFix;
         if (
           prev.tab === mapped.tab &&
           prev.consoleId === nextConsole &&
           prev.mbps === nextMbps &&
+          prev.includePatch === nextIncludePatch &&
           prev.activeFix === nextActiveFix
         ) {
           return prev;
@@ -190,6 +204,7 @@ export default function LeonidaCommandCenter({
           tab: mapped.tab,
           consoleId: nextConsole,
           mbps: nextMbps,
+          includePatch: nextIncludePatch,
           activeFix: nextActiveFix,
         };
       });
@@ -402,6 +417,33 @@ export default function LeonidaCommandCenter({
     );
   };
 
+  const handleCopyDiscordSummary = async () => {
+    playSwitchTick(soundEnabled, 760);
+    const stats = computeTrackerStats(state.counts);
+    const chMeta = LEONIDA_CHAPTERS.find((c) => c.id === state.chapter) || LEONIDA_CHAPTERS[0];
+    const savedCount = state.saves.filter((s) => s.saved).length;
+    const hash = encodeLeonidaShareHash(state);
+    const summary = [
+      `**GTA VI Leonida Run** · ${stats.totalPct}% Complete (${chMeta.label})`,
+      `WAiNK ${state.counts.waink}/200 · Wildlife ${state.counts.wildlife}/100 · Flamingos ${state.counts.flamingos}/100 · Stunts ${state.counts.stunts}/300 · Cards ${state.counts.cards}/15 · Saves ${savedCount}/15`,
+      `https://playunpause.com/${hash}`,
+    ].join('\n');
+
+    let copied = false;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(summary);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+    if (!copied) {
+      copied = copyWithExecFallback(summary);
+    }
+    showToast(copied ? 'Discord run summary copied.' : 'Could not access clipboard.');
+  };
+
   const handleKeepMine = () => {
     playSwitchTick(soundEnabled, 660);
     const own = loadLeonidaState();
@@ -492,6 +534,18 @@ export default function LeonidaCommandCenter({
       const nextCounts = {
         ...prev.counts,
         [key]: (prev.counts[key] || 0) + delta,
+      };
+      return sanitizeLeonidaState({ ...prev, counts: nextCounts });
+    });
+  };
+
+  const handleSetCount = (key, rawVal) => {
+    const parsed = Number(rawVal);
+    if (!Number.isFinite(parsed)) return;
+    setState((prev) => {
+      const nextCounts = {
+        ...prev.counts,
+        [key]: Math.round(parsed),
       };
       return sanitizeLeonidaState({ ...prev, counts: nextCounts });
     });
@@ -704,27 +758,40 @@ export default function LeonidaCommandCenter({
                 <Share2 size={14} aria-hidden="true" />
                 <span>Share</span>
               </button>
+
+              <button
+                type="button"
+                className="lh-hud-btn lh-pressable"
+                onClick={handleCopyDiscordSummary}
+              >
+                <Copy size={14} aria-hidden="true" />
+                <span>Discord</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* 5 Horizontal Operate-Mode Tabs */}
+        {/* 5 Horizontal Operate-Mode Tabs (crawlable <a> links for Googlebot WRS) */}
         <nav className="lh-tabs-bar" role="tablist" aria-label="Leonida Command Center Tabs">
           {LEONIDA_TABS.map((t) => {
             const IconComp = TAB_ICONS[t.id] || LayoutDashboard;
             const active = activeTabId === t.id;
             return (
-              <button
+              <a
                 key={t.id}
-                type="button"
+                href={t.path}
                 role="tab"
                 aria-selected={active}
                 className={`lh-mode-tab lh-pressable ${active ? 'active' : ''}`}
-                onClick={() => switchTab(t.id)}
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  switchTab(t.id);
+                }}
               >
                 <IconComp size={15} aria-hidden="true" />
                 <span>{t.label}</span>
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -738,6 +805,7 @@ export default function LeonidaCommandCenter({
               state={state}
               onJumpToPill={handleJumpToPill}
               onAdjustCount={handleAdjustCount}
+              onSetCount={handleSetCount}
               onToggleBalcony={() => {
                 playUnlockChime(soundEnabled);
                 setState((prev) => ({ ...prev, balconyDone: !prev.balconyDone }));
@@ -875,6 +943,35 @@ export default function LeonidaCommandCenter({
           onExportPng={handleExportPng}
         />
       </div>
+
+      {/* Crawlable GTA VI Sub-Hub Quick Links */}
+      <nav className="lh-subhub-links" aria-label="GTA VI Tools">
+        {[
+          { path: '/gta-6/storage', label: 'Storage Fit' },
+          { path: '/gta-6/cheats', label: 'Pure D-Pad Cheats' },
+          { path: '/gta-6/money', label: 'Money & Heat' },
+          { path: '/gta-6/robberies', label: 'Robberies & Keypads' },
+          { path: '/gta-6/settings', label: '30FPS Settings' },
+          { path: '/gta-6/platinum', label: '100% Platinum' },
+          { path: '/gta-6/fixes', label: 'Patch 01.002.002 & Fixes' },
+          { path: '/gta-6/radio', label: '23 Radio Stations' },
+        ].map((link) => (
+          <a
+            key={link.path}
+            href={link.path}
+            className={`lh-subhub-link ${activeRoute?.path === link.path ? 'active' : ''}`}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              if (typeof onNavigatePath === 'function') {
+                e.preventDefault();
+                onNavigatePath(link.path, { scrollToTop: false });
+              }
+            }}
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
 
       {/* In-Page Modal for 15-Slot Save Guard Editing */}
       {editingSlot !== null && (

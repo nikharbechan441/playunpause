@@ -203,7 +203,7 @@ async function main() {
 
   // Direct test of Storage + Roblox Math + V2.3 Leonida Engine (#s=, chips, 23 radio stations, Shitzu Squalo, Patch 01.002.002, Apollo, Keypads, Pure D-Pad)
   const { calcRobloxDevEx } = await import('../src/utils/gameMath.js');
-  const { LEONIDA_INSTALLED_GAMES, LEONIDA_RADIO_STATIONS, LEONIDA_VERIFIED_CHEATS } = await import('../src/data/games/leonidaV2Data.js');
+  const { LEONIDA_CONSOLES, LEONIDA_INSTALLED_GAMES, LEONIDA_RADIO_STATIONS, LEONIDA_VERIFIED_CHEATS } = await import('../src/data/games/leonidaV2Data.js');
   const {
     computeLeonidaStorage,
     createDefaultLeonidaState,
@@ -226,6 +226,15 @@ async function main() {
   assert.ok(joinedJsBundle.includes('0420'), 'Built bundle must include 0420 static keypad');
   const cashCheat = LEONIDA_VERIFIED_CHEATS.find((c) => c.id === 'cash-250k');
   assert.equal(cashCheat?.dpad?.join(' '), '↑ → ↓ ← ↑ ← ↓ →', 'Verified $250K D-Pad code must match ↑ → ↓ ← ↑ ← ↓ →');
+  assert.equal(
+    LEONIDA_VERIFIED_CHEATS.filter((c) => !c.codeTbc).length,
+    17,
+    'Expected 17 verified pure D-Pad GTA VI cheats'
+  );
+  assert.ok(
+    LEONIDA_CONSOLES.some((c) => c.id === 'xss_1tb' && c.usableGb === 802),
+    'LEONIDA_CONSOLES missing xss_1tb (802 GB)'
+  );
   for (const st of LEONIDA_RADIO_STATIONS) {
     assert.ok(joinedJsBundle.includes(st.name), `Built bundle missing radio station: ${st.name}`);
   }
@@ -321,7 +330,7 @@ async function main() {
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/platinum</loc>'), 'sitemap.xml missing /gta-6/platinum');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/fixes'), 'sitemap.xml missing /gta-6/fixes');
   assert.ok(sitemapXml.includes('https://playunpause.com/gta-6/radio'), 'sitemap.xml missing /gta-6/radio');
-  assert.ok(distSitemapXml.includes('<lastmod>2026-11-24</lastmod>'), 'dist/sitemap.xml missing <lastmod>2026-11-24</lastmod>');
+  assert.ok(distSitemapXml.includes('<lastmod>2026-11-28</lastmod>'), 'dist/sitemap.xml missing <lastmod>2026-11-28</lastmod>');
 
   const bannerPath = path.join(ROOT, 'public/images/leonida-banner.jpg');
   assert.ok(fs.existsSync(bannerPath), 'Missing public/images/leonida-banner.jpg');

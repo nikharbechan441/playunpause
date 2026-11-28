@@ -1374,11 +1374,11 @@ export const CORE_ROUTES = [
     changefreq: 'daily',
     title: clampTitle('GTA 6 Cheats (Verified D-Pad Codes & Tracker) — Unpause'),
     description: clampDesc(
-      'Dial verified pure D-Pad GTA VI cheats (Phone Up + L1/LB + R1/RB): 12 working combos ($250K, Focus, Boomazoom, Weather) + 7 challenge trackers.'
+      'Dial verified pure D-Pad GTA VI cheats (Phone Up + L1/LB + R1/RB): 17 working combos ($250K, Focus, Max/Infinite Ammo, Drunk, No Fall) + 2 TBC.'
     ),
-    h1: 'GTA VI Pure D-Pad Cheat Deck (12 Verified + 7 Challenge Trackers)',
+    h1: 'GTA VI Pure D-Pad Cheat Deck (17 Verified + 2 Challenge Trackers)',
     answerSummary:
-      'Dial verified pure D-Pad cheats using Phone (Up) + L1/R1 (PS5) or LB/RB (Xbox) — zero face buttons. Animate 12 working codes ($250K, Unlimited Focus, Exploding Ammo, Boomazoom, Moon Gravity, Weather) and track 7 TBC unlock challenges.',
+      'Dial verified pure D-Pad cheats using Phone (Up) + L1/R1 (PS5) or LB/RB (Xbox) — zero face buttons. Track 17 verified codes ($250K, Unlimited Focus, Exploding Balls, Max/Infinite Ammo, Drunk Mode, No Fall Damage, Parachute, Boomazoom, Weather) plus 2 TBC unlock challenges across the 61-cheat pool.',
     ogImage: '/og/gta-6-cheats.png',
     ogAlt: 'Unpause GTA VI Pure D-Pad Cheat Deck',
     breadcrumbs: [
@@ -1387,7 +1387,7 @@ export const CORE_ROUTES = [
     ],
     preset: { cheatPlatform: 'ps5' },
     metaRows: [
-      { label: 'Verified Cheat Combos', val: '12 Pure D-Pad Sequences + 7 TBC Challenge Trackers (61 Pool)' },
+      { label: 'Verified Cheat Combos', val: '17 Pure D-Pad Sequences + 2 TBC Challenge Trackers (61 Pool)' },
       { label: 'Activation Trigger', val: 'Phone Up + L1 + R1 (PS5) / Phone Up + LB + RB (Xbox)' },
       { label: 'Achievement Rule', val: 'Disables Trophies & Manual/Auto Saving while active' },
     ],
@@ -1515,11 +1515,11 @@ export const CORE_ROUTES = [
     changefreq: 'daily',
     title: clampTitle('GTA 6 100% Tracker (Missables & 15 Save Slots) | PlayUnpause'),
     description: clampDesc(
-      'Track 0 in-game 100% missables + Ch. 1 Positive Mental Attitude trophy, 15 manual save slots, WAiNK 200, Wildlife 100, Flamingos 100, Stunts 300 & Cards 15.'
+      'Track 0 permanently missable Platinum trophies + Ch. 1 Point of No Return (Recalibration -> Tourist Trap), 15 save slots, WAiNK 200, Wildlife 100, Flamingos 100, Stunts 300 & Cards 15.'
     ),
     h1: 'GTA VI 100% & Platinum Tracker (Missables + 15 Save Slots)',
     answerSummary:
-      '0 missables for the in-game 100% Completion menu (hidden until after the story). 1 potentially missable trophy: Positive Mental Attitude (Ch. 1 Balcony Meditation after Down to Earth). Use the 15-Slot Manual Save Planner (10 chapter + 5 free-roam), 5 thumb counters, and #s= share links.',
+      '0 permanently missable trophies for Platinum (55 trophies · Gold "A Long Road" for 100%, hidden until credits). Make a manual backup save after Ch. 1 Recalibration before Tourist Trap (bank wallet cash in Family Savings & loot Donnie’s revolver/aviators in Don Gone). Use the 15-Slot Manual Save Planner, 5 counters, and #s= share links.',
     ogImage: '/og/gta-6-platinum.png',
     ogAlt: 'Unpause GTA VI 100% Completion & 15-Save-Slot Tracker',
     breadcrumbs: [
@@ -1528,7 +1528,7 @@ export const CORE_ROUTES = [
     ],
     preset: { subTab: 'platinum' },
     metaRows: [
-      { label: '100% Menu Missables', val: '0 In-Game 100% Missables · 1 Missable Trophy (Ch. 1)' },
+      { label: 'Platinum & Ch. 1 Guard', val: '0 Permanently Missable Trophies · Save After Recalibration' },
       { label: 'Hidden 100% Targets', val: '200 WAiNK · 100 Wildlife · 100 Flamingos · 300 Stunts · 15 Cards' },
     ],
     faqs: getGameFaqs('gta-6'),
@@ -1575,7 +1575,7 @@ export const CORE_ROUTES = [
     ),
     h1: 'GTA VI Patch 01.002.002 / 1.0.2.2 Notes, PSN Offline & Phone Fixes',
     answerSummary:
-      'Nov 23 Patch 01.002.002 (~603.8 MB PS5) & 1.0.2.2 (+1.6 GB Xbox) ship 7 official Rockstar fixes for boot stability, cutscene sync & progression blockers, plus PSN WS-116449-5 offline bypass, PS5 FW 26.07-14.23.00 checks, and Phone Mythbusters (no manual dial pad; Skunk Ape 461-555-0139 RydeMe event).',
+      'Nov 23 Patch 01.002.002 (~603.8 MB PS5) & 1.0.2.2 (+1.6 GB Xbox) ship 7 official Rockstar fixes for boot stability, autosaves & progression blockers, plus PSN WS-116449-5 offline bypass, PS5 FW 26.07-14.23.00 & Safe Mode cache checks, and Phone Mythbusters (no manual dial pad; 461-555-0139 flyer at Rusty Anchor / Skeers Bar adds Kirk for Pelican River marshes).',
     ogImage: '/og/gta-6-fixes.png',
     ogAlt: 'Unpause GTA VI Patch 01.002.002 Notes, PSN & Phone Triage',
     breadcrumbs: [
@@ -1586,16 +1586,16 @@ export const CORE_ROUTES = [
     metaRows: [
       { label: 'Nov 23 Patch', val: '01.002.002 PS5 (~603.8 MB) / 1.0.2.2 Xbox (+1.6 GB) · 7 Fixes' },
       { label: 'Mandatory PS5 Firmware', val: '26.07-14.23.00 (1.267 GB · Nov 17, 2026)' },
-      { label: 'Phone Dial / Skunk Ape', val: 'No Dial Pad in GTA VI · RydeMe App 461-555-0139' },
+      { label: 'Phone Dial / Skunk Ape', val: 'No Dial Pad in GTA VI · Flyer 461-555-0139 Adds Kirk' },
     ],
     faqs: [
       {
         q: 'What did Nov 23 GTA VI Patch 01.002.002 (PS5) / 1.0.2.2 (Xbox) fix?',
-        a: 'Patch 01.002.002 (~603.8 MB on PS5) and 1.0.2.2 (~1.6 GB on Xbox) deliver 7 official Rockstar Support stability, audio/cutscene sync, and mission blocker fixes — while the Apollo Aggregates Red Barn loop stays unpatched.',
+        a: 'Patch 01.002.002 (~603.8 MB on PS5) and 1.0.2.2 (~1.6 GB on Xbox) deliver 7 official Rockstar Support stability, autosave, weather, Wanted Level, gym, and story phone-call fixes — while the Apollo Aggregates Red Barn loop stays unpatched as of Nov 28.',
       },
       {
         q: 'Can you manually dial numbers or call 461-555-0139 on the GTA VI phone?',
-        a: 'No — Jason and Lucia’s in-game phone has no manual dial pad for arbitrary numbers. Number 461-555-0139 belongs to the RydeMe Skunk Ape encounter script rather than a free-roam dialable number.',
+        a: 'No — Jason and Lucia’s in-game phone has no manual dial pad for arbitrary numbers. Inspecting the Skunk Ape flyer (461-555-0139) at Rusty Anchor or Skeers Bar adds Kirk to your Contacts to trigger the Pelican River marshes encounter.',
       },
       {
         q: 'How do I launch GTA VI offline during PSN Error WS-116449-5?',
@@ -2253,6 +2253,13 @@ export function parseSafeStatefulQuery(searchParamsInput = null, basePreset = {}
   if (params.has('robux')) clean.robux = safeInt(params.get('robux'), clean.robux ?? 50000, 0, 50000000);
   if (params.has('rate') && VALID_ROBLOX_RATES.has(params.get('rate').trim())) clean.devexRate = params.get('rate').trim();
   if (params.has('split')) clean.groupSplit = safeInt(params.get('split'), clean.groupSplit ?? 100, 1, 100);
+  if (params.get('mode') === 'gross' || params.get('mode') === 'net') clean.rbxMode = params.get('mode');
+  if (params.has('wh')) {
+    const whVal = safeInt(params.get('wh'), 0, 0, 30);
+    if ([0, 5, 10, 15, 24, 30].includes(whVal)) clean.rbxWithholdingPct = whVal;
+  }
+  const ppBool = parseBoolParam(params, 'pp');
+  if (ppBool !== undefined) clean.rbxPaypalFee = ppBool;
 
   if (params.has('cash')) clean.cs2Cash = safeInt(params.get('cash'), clean.cs2Cash ?? 3200, 0, 16000);
   if (params.has('loss')) clean.cs2Loss = safeInt(params.get('loss'), clean.cs2Loss ?? 1, 0, 4);

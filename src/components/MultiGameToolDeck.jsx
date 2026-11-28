@@ -217,9 +217,20 @@ export default function MultiGameToolDeck({
   const camoMatchesLeft = camoRemainingGuns * camoMatchesPerGun;
 
   // ==================== 2. FORTNITE ====================
+  const defaultFnDaysLeft = useMemo(() => {
+    const endIso =
+      game?.id === 'fortnite' && game?.patchMeta?.seasonEndIsoUtc
+        ? game.patchMeta.seasonEndIsoUtc
+        : '2026-12-05T19:00:00Z';
+    const endMs = Date.parse(endIso);
+    if (!Number.isFinite(endMs)) return 7;
+    const diffDays = Math.ceil((endMs - Date.now()) / 86400000);
+    return diffDays >= 1 ? Math.min(120, diffDays) : 7;
+  }, [game?.id, game?.patchMeta?.seasonEndIsoUtc]);
+
   const [fnCurLvl, setFnCurLvl] = useState(() => initialPreset?.fnLevel ?? 44);
   const [fnTargetLvl, setFnTargetLvl] = useState(() => initialPreset?.fnTarget ?? 200);
-  const [fnDaysLeft, setFnDaysLeft] = useState(() => initialPreset?.fnDays ?? 28);
+  const [fnDaysLeft, setFnDaysLeft] = useState(() => initialPreset?.fnDays ?? defaultFnDaysLeft);
   const [fnIncludeDailies, setFnIncludeDailies] = useState(() => initialPreset?.fnDailies ?? true);
   const [fnIncludeCreative, setFnIncludeCreative] = useState(
     () => initialPreset?.fnCreative ?? true
@@ -299,9 +310,12 @@ export default function MultiGameToolDeck({
   const [rbxRateId, setRbxRateId] = useState(() => initialPreset?.devexRate ?? 'std-2025');
   const [rbxGroupSplit, setRbxGroupSplit] = useState(() => initialPreset?.groupSplit ?? 100);
   const [rbxDesiredNet, setRbxDesiredNet] = useState(() => initialPreset?.desiredNet ?? 30000);
+  const [rbxTargetUsd, setRbxTargetUsd] = useState(() => initialPreset?.targetUsd ?? 100);
   const [rbxMode, setRbxMode] = useState(() => (initialPreset?.rbxMode === 'gross' ? 'gross' : 'net'));
-  const [rbxWithholdingPct, setRbxWithholdingPct] = useState(0);
-  const [rbxPaypalFee, setRbxPaypalFee] = useState(false);
+  const [rbxWithholdingPct, setRbxWithholdingPct] = useState(
+    () => initialPreset?.rbxWithholdingPct ?? 0
+  );
+  const [rbxPaypalFee, setRbxPaypalFee] = useState(() => Boolean(initialPreset?.rbxPaypalFee));
 
   useEffect(() => {
     if (!initialPreset) return;
@@ -314,14 +328,13 @@ export default function MultiGameToolDeck({
     } else {
       setRbxMode('net');
     }
-    setRbxWithholdingPct(0);
-    setRbxPaypalFee(false);
+    setRbxWithholdingPct(initialPreset.rbxWithholdingPct ?? 0);
+    setRbxPaypalFee(Boolean(initialPreset.rbxPaypalFee));
   }, [presetKey]);
 
   const safeDesiredNet = clampNum(Math.round(parseSafeNum(rbxDesiredNet, 30000)), 1, 15000000);
   const safeGroupSplit = clampNum(Math.round(parseSafeNum(rbxGroupSplit, 100)), 1, 100);
-  const activeRbxRate = ROBLOX_RATES.find((r) => r.id === rbxRateId) || ROBLOX_RATES[0];
-  const desiredTargetUsd = Number((safeDesiredNet * activeRbxRate.usdPerRobux).toFixed(2));
+  const safeTargetUsd = clampNum(parseSafeNum(rbxTargetUsd, 100), 1, 500000);
 
   const rbxResult = useMemo(
     () =>
@@ -329,12 +342,12 @@ export default function MultiGameToolDeck({
         grossRobux: rbxGross,
         rateId: rbxRateId,
         groupSplitPct: safeGroupSplit,
-        targetUsd: desiredTargetUsd,
+        targetUsd: safeTargetUsd,
         isNetEarned: rbxMode === 'net',
         withholdingPct: rbxWithholdingPct,
         includePaypalFee: rbxPaypalFee,
       }),
-    [rbxGross, rbxRateId, safeGroupSplit, desiredTargetUsd, rbxMode, rbxWithholdingPct, rbxPaypalFee]
+    [rbxGross, rbxRateId, safeGroupSplit, safeTargetUsd, rbxMode, rbxWithholdingPct, rbxPaypalFee]
   );
   const reverseGamepassPrice = Math.ceil(safeDesiredNet / (0.7 * (safeGroupSplit / 100)));
 
@@ -592,6 +605,9 @@ export default function MultiGameToolDeck({
         devexRate: rbxRateId,
         groupSplit: rbxGroupSplit,
         desiredNet: rbxDesiredNet,
+        rbxMode,
+        rbxWithholdingPct,
+        rbxPaypalFee,
         cs2Side: csSide,
         cs2Cash: csCash,
         cs2Loss: csLossLevel,
@@ -1209,6 +1225,8 @@ export default function MultiGameToolDeck({
                 setRbxGroupSplit={setRbxGroupSplit}
                 rbxDesiredNet={rbxDesiredNet}
                 setRbxDesiredNet={setRbxDesiredNet}
+                rbxTargetUsd={rbxTargetUsd}
+                setRbxTargetUsd={setRbxTargetUsd}
                 rbxMode={rbxMode}
                 setRbxMode={setRbxMode}
                 rbxWithholdingPct={rbxWithholdingPct}

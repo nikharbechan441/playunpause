@@ -41,10 +41,13 @@ import {
   createDefaultLeonidaState,
   decodeLeonidaShareHash,
   encodeLeonidaShareHash,
+  mapRoutePresetToLeonida,
   sanitizeLeonidaState,
 } from '../src/utils/leonidaState.js';
+import { buildMultiGameShareUrl } from '../src/utils/shareUrlHelpers.js';
 import {
   LEGAL_META,
+  parseSafeStatefulQuery,
   resolveSeoRequest,
 } from '../src/data/seoRoutes.js';
 
@@ -286,7 +289,7 @@ test('1. GTA VI ground-truth: 212 GB + Patch 01.002.002 / 1.0.2.2, pure D-Pad ch
   }
 });
 
-test('1B. Leonida V2.3: 6 fixes, pure D-Pad cheats (12+7 TBC), 23 radio stations + Vault #23, 5 game chips recalc, #s= roundtrip', () => {
+test('1B. Leonida V2.3+: 6 fixes, pure D-Pad cheats (17+2 TBC), 23 radio stations + Vault #23, xss_1tb & Roblox share roundtrip', () => {
   assert.equal(LEONIDA_LAUNCH_FIXES.length, 6);
   assert.equal(LEONIDA_RADIO_STATIONS.length, 23);
   const vault = LEONIDA_RADIO_STATIONS.find((s) => s.num === 23);
@@ -294,8 +297,35 @@ test('1B. Leonida V2.3: 6 fixes, pure D-Pad cheats (12+7 TBC), 23 radio stations
 
   const verifiedDPadCheats = LEONIDA_VERIFIED_CHEATS.filter((c) => !c.codeTbc);
   const tbcCheats = LEONIDA_VERIFIED_CHEATS.filter((c) => c.codeTbc);
-  assert.equal(verifiedDPadCheats.length, 12);
-  assert.equal(tbcCheats.length, 7);
+  assert.equal(verifiedDPadCheats.length, 17);
+  assert.equal(tbcCheats.length, 2);
+  const xss1tbMapped = mapRoutePresetToLeonida(
+    { path: '/gta-6/storage/xbox-series-s-1tb', tab: 'storage' },
+    { consoleId: 'xss-1tb', includePatch: false }
+  );
+  assert.equal(xss1tbMapped.consoleId, 'xss_1tb');
+  assert.equal(xss1tbMapped.includePatch, false);
+
+  const rbxShare = buildMultiGameShareUrl(
+    'roblox',
+    {
+      robux: 100000,
+      devexRate: 'std-2025',
+      groupSplit: 80,
+      desiredNet: 30000,
+      rbxMode: 'gross',
+      rbxWithholdingPct: 24,
+      rbxPaypalFee: true,
+    },
+    'https://playunpause.com',
+    '/roblox'
+  );
+  const parsedRbxUrl = new URL(rbxShare);
+  const resolvedRbx = resolveSeoRequest(parsedRbxUrl.pathname, parsedRbxUrl.searchParams);
+  const mergedRbx = parseSafeStatefulQuery(parsedRbxUrl.searchParams, resolvedRbx.route.preset);
+  assert.equal(mergedRbx.rbxMode, 'gross');
+  assert.equal(mergedRbx.rbxWithholdingPct, 24);
+  assert.equal(mergedRbx.rbxPaypalFee, true);
   const bannedCheatTokenRe = /[✕□△○]|R2|L2|RT|LT|\b[ABXY]\b/;
   for (const c of LEONIDA_VERIFIED_CHEATS) {
     const seq = (c.dpad || []).join(' ');

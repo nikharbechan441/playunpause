@@ -264,6 +264,13 @@ export default function EaFc27Studio({
             <button
               type="button"
               className="filter-pill"
+              onClick={() => applySbcTemplate([85, 85, 84, 84, 84, 84, 84, 84, 84, 83, 83])}
+            >
+              84 OVR (Reece James SBC)
+            </button>
+            <button
+              type="button"
+              className="filter-pill"
               onClick={() => applySbcTemplate([85, 85, 85, 85, 85, 85, 85, 85, 85, 84, 84])}
             >
               85 OVR Formula (9×85 + 2×84)
@@ -274,6 +281,13 @@ export default function EaFc27Studio({
               onClick={() => applySbcTemplate([87, 87, 86, 86, 86, 85, 85, 85, 85, 85, 85])}
             >
               86 OVR Formula (2×87 + 3×86 + 6×85)
+            </button>
+            <button
+              type="button"
+              className="filter-pill"
+              onClick={() => applySbcTemplate([89, 89, 88, 88, 88, 88, 88, 88, 87, 87, 87])}
+            >
+              88 OVR (High-Tier Icon)
             </button>
             <button
               type="button"

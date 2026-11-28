@@ -196,20 +196,46 @@ export async function exportLeonidaPassportPng({
   ctx.textAlign = 'center';
   ctx.fillStyle = '#9CA3AF';
   ctx.font = '700 30px "Barlow Condensed", sans-serif';
-  ctx.fillText('TRACK YOUR RUN AT PLAYUNPAUSE.COM/GTA-6', 540, 1838);
+  ctx.fillText('TRACK YOUR RUN AT PLAYUNPAUSE.COM', 540, 1838);
 
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
+    canvas.toBlob(async (blob) => {
       if (!blob) {
         resolve(false);
         return;
       }
+      const fileName = previewSample
+        ? 'playunpause-gta6-passport-sample.png'
+        : 'playunpause-gta6-passport-9x16.png';
+
+      // Use native mobile share sheet when supported on coarse-pointer touch devices
+      const isTouchDevice =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches;
+      if (isTouchDevice && typeof navigator !== 'undefined' && typeof File === 'function' && navigator.canShare) {
+        try {
+          const shareFile = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [shareFile] })) {
+            await navigator.share({
+              files: [shareFile],
+              title: 'GTA VI Leonida 100% Passport',
+            });
+            resolve(true);
+            return;
+          }
+        } catch (err) {
+          if (err?.name === 'AbortError') {
+            resolve(true);
+            return;
+          }
+        }
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = previewSample
-        ? 'playunpause-gta6-passport-sample.png'
-        : 'playunpause-gta6-passport-9x16.png';
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

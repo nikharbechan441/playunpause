@@ -245,7 +245,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 | --- | --- | --- | --- | --- |
 ${consoleRows}
 
-### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
+### GTA VI Download ETA Reference (at 100% Decimal Line Rate)
 | Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.0.2.2 (${(212 + xboxPatchGb).toFixed(1)} GB) |
 | --- | --- | --- |
 ${speedRows}
@@ -269,7 +269,7 @@ ${fcSample}
 ${netherSample}
 
 ## 5. Roblox DevEx & Marketplace 30% Fee Reference
-| Gross Sales Robux | DevEx Payout (After 30% Fee at 0.0038) | Net Breakdown |
+| Earned / Sales Robux | Direct Earned DevEx Payout ($0.0038/R$) | Net Breakdown |
 | --- | --- | --- |
 ${devexSample}
 

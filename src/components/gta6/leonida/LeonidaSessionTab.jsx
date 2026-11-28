@@ -10,6 +10,7 @@ export default function LeonidaSessionTab({
   state,
   onJumpToPill,
   onAdjustCount,
+  onSetCount,
   onToggleBalcony,
   onSelectPace,
   onChangeHoursPerDay,
@@ -70,9 +71,8 @@ export default function LeonidaSessionTab({
 
         <div className="lh-missable-strip">
           <span>
-            <strong>0 missables</strong> for the 100% Completion menu ·{' '}
-            <strong>1 potentially missable trophy:</strong> Positive Mental Attitude (Ch. 1 Balcony
-            Meditation after Down to Earth).
+            <strong>0 permanently missable trophies</strong> for Platinum (55 trophies · Gold &ldquo;A Long Road&rdquo; for 100%) ·{' '}
+            <strong>Ch. 1 Point of No Return:</strong> Save manually after <em>Recalibration</em> before <em>Tourist Trap</em> (bank wallet cash in Family Savings, loot Donnie&apos;s H&amp;L .38 Revolver &amp; Aviators in <em>Don Gone</em>, finish Shirley&apos;s Favors, &amp; do Ch. 1 Balcony Meditation early).
           </span>
           <button
             type="button"
@@ -151,6 +151,17 @@ export default function LeonidaSessionTab({
                     >
                       -1
                     </button>
+                    {typeof onSetCount === 'function' && (
+                      <input
+                        type="number"
+                        min="0"
+                        max={row.target}
+                        value={row.value}
+                        aria-label={`${row.label} count`}
+                        className="lh-tracker-direct-input lh-num"
+                        onChange={(e) => onSetCount(row.key, e.target.value)}
+                      />
+                    )}
                     <button
                       type="button"
                       className="lh-couch-btn lh-pressable lh-num"

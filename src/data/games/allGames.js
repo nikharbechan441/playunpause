@@ -68,8 +68,8 @@ export const TOP_GAMES = [
     },
     patchMeta: {
       patchVersion: 'Patch 01.002.002 (PS5) / 1.0.2.2 (Xbox)',
-      patchUpdatedIso: '2026-11-24',
-      seasonLabel: 'Launch Week — Patch 01.002.002',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Week 2 Live — Patch 01.002.002',
       seasonEndIsoUtc: null,
     },
     gearOffer: {
@@ -84,7 +84,7 @@ export const TOP_GAMES = [
     },
     icon: 'Car',
     tagline: '212 GB SSD Fit, 61 Haptic Cheats, Story Money/Robberies, 30fps Tuner & Platinum Tracker',
-    sourceNote: 'Launch Week Live (Nov 24, 2026) · 212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox)',
+    sourceNote: 'Week 2 Live (Nov 28, 2026) · 212 GB Base + Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox)',
     isGta6Suite: true,
     faqs: [
       {
@@ -116,9 +116,9 @@ export const TOP_GAMES = [
       styleLabel: 'Mil-Spec Tactical Stencil',
     },
     patchMeta: {
-      patchVersion: 'Season 2026 Reloaded',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Current Season',
+      patchVersion: 'Season 1 (MW4 Integration)',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Nov 19 Balance Patch',
       seasonEndIsoUtc: '2026-12-17T18:00:00Z',
     },
     gearOffer: null,
@@ -175,10 +175,10 @@ export const TOP_GAMES = [
       styleLabel: 'Arcade Italic Showcase',
     },
     patchMeta: {
-      patchVersion: 'BR XP Tune v26.11',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Battle Pass Finale',
-      seasonEndIsoUtc: '2026-12-06T07:00:00Z',
+      patchVersion: 'Ch. 7 Mini-Season v43.11',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Treasure Hunters · Golden Week',
+      seasonEndIsoUtc: '2026-12-05T19:00:00Z',
     },
     gearOffer: null,
     icon: 'Zap',
@@ -228,8 +228,8 @@ export const TOP_GAMES = [
       styleLabel: 'Voxel Pixel Bitmap',
     },
     patchMeta: {
-      patchVersion: '1.21+ Link Spec',
-      patchUpdatedIso: '2026-11-16',
+      patchVersion: '26.4 Deep Freeze Pre-Release',
+      patchUpdatedIso: '2026-11-28',
       seasonLabel: 'Java & Bedrock Parity',
       seasonEndIsoUtc: null,
     },
@@ -287,9 +287,9 @@ export const TOP_GAMES = [
       styleLabel: 'Broadcast Stadium Scorebug',
     },
     patchMeta: {
-      patchVersion: 'FUT Market v27.3',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Active FUT Cycle',
+      patchVersion: 'Thunderstruck Team 2',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Black Friday Promo Live',
       seasonEndIsoUtc: null,
     },
     gearOffer: null,
@@ -347,8 +347,8 @@ export const TOP_GAMES = [
       styleLabel: 'Tactile Studio Workshop',
     },
     patchMeta: {
-      patchVersion: 'DevEx Tiers 2026',
-      patchUpdatedIso: '2026-11-16',
+      patchVersion: 'DevEx $0.0038 + Nov 2026 Tax',
+      patchUpdatedIso: '2026-11-28',
       seasonLabel: 'Creator Payout Standard',
       seasonEndIsoUtc: null,
     },
@@ -400,9 +400,9 @@ export const TOP_GAMES = [
       styleLabel: 'Precision Industrial HUD',
     },
     patchMeta: {
-      patchVersion: 'Premier MR12',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Premier Season',
+      patchVersion: 'Premier MR12 · Cobblestone',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Late-Nov Map Fixes',
       seasonEndIsoUtc: '2026-12-31T23:59:59Z',
     },
     gearOffer: {
@@ -459,9 +459,9 @@ export const TOP_GAMES = [
       styleLabel: 'Neo-Brutalist Protocol',
     },
     patchMeta: {
-      patchVersion: 'Patch 9.10+ Econ',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Ranked Act Window',
+      patchVersion: 'Patch 13.10 · Act VI',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Bind & Corrode Pool',
       seasonEndIsoUtc: '2026-12-10T22:00:00Z',
     },
     gearOffer: {
@@ -524,9 +524,9 @@ export const TOP_GAMES = [
       styleLabel: 'Frontier Dropship Tech',
     },
     patchMeta: {
-      patchVersion: 'Prestige Pity 0–3',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Ranked Split',
+      patchVersion: 'Nov 25 Patch · E-District',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'Crypto & Visibility Tune',
       seasonEndIsoUtc: '2026-12-15T18:00:00Z',
     },
     gearOffer: {
@@ -590,8 +590,8 @@ export const TOP_GAMES = [
     },
     patchMeta: {
       patchVersion: 'Cayo Fees 2%+10%',
-      patchUpdatedIso: '2026-11-16',
-      seasonLabel: 'Heist Week',
+      patchUpdatedIso: '2026-11-28',
+      seasonLabel: 'GTA Online Heist Planner',
       seasonEndIsoUtc: null,
     },
     gearOffer: {

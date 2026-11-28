@@ -156,6 +156,15 @@ export const LEONIDA_CONSOLES = [
     patchGb: 1.6,
     subtext: '364 GB net · +1.6 GB patch',
   },
+  {
+    id: 'xss_1tb',
+    label: 'Xbox Series S 1TB',
+    shortLabel: 'Series S 1TB',
+    platform: 'xbox',
+    usableGb: 802,
+    patchGb: 1.6,
+    subtext: '802 GB net · +1.6 GB patch',
+  },
 ];
 
 export const LEONIDA_INSTALLED_GAMES = [
@@ -371,7 +380,7 @@ export const LEONIDA_STATIC_KEYPADS = [
 ];
 
 export const LEONIDA_APOLLO_LOOP = {
-  statusBadge: 'UNPATCHED IN 01.002.002 (NOV 24)',
+  statusBadge: 'UNPATCHED IN 01.002.002 (NOV 28)',
   title: 'Apollo Aggregates ("Red Barn") Warehouse Loop',
   location: 'South Vice-Dale County (north of Key Lento, east of Hamlet)',
   summary:
@@ -569,21 +578,21 @@ export const LEONIDA_VERIFIED_CHEATS = [
     id: 'max-ammo',
     name: 'Max Ammo',
     category: 'Combat',
-    status: 'CHALLENGE ONLY · TBC',
-    unlockChallenge: 'Earn 20 Bronze Shooting Range Medals',
+    status: 'COMMUNITY-VERIFIED',
+    unlockChallenge: 'Earn 25 Bronze Shooting Range Medals',
     effect: 'Refills reserve weapon ammunition pools.',
-    dpad: [],
-    codeTbc: true,
+    dpad: ['↓', '↑', '→', '↓', '←', '←', '↑', '↑', '↓', '←'],
+    codeTbc: false,
   },
   {
     id: 'infinite-ammo',
     name: 'Infinite Ammo',
     category: 'Combat',
-    status: 'CHALLENGE ONLY · TBC',
+    status: 'COMMUNITY-VERIFIED',
     unlockChallenge: 'Earn 25 Silver Shooting Range Medals',
     effect: 'Removes ammo expenditure.',
-    dpad: [],
-    codeTbc: true,
+    dpad: ['↓', '↑', '→', '↓', '←', '←', '↑', '↓', '↓', '↓'],
+    codeTbc: false,
   },
   {
     id: 'all-explosives',
@@ -599,31 +608,31 @@ export const LEONIDA_VERIFIED_CHEATS = [
     id: 'drunk-mode',
     name: 'Drunk Mode',
     category: 'Player',
-    status: 'CHALLENGE ONLY · TBC',
+    status: 'COMMUNITY-VERIFIED',
     unlockChallenge: 'Spend $2,500 on alcohol in bars & shops',
     effect: 'Toggles ragdoll/camera intoxication physics.',
-    dpad: [],
-    codeTbc: true,
+    dpad: ['↑', '←', '→', '↑', '↑', '←', '→', '↑', '←', '→'],
+    codeTbc: false,
   },
   {
     id: 'no-fall-damage',
     name: 'No Fall Damage',
     category: 'Player',
-    status: 'CHALLENGE ONLY · TBC',
+    status: 'COMMUNITY-VERIFIED',
     unlockChallenge: 'Survive 20 freefalls from 40+ feet',
     effect: 'Negates vertical impact damage.',
-    dpad: [],
-    codeTbc: true,
+    dpad: ['↓', '↑', '↑', '↑', '↑', '↑', '↑', '↑', '↓'],
+    codeTbc: false,
   },
   {
     id: 'parachute',
     name: 'Spawn Parachute',
     category: 'Player',
-    status: 'CHALLENGE ONLY · TBC',
+    status: 'COMMUNITY-VERIFIED',
     unlockChallenge: 'Complete 50 skydives or BASE jumps from 300+ ft',
     effect: 'Equips reserve chute directly.',
-    dpad: [],
-    codeTbc: true,
+    dpad: ['→', '↑', '←', '↑', '→', '↑', '←', '↑', '→'],
+    codeTbc: false,
   },
   {
     id: 'inflatable-flamingo',
@@ -662,7 +671,7 @@ export const LEONIDA_LAUNCH_FIXES = [
     badge: 'NOV 23 HOTFIX · 7 OFFICIAL FIXES',
     isScam: false,
     summary:
-      'Rockstar released Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox) on Nov 23, 2026 fixing 7 major blockers (while Apollo Aggregates remains unpatched as of Nov 24).',
+      'Rockstar released Patch 01.002.002 (~603.8 MB PS5) / 1.0.2.2 (~1.6 GB Xbox) on Nov 23, 2026 fixing 7 major blockers (while Apollo Aggregates remains unpatched as of Nov 28).',
     steps: [
       'Stability & Saves: Fixed multiple game crashes and a bug causing autosave failures.',
       'Story & World Fixes: Fixed weather getting stuck without changing, story phone calls not triggering, Wanted Levels refusing to clear, broken gym deadlift bars, and partners failing to hand over bags to sell at Fences.',
@@ -679,6 +688,7 @@ export const LEONIDA_LAUNCH_FIXES = [
       'Open PS5 Settings -> System -> System Software -> System Software Update and Settings.',
       'Update to FW 26.07-14.23.00 (1.267 GB), reboot your console cleanly, and confirm GTA VI shows Patch 01.002.002.',
       'Verify free SSD space leaves breathing room on 667 GB net PS5 825GB / 848 GB Slim 1TB.',
+      'If launch locks persist after updating, run Settings -> Users and Accounts -> Other -> Restore Licenses (PS5) or verify My Home Xbox.',
     ],
   },
   {
@@ -702,6 +712,7 @@ export const LEONIDA_LAUNCH_FIXES = [
     steps: [
       'Confirm Patch 01.002.002 (PS5 ~603.8 MB) / 1.0.2.2 (Xbox ~1.6 GB) is installed before loading older saves.',
       'Rotate Pause Menu -> Game -> Save Game across all 15 manual slots (10 story checkpoints + 5 free-roam).',
+      'For recurring post-patch crashes, do a full cold reboot (unplug 30s) or PS5 Safe Mode -> Clear Cache and Rebuild Database -> Clear System Software Cache.',
       'Never save after activating any cheat code; reload your last clean uncheated slot before hunting trophies.',
     ],
   },
@@ -712,7 +723,7 @@ export const LEONIDA_LAUNCH_FIXES = [
     isScam: true,
     summary: 'GTA VI launched November 19, 2026 exclusively on PS5 and Xbox Series X|S. PC installers are phishing or malware scams.',
     steps: [
-      'There is ZERO legitimate PC build or "free PC crack" on launch day — console only.',
+      'There is ZERO legitimate PC build or "free PC crack" currently — console only.',
       'Never run third-party ZIP/EXE installers or enter Rockstar / PlayStation / Xbox logins on mirror sites.',
       'Wait strictly for official Rockstar Newswire PC release announcements.',
     ],

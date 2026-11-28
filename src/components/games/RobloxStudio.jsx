@@ -27,6 +27,8 @@ export default function RobloxStudio({
   setRbxGroupSplit,
   rbxDesiredNet,
   setRbxDesiredNet,
+  rbxTargetUsd = 100,
+  setRbxTargetUsd = null,
   rbxMode = 'net',
   setRbxMode = null,
   rbxWithholdingPct = 0,
@@ -220,6 +222,29 @@ export default function RobloxStudio({
           })}
         </div>
 
+        {/* Quick Robux Milestone Pills */}
+        <div className="filter-row" role="group" aria-label="Quick Robux milestones">
+          {[
+            { label: '30K Min', val: 30000 },
+            { label: '100K', val: 100000 },
+            { label: '250K', val: 250000 },
+            { label: '1M R$', val: 1000000 },
+          ].map((preset) => (
+            <button
+              key={preset.val}
+              type="button"
+              aria-pressed={safeGross === preset.val}
+              className={`filter-pill ${safeGross === preset.val ? 'active' : ''}`}
+              onClick={() => {
+                playTick?.(soundEnabled, 740);
+                setRbxGross(preset.val);
+              }}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         <div className="mg-field-grid">
           <div className="mg-field">
             <label htmlFor="rbx-gross">
@@ -336,6 +361,37 @@ export default function RobloxStudio({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Reverse USD Target Planner */}
+        {typeof setRbxTargetUsd === 'function' && (
+          <div className="gs-rbx-pass-tag" style={{ marginBottom: '10px' }}>
+            <div style={{ flex: '1 1 200px' }}>
+              <span className="mono gs-micro-label">REVERSE USD TARGET PLANNER</span>
+              <div className="mg-field" style={{ marginTop: '6px', maxWidth: '190px' }}>
+                <label htmlFor="rbx-target-usd">Target Payout ($ USD)</label>
+                <NumericField
+                  id="rbx-target-usd"
+                  min={1}
+                  max={500000}
+                  step={50}
+                  fallback={100}
+                  className="deck-input no-icon mono"
+                  value={rbxTargetUsd}
+                  onCommit={setRbxTargetUsd}
+                />
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div className="mono gs-micro-label">EARNED ROBUX NEEDED</div>
+              <strong className="mono gs-txt-teal" style={{ fontSize: '1.15rem', display: 'block' }}>
+                {rbxResult.robuxNeededForTargetUsd.toLocaleString('en-US')} R$
+              </strong>
+              <span className="gs-rbx-tag-sub mono" style={{ display: 'block', marginTop: '2px' }}>
+                Gross Player Spend: {rbxResult.grossSalesNeededForTargetUsd.toLocaleString('en-US')} R$
+              </span>
+            </div>
           </div>
         )}
 

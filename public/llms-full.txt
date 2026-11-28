@@ -14,7 +14,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 | PS5 Slim Disc (1TB - 848 GB usable) | 848 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 01.002.002) | FW 26.07-14.23.00 Req |
 | PS5 Pro (2TB - 1,890 GB usable) | 1890 GB usable | 212 GB base | 212.6 GB (+0.6 GB Patch 01.002.002) | 1440p PSSR + RT Shadows |
 
-### GTA VI Download ETA Reference (at 90% Realistic ISP Throughput)
+### GTA VI Download ETA Reference (at 100% Decimal Line Rate)
 | Connection Speed | PS5 & Xbox Base (212 GB) | W/ Xbox Patch 1.0.2.2 (213.6 GB) |
 | --- | --- | --- |
 | 25 Mbps | 18h 51m (1131m) | 18h 59m (1139m) |
@@ -60,7 +60,7 @@ Important attribution note: playunpause.com is an independent unofficial utility
 | (-4000, 70, 2400) | (-500, 70, 300) | Chunk (-250, 150) |
 
 ## 5. Roblox DevEx & Marketplace 30% Fee Reference
-| Gross Sales Robux | DevEx Payout (After 30% Fee at 0.0038) | Net Breakdown |
+| Earned / Sales Robux | Direct Earned DevEx Payout ($0.0038/R$) | Net Breakdown |
 | --- | --- | --- |
 | 30,000 R$ | $114.00 USD ($0.0038/R$ Net) | 21,000 R$ after 30% Gamepass cut |
 | 50,000 R$ | $190.00 USD ($0.0038/R$ Net) | 35,000 R$ after 30% Gamepass cut |

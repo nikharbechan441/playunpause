@@ -124,26 +124,26 @@ export default function LeonidaStorageTab({
         {calc.isShort && <span style={{ color: 'var(--lh-coral)' }}>Over Capacity: {calc.shortByGb} GB ({calc.overPct}%)</span>}
       </div>
 
-      {/* Inline Mobile/Workbench Amazon Shortage CTA so mobile users don't miss it below the fold */}
-      {calc.isShort && (
-        <div className="lh-inset-strip coral-border" style={{ marginTop: '10px' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-            <span className="lh-badge coral">Shortage Fix · Expand NVMe</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--lh-slate)' }}>
-              As an Amazon Associate I earn from qualifying purchases.
-            </span>
-          </div>
-          <a
-            href={hardwareUrl}
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-            className="lh-amazon-link lh-pressable"
-          >
-            <span>{hardwareCta}</span>
-            <ExternalLink size={14} aria-hidden="true" />
-          </a>
+      {/* Console-Matched Amazon SSD Expansion Card (Always visible on /gta-6/storage) */}
+      <div className={`lh-inset-strip ${calc.isShort ? 'coral-border' : ''}`} style={{ marginTop: '10px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+          <span className={`lh-badge ${calc.isShort ? 'coral' : 'teal'}`}>
+            {calc.isShort ? 'Shortage Fix · Expand NVMe' : 'Optional Expansion · 1TB NVMe'}
+          </span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--lh-slate)' }}>
+            As an Amazon Associate I earn from qualifying purchases.
+          </span>
         </div>
-      )}
+        <a
+          href={hardwareUrl}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          className="lh-amazon-link lh-pressable"
+        >
+          <span>{hardwareCta}</span>
+          <ExternalLink size={14} aria-hidden="true" />
+        </a>
+      </div>
 
       {/* Interactive Installed Game Chips */}
       <div style={{ marginTop: '14px' }}>

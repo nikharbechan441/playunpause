@@ -408,6 +408,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -1172,6 +1173,55 @@
   top: 0;
   opacity: 0;
   pointer-events: none;
+}
+
+.lh-subhub-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--lh-hairline);
+  background-color: var(--lh-surface);
+}
+
+.lh-subhub-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--lh-hairline);
+  background-color: var(--lh-inset);
+  color: var(--lh-slate);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 150ms ease-out, color 150ms ease-out;
+}
+
+.lh-subhub-link:hover,
+.lh-subhub-link.active {
+  border-color: var(--lh-gold);
+  color: var(--lh-ivory);
+}
+
+.lh-tracker-direct-input {
+  width: 58px;
+  min-height: 36px;
+  padding: 4px 6px;
+  text-align: center;
+  border-radius: 7px;
+  border: 1px solid var(--lh-hairline);
+  background-color: var(--lh-inset);
+  color: var(--lh-ivory);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.lh-tracker-direct-input:focus {
+  outline: none;
+  border-color: var(--lh-gold);
 }
 
 /* Mobile Responsive Rules (<1024px & <768px) */

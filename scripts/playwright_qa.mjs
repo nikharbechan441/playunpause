@@ -592,8 +592,19 @@ async function verifyInteractiveFlowsDesktop(page, baseUrl) {
     `Missing tag=playunpause-20 on /gta-6/storage Xbox link: ${storageXboxHref}`
   );
 
+  // Crawlable Leonida tabs + sub-hub quick links on /
+  assert.equal(
+    await page.locator('.lh-tabs-bar a[href]').count(),
+    5,
+    'Expected 5 crawlable <a href> tabs in .lh-tabs-bar on /'
+  );
+  assert.ok(
+    (await page.locator('.lh-subhub-links a[href]').count()) >= 8,
+    'Expected >= 8 crawlable GTA VI sub-hub links in .lh-subhub-links on /'
+  );
+
   // Switch to MONEY tab via UI tab bar -> strictly 1 active tab, zero focus outline leak on previous tab
-  const moneyTab = page.locator('.lh-tabs-bar button[role="tab"]:has-text("MONEY")');
+  const moneyTab = page.locator('.lh-tabs-bar [role="tab"]:has-text("MONEY")');
   assert.equal(await moneyTab.count(), 1, 'Expected MONEY tab button in .lh-tabs-bar');
   await moneyTab.click();
   await page.waitForTimeout(180);
@@ -604,6 +615,39 @@ async function verifyInteractiveFlowsDesktop(page, baseUrl) {
     return Boolean(el && el.classList?.contains('lh-mode-tab') && !el.classList.contains('active'));
   });
   assert.equal(focusLeakedOnInactiveTab, false, 'Stale focus outline remained on an inactive tab after switching');
+
+  // /gta-6/download-time/1000-mbps-gigabit hydrates 1000 Mbps (28m ETA @ 1000 Mbps, NOT 4h 45m)
+  await page.goto(`${baseUrl}/gta-6/download-time/1000-mbps-gigabit`, { waitUntil: 'domcontentloaded' });
+  await waitForReady(page);
+  const gigabitText = await page.evaluate(() => document.body.textContent || '');
+  assert.ok(gigabitText.includes('28m @ 1000 Mbps'), 'Expected 28m @ 1000 Mbps ETA on /gta-6/download-time/1000-mbps-gigabit');
+  assert.equal(gigabitText.includes('4h 45m'), false, 'Gigabit download-time route fell back to 100 Mbps (4h 45m)');
+
+  // /gta-6/storage/xbox-series-s-1tb hydrates Xbox Series S 1TB (802 GB usable) + always-visible SSD offer even when FITS
+  await page.goto(`${baseUrl}/gta-6/storage/xbox-series-s-1tb`, { waitUntil: 'domcontentloaded' });
+  await waitForReady(page);
+  const xss1tbText = await page.evaluate(() => document.body.textContent || '');
+  assert.ok(
+    xss1tbText.includes('Xbox Series S 1TB: 802 GB usable'),
+    'Expected Xbox Series S 1TB (802 GB usable) hydrated on /gta-6/storage/xbox-series-s-1tb'
+  );
+  const xss1tbOffer = page.locator('main a.lh-amazon-link').first();
+  assert.equal(await xss1tbOffer.count(), 1, 'Expected always-visible Xbox SSD offer on /gta-6/storage/xbox-series-s-1tb');
+  assert.ok(
+    ((await xss1tbOffer.textContent()) || '').includes('WD_BLACK C50 1TB Expansion Card for Xbox'),
+    'Expected WD_BLACK C50 copy on /gta-6/storage/xbox-series-s-1tb'
+  );
+  assert.ok(
+    ((await xss1tbOffer.getAttribute('href')) || '').includes('tag=playunpause-20'),
+    'Missing tag=playunpause-20 on /gta-6/storage/xbox-series-s-1tb'
+  );
+
+  // /roblox: Reverse USD Target Planner (#rbx-target-usd) & milestone chips
+  await page.goto(`${baseUrl}/roblox`, { waitUntil: 'domcontentloaded' });
+  await waitForReady(page);
+  assert.equal(await page.locator('#rbx-target-usd').count(), 1, 'Expected #rbx-target-usd input on /roblox');
+  assert.equal(await page.locator('button.filter-pill:has-text("30K Min")').count(), 1, 'Expected 30K Min chip on /roblox');
+  assert.equal(await page.locator('button.filter-pill:has-text("100K")').count(), 1, 'Expected 100K chip on /roblox');
 
   // /ea-fc-27: negative tax delta "-10,750" must never wrap its minus sign
   await page.goto(`${baseUrl}/ea-fc-27`, { waitUntil: 'domcontentloaded' });
